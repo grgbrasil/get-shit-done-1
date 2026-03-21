@@ -26,8 +26,8 @@ The version string (`-rc.1` vs `-beta.1`) communicates stability level. Users ne
 | Increment | When | Examples |
 |-----------|------|----------|
 | **PATCH** (1.27.x) | Bug fixes, typo corrections, test additions | Hook filter fix, config corruption fix |
-| **MINOR** (1.x.0) | New features, new commands, non-breaking enhancements | New runtime support, new workflow command |
-| **MAJOR** (x.0.0) | Breaking changes to config format, CLI flags, or runtime API | Removing a command, changing config schema |
+| **MINOR** (1.x.0) | Non-breaking enhancements, new commands, new runtime support | New workflow command, discuss-mode feature |
+| **MAJOR** (x.0.0) | Breaking changes to config format, CLI flags, or runtime API; new features that alter existing behavior | Removing a command, changing config schema |
 
 ## Pre-Release Version Progression
 
