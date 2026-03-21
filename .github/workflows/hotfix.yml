@@ -1,0 +1,149 @@
+name: Hotfix Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - create
+          - finalize
+      version:
+        description: 'Patch version (e.g., 1.27.1)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (skip npm publish)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  NODE_VERSION: 24
+
+jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      base_tag: ${{ steps.validate.outputs.base_tag }}
+      branch: ${{ steps.validate.outputs.branch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version format
+        id: validate
+        run: |
+          VERSION="${{ inputs.version }}"
+          # Must be X.Y.Z where Z > 0 (patch release)
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[1-9][0-9]*$'; then
+            echo "::error::Version must be a patch release (e.g., 1.27.1, not 1.28.0)"
+            exit 1
+          fi
+          # Extract base version (X.Y.0)
+          BASE=$(echo "$VERSION" | sed 's/\.[0-9]*$/.0/')
+          BASE_TAG="v${BASE}"
+          BRANCH="hotfix/${VERSION}"
+          # Verify base tag exists
+          if ! git tag -l "$BASE_TAG" | grep -q .; then
+            echo "::error::Base tag $BASE_TAG not found. Cannot create hotfix without a released base version."
+            exit 1
+          fi
+          echo "base_tag=$BASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+  create:
+    needs: validate-version
+    if: inputs.action == 'create'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Create hotfix branch
+        run: |
+          BRANCH="${{ needs.validate-version.outputs.branch }}"
+          BASE_TAG="${{ needs.validate-version.outputs.base_tag }}"
+          git checkout -b "$BRANCH" "$BASE_TAG"
+          # Bump version in package.json
+          npm version "${{ inputs.version }}" --no-git-tag-version
+          git add package.json package-lock.json
+          git commit -m "chore: bump version to ${{ inputs.version }} for hotfix"
+          git push origin "$BRANCH"
+          echo "## Hotfix branch created" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: \`$BRANCH\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Based on: \`$BASE_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Apply your fix, push, then run this workflow again with \`finalize\`" >> "$GITHUB_STEP_SUMMARY"
+
+  finalize:
+    needs: validate-version
+    if: inputs.action == 'finalize'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm-publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-version.outputs.branch }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install and test
+        run: |
+          npm ci
+          npm run test:coverage
+
+      - name: Publish to npm (latest)
+        if: ${{ !inputs.dry_run }}
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Tag and push
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Create PR to merge hotfix back to main
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ needs.validate-version.outputs.branch }}"
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: merge hotfix v${{ inputs.version }} back to main" \
+            --body "Merge hotfix changes back to main after v${{ inputs.version }} release."
+
+      - name: Summary
+        run: |
+          echo "## Hotfix v${{ inputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "**DRY RUN** — npm publish skipped" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Published to npm as \`latest\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Tagged \`v${{ inputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- PR created to merge back to main" >> "$GITHUB_STEP_SUMMARY"
+          fi

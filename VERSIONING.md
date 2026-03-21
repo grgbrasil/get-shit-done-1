@@ -1,0 +1,121 @@
+# Versioning & Release Strategy
+
+GSD follows [Semantic Versioning 2.0.0](https://semver.org/) with three release tiers mapped to npm dist-tags.
+
+## Release Tiers
+
+| Tier | What ships | Version format | npm tag | Branch | Install |
+|------|-----------|---------------|---------|--------|---------|
+| **Patch** | Bug fixes only | `1.27.1` | `latest` | `hotfix/1.27.1` | `npx get-shit-done-cc@latest` |
+| **Minor** | Fixes + enhancements | `1.28.0` | `latest` (after RC) | `release/1.28.0` | `npx get-shit-done-cc@next` (RC) |
+| **Major** | Fixes + enhancements + features | `2.0.0` | `latest` (after beta) | `release/2.0.0` | `npx get-shit-done-cc@next` (beta) |
+
+## npm Dist-Tags
+
+Only two tags, following Angular/Next.js convention:
+
+| Tag | Meaning | Installed by |
+|-----|---------|-------------|
+| `latest` | Stable production release | `npm install get-shit-done-cc` (default) |
+| `next` | Pre-release (RC or beta) | `npm install get-shit-done-cc@next` (opt-in) |
+
+The version string (`-rc.1` vs `-beta.1`) communicates stability level. Users never get pre-releases unless they explicitly opt in.
+
+## Semver Rules
+
+| Increment | When | Examples |
+|-----------|------|----------|
+| **PATCH** (1.27.x) | Bug fixes, typo corrections, test additions | Hook filter fix, config corruption fix |
+| **MINOR** (1.x.0) | New features, new commands, non-breaking enhancements | New runtime support, new workflow command |
+| **MAJOR** (x.0.0) | Breaking changes to config format, CLI flags, or runtime API | Removing a command, changing config schema |
+
+## Pre-Release Version Progression
+
+```
+1.28.0-beta.1  →  1.28.0-beta.2  →  1.28.0-rc.1  →  1.28.0-rc.2  →  1.28.0
+```
+
+- **beta**: Feature-complete but not fully tested. API mostly stable.
+- **rc**: Production-ready candidate. Only critical fixes expected.
+- Semver sorts these correctly: `beta` < `rc` < stable.
+
+## Branch Structure
+
+```
+main                              ← stable, always deployable
+  │
+  ├── hotfix/1.27.1               ← patch: cherry-pick fix from main, publish to latest
+  │
+  ├── release/1.28.0              ← minor: accumulate fixes + enhancements, RC cycle
+  │     ├── v1.28.0-rc.1          ← tag: published to next
+  │     └── v1.28.0               ← tag: promoted to latest
+  │
+  ├── release/2.0.0               ← major: features + breaking changes, beta + RC cycle
+  │     ├── v2.0.0-beta.1         ← tag: published to next
+  │     ├── v2.0.0-rc.1           ← tag: published to next
+  │     └── v2.0.0                ← tag: promoted to latest
+  │
+  ├── fix/1200-bug-description    ← bug fix branch (merges to main)
+  ├── feat/925-feature-name       ← feature branch (merges to main)
+  └── chore/1206-maintenance      ← maintenance branch (merges to main)
+```
+
+## Release Workflows
+
+### Patch Release (Hotfix)
+
+For critical bugs that can't wait for the next minor release.
+
+1. Trigger `hotfix.yml` with version (e.g., `1.27.1`)
+2. Workflow creates `hotfix/1.27.1` branch from latest `v1.27.x` tag
+3. Cherry-pick or apply fix on the hotfix branch
+4. Push — CI runs tests automatically
+5. Trigger `hotfix.yml` finalize action
+6. Workflow runs full test suite, bumps version, tags, publishes to `latest`
+7. Merge hotfix branch back to main
+
+### Minor Release (Standard Cycle)
+
+For accumulated fixes and enhancements.
+
+1. Trigger `release.yml` with action `create` and version (e.g., `1.28.0`)
+2. Workflow creates `release/1.28.0` branch from main, bumps package.json
+3. Trigger `release.yml` with action `rc` to publish `1.28.0-rc.1` to `next`
+4. Test the RC: `npx get-shit-done-cc@next`
+5. If issues found: fix on release branch, publish `rc.2`, `rc.3`, etc.
+6. Trigger `release.yml` with action `finalize` — publishes `1.28.0` to `latest`
+7. Merge release branch to main
+
+### Major Release
+
+Same as minor but starts with `-beta.1` instead of `-rc.1`, allowing a longer testing cycle.
+
+1. Trigger `release.yml` with action `create` and version (e.g., `2.0.0`)
+2. Publish `2.0.0-beta.1` to `next`
+3. Iterate through beta, then RC, then finalize
+
+## Conventional Commits
+
+Branch names map to commit types:
+
+| Branch prefix | Commit type | Version bump |
+|--------------|-------------|-------------|
+| `fix/` | `fix:` | PATCH |
+| `feat/` | `feat:` | MINOR |
+| `hotfix/` | `fix:` | PATCH (immediate) |
+| `chore/` | `chore:` | none |
+| `docs/` | `docs:` | none |
+| `refactor/` | `refactor:` | none |
+
+## Publishing Commands (Reference)
+
+```bash
+# Stable release (sets latest tag automatically)
+npm publish
+
+# Pre-release (must use --tag to avoid overwriting latest)
+npm publish --tag next
+
+# Verify what latest and next point to
+npm dist-tag ls get-shit-done-cc
+```
