@@ -28,7 +28,7 @@ jobs:
           - os: macos-latest
             node-version: 22
           # Single Windows runner — slowest CI runner, smoke-test only
-          - os: windows-latest
+          - os: blacksmith-4vcpu-windows-2025
             node-version: 22
 
     steps:
