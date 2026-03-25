@@ -577,6 +577,72 @@ Options:
 Use AskUserQuestion to present the options.
 </step>
 
+<step name="schema_drift_gate">
+Post-execution schema drift detection. Catches false-positive verification where
+build/types pass because TypeScript types come from config, not the live database.
+
+**Run after execution completes but BEFORE verification marks success.**
+
+```bash
+SCHEMA_DRIFT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" verify schema-drift "${PHASE_NUMBER}" 2>/dev/null)
+```
+
+Parse JSON result for: `drift_detected`, `blocking`, `schema_files`, `orms`, `unpushed_orms`, `message`.
+
+**If `drift_detected` is false:** Skip to verify_phase_goal.
+
+**If `drift_detected` is true AND `blocking` is true:**
+
+Check for override:
+```bash
+SKIP_SCHEMA=$(echo "${GSD_SKIP_SCHEMA_CHECK:-false}")
+```
+
+**If `SKIP_SCHEMA` is `true`:**
+
+Display:
+```
+⚠ Schema drift detected but GSD_SKIP_SCHEMA_CHECK=true — bypassing gate.
+
+Schema files changed: {schema_files}
+ORMs requiring push: {unpushed_orms}
+
+Proceeding to verification (database may be out of sync).
+```
+→ Continue to verify_phase_goal.
+
+**If `SKIP_SCHEMA` is not `true`:**
+
+BLOCK verification. Display:
+
+```
+## BLOCKED: Schema Drift Detected
+
+Schema-relevant files changed during this phase but no database push command
+was executed. Build and type checks pass because TypeScript types come from
+config, not the live database — verification would produce a false positive.
+
+Schema files changed: {schema_files}
+ORMs requiring push: {unpushed_orms}
+
+Required push commands:
+{For each unpushed ORM, show the push command from the message}
+
+Options:
+1. Run push command now (recommended) — execute the push, then re-verify
+2. Skip schema check (GSD_SKIP_SCHEMA_CHECK=true) — bypass this gate
+3. Abort — stop execution and investigate
+```
+
+If `TEXT_MODE` is true, present as a plain-text numbered list. Otherwise use AskUserQuestion.
+
+**If user selects option 1:** Present the specific push command(s) to run. After user confirms execution, re-run the schema drift check. If it passes, continue to verify_phase_goal.
+
+**If user selects option 2:** Set override and continue to verify_phase_goal.
+
+**If user selects option 3:** Stop execution. Report partial completion.
+</step>
+
 <step name="verify_phase_goal">
 Verify phase achieved its GOAL, not just completed tasks.
 
