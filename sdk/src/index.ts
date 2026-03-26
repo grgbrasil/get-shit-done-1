@@ -292,3 +292,8 @@ export type { LogLevel, LogEntry, GSDLoggerOptions } from './logger.js';
 // S03: Phase lifecycle state machine
 export { PhaseRunner, PhaseRunnerError } from './phase-runner.js';
 export type { PhaseRunnerDeps, VerificationOutcome } from './phase-runner.js';
+
+// S05: Transports
+export { CLITransport } from './cli-transport.js';
+export { WSTransport } from './ws-transport.js';
+export type { WSTransportOptions } from './ws-transport.js';
