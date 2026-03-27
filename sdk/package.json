@@ -15,7 +15,8 @@
     "gsd-sdk": "./dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "prompts"
   ],
   "repository": {
     "type": "git",
