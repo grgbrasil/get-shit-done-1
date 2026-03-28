@@ -504,6 +504,38 @@ async function cmdWebsearch(query, options, raw) {
   }
 }
 
+/**
+ * Determine phase status by checking plans, summaries, AND verification.
+ * A phase is only "Complete" if it has a VERIFICATION.md with a passing result.
+ * If all plans have summaries but no verification exists (or it didn't pass),
+ * the status is "Executed" (work done, not yet verified).
+ *
+ * Also handles duplicate phase directories: when multiple dirs share the same
+ * phase number prefix, their plans/summaries are accumulated.
+ */
+function determinePhaseStatus(phasesDir, dir, plans, summaries) {
+  if (plans === 0) return 'Not Started';
+  if (summaries < plans && summaries > 0) return 'In Progress';
+  if (summaries === 0) return 'Planned';
+
+  // summaries >= plans — check verification
+  const phaseDir = path.join(phasesDir, dir);
+  const phaseFiles = fs.readdirSync(phaseDir);
+  const verificationFile = phaseFiles.find(f => f.endsWith('-VERIFICATION.md') || f === 'VERIFICATION.md');
+
+  if (!verificationFile) return 'Executed';
+
+  try {
+    const content = fs.readFileSync(path.join(phaseDir, verificationFile), 'utf-8');
+    // Check frontmatter result field or markdown heading
+    const passPattern = /(?:^result:\s*pass|^##?\s*Result\s*:\s*PASS|verdict:\s*pass|status:\s*(?:pass|complete|verified))/im;
+    if (passPattern.test(content)) return 'Complete';
+    return 'Executed';
+  } catch {
+    return 'Executed';
+  }
+}
+
 function cmdProgressRender(cwd, format, raw) {
   const phasesDir = planningPaths(cwd).phases;
   const roadmapPath = planningPaths(cwd).roadmap;
@@ -528,11 +560,7 @@ function cmdProgressRender(cwd, format, raw) {
       totalPlans += plans;
       totalSummaries += summaries;
 
-      let status;
-      if (plans === 0) status = 'Pending';
-      else if (summaries >= plans) status = 'Complete';
-      else if (summaries > 0) status = 'In Progress';
-      else status = 'Planned';
+      const status = determinePhaseStatus(phasesDir, dir, plans, summaries);
 
       phases.push({ number: phaseNum, name: phaseName, plans, summaries, status });
     }
@@ -825,27 +853,34 @@ function cmdStats(cwd, format, raw) {
       const plans = phaseFiles.filter(f => f.endsWith('-PLAN.md') || f === 'PLAN.md').length;
       const summaries = phaseFiles.filter(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md').length;
 
+      // Handle duplicate phase directories (same number prefix, different slug).
+      // Accumulate plans/summaries from all dirs sharing the same phase number.
+      const existingEntry = phasesByNumber.get(phaseNum);
+      const accumPlans = (existingEntry?.plans || 0) + plans;
+      const accumSummaries = (existingEntry?.summaries || 0) + summaries;
+
       totalPlans += plans;
       totalSummaries += summaries;
 
-      let status;
-      if (plans === 0) status = 'Not Started';
-      else if (summaries >= plans) status = 'Complete';
-      else if (summaries > 0) status = 'In Progress';
-      else status = 'Planned';
+      // Use the dir with actual content for status determination
+      const statusDir = plans > 0 ? dir : (existingEntry?._dir || dir);
+      const status = determinePhaseStatus(phasesDir, statusDir, accumPlans, accumSummaries);
 
       const existing = phasesByNumber.get(phaseNum);
       phasesByNumber.set(phaseNum, {
         number: phaseNum,
         name: existing?.name || phaseName,
-        plans,
-        summaries,
+        plans: accumPlans,
+        summaries: accumSummaries,
         status,
+        _dir: statusDir,
       });
     }
   } catch { /* intentionally empty */ }
 
-  const phases = [...phasesByNumber.values()].sort((a, b) => comparePhaseNum(a.number, b.number));
+  const phases = [...phasesByNumber.values()]
+    .map(({ _dir, ...rest }) => rest)
+    .sort((a, b) => comparePhaseNum(a.number, b.number));
   const completedPhases = phases.filter(p => p.status === 'Complete').length;
   const planPercent = totalPlans > 0 ? Math.min(100, Math.round((totalSummaries / totalPlans) * 100)) : 0;
   const percent = phases.length > 0 ? Math.min(100, Math.round((completedPhases / phases.length) * 100)) : 0;
