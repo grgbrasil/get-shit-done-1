@@ -121,6 +121,10 @@ function cmdInitExecutePhase(cwd, phase, raw) {
     milestone_name: milestone.name,
     milestone_slug: generateSlugInternal(milestone.name),
 
+    // Impact analysis
+    impact_analysis_enabled: config.impact_analysis?.enabled || false,
+    cataloger_model: resolveModelInternal(cwd, 'gsd-cataloger'),
+
     // File existence
     state_exists: fs.existsSync(path.join(planningDir(cwd), 'STATE.md')),
     roadmap_exists: fs.existsSync(path.join(planningDir(cwd), 'ROADMAP.md')),
@@ -130,6 +134,62 @@ function cmdInitExecutePhase(cwd, phase, raw) {
     roadmap_path: toPosixPath(path.relative(cwd, path.join(planningDir(cwd), 'ROADMAP.md'))),
     config_path: toPosixPath(path.relative(cwd, path.join(planningDir(cwd), 'config.json'))),
   };
+
+  // Write function-map-stats.json for Context Engine injection (INT-02)
+  try {
+    const fmapPath = path.join(planningRoot(cwd), 'function-map.json');
+    if (fs.existsSync(fmapPath)) {
+      const mapData = JSON.parse(fs.readFileSync(fmapPath, 'utf-8'));
+      const entries = Object.values(mapData);
+      const byKind = {};
+      for (const e of entries) { byKind[e.kind || 'unknown'] = (byKind[e.kind || 'unknown'] || 0) + 1; }
+      const stats = { total: entries.length, by_kind: byKind, path: fmapPath };
+      const statsPath = path.join(planningRoot(cwd), 'function-map-stats.json');
+      fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2), 'utf-8');
+    }
+  } catch {
+    // Non-fatal: stats file is optional context enrichment
+  }
+
+  // Write ops-summary.json for Context Engine injection (D-01, D-02)
+  try {
+    const opsRegistryPath = path.join(planningRoot(cwd), 'ops', 'registry.json');
+    if (fs.existsSync(opsRegistryPath)) {
+      const opsRegistry = JSON.parse(fs.readFileSync(opsRegistryPath, 'utf-8'));
+      const opsSummary = {
+        areas_count: opsRegistry.areas.length,
+        areas: opsRegistry.areas.map(a => {
+          const areaSummary = { slug: a.slug, name: a.name, components: a.components_count || 0, last_scanned: a.last_scanned || null };
+          // Enrich with tree stats per D-02
+          const treePath = path.join(planningRoot(cwd), 'ops', a.slug, 'tree.json');
+          if (fs.existsSync(treePath)) {
+            try {
+              const tree = JSON.parse(fs.readFileSync(treePath, 'utf-8'));
+              const byType = {};
+              for (const n of tree.nodes) { byType[n.type] = (byType[n.type] || 0) + 1; }
+              areaSummary.nodes_by_type = byType;
+              areaSummary.edges_count = tree.edges.length;
+              // Cross-refs: unique directory prefixes from edge targets outside this area
+              const crossRefs = new Set();
+              for (const e of tree.edges) {
+                const target = tree.nodes.find(n => n.id === e.to);
+                if (target) {
+                  const dirPrefix = target.file_path.split('/').slice(0, 2).join('/');
+                  if (!dirPrefix.toLowerCase().includes(a.slug)) crossRefs.add(dirPrefix);
+                }
+              }
+              areaSummary.cross_refs = [...crossRefs];
+            } catch { /* non-fatal */ }
+          }
+          return areaSummary;
+        })
+      };
+      const opsSummaryPath = path.join(planningRoot(cwd), 'ops-summary.json');
+      fs.writeFileSync(opsSummaryPath, JSON.stringify(opsSummary, null, 2), 'utf-8');
+    }
+  } catch {
+    // Non-fatal: ops summary is optional context enrichment
+  }
 
   output(withProjectRoot(cwd, result), raw);
 }
@@ -233,6 +293,62 @@ function cmdInitPlanPhase(cwd, phase, raw) {
         result.reviews_path = toPosixPath(path.join(phaseInfo.directory, reviewsFile));
       }
     } catch { /* intentionally empty */ }
+  }
+
+  // Write function-map-stats.json for Context Engine injection (INT-02)
+  try {
+    const fmapPath = path.join(planningRoot(cwd), 'function-map.json');
+    if (fs.existsSync(fmapPath)) {
+      const mapData = JSON.parse(fs.readFileSync(fmapPath, 'utf-8'));
+      const entries = Object.values(mapData);
+      const byKind = {};
+      for (const e of entries) { byKind[e.kind || 'unknown'] = (byKind[e.kind || 'unknown'] || 0) + 1; }
+      const stats = { total: entries.length, by_kind: byKind, path: fmapPath };
+      const statsPath = path.join(planningRoot(cwd), 'function-map-stats.json');
+      fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2), 'utf-8');
+    }
+  } catch {
+    // Non-fatal: stats file is optional context enrichment
+  }
+
+  // Write ops-summary.json for Context Engine injection (D-01, D-02)
+  try {
+    const opsRegistryPath = path.join(planningRoot(cwd), 'ops', 'registry.json');
+    if (fs.existsSync(opsRegistryPath)) {
+      const opsRegistry = JSON.parse(fs.readFileSync(opsRegistryPath, 'utf-8'));
+      const opsSummary = {
+        areas_count: opsRegistry.areas.length,
+        areas: opsRegistry.areas.map(a => {
+          const areaSummary = { slug: a.slug, name: a.name, components: a.components_count || 0, last_scanned: a.last_scanned || null };
+          // Enrich with tree stats per D-02
+          const treePath = path.join(planningRoot(cwd), 'ops', a.slug, 'tree.json');
+          if (fs.existsSync(treePath)) {
+            try {
+              const tree = JSON.parse(fs.readFileSync(treePath, 'utf-8'));
+              const byType = {};
+              for (const n of tree.nodes) { byType[n.type] = (byType[n.type] || 0) + 1; }
+              areaSummary.nodes_by_type = byType;
+              areaSummary.edges_count = tree.edges.length;
+              // Cross-refs: unique directory prefixes from edge targets outside this area
+              const crossRefs = new Set();
+              for (const e of tree.edges) {
+                const target = tree.nodes.find(n => n.id === e.to);
+                if (target) {
+                  const dirPrefix = target.file_path.split('/').slice(0, 2).join('/');
+                  if (!dirPrefix.toLowerCase().includes(a.slug)) crossRefs.add(dirPrefix);
+                }
+              }
+              areaSummary.cross_refs = [...crossRefs];
+            } catch { /* non-fatal */ }
+          }
+          return areaSummary;
+        })
+      };
+      const opsSummaryPath = path.join(planningRoot(cwd), 'ops-summary.json');
+      fs.writeFileSync(opsSummaryPath, JSON.stringify(opsSummary, null, 2), 'utf-8');
+    }
+  } catch {
+    // Non-fatal: ops summary is optional context enrichment
   }
 
   output(withProjectRoot(cwd, result), raw);
