@@ -46,11 +46,11 @@ Plans:
   3. When a function's behavior changes (business logic, semantic result), the executor stops and explains the impact to the user before proceeding
   4. When a caller is auto-updated, the system checks one level deeper -- callers of that caller -- for cascading impact
   5. After all impacts are resolved, the Function Map reflects the new state (updated signatures, new callers)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — fmap impact CLI subcommand + normalizeSignature helper + TDD tests
+- [ ] 02-02-PLAN.md — PreToolUse hook (gsd-impact-guard.js) + executor prompt impact analysis protocol + install.js registration
 
 ### Phase 3: Model Routing & Integration
 **Goal**: Cataloger runs on cheap model, all Impact Analysis components wired into GSD workflows, opt-in toggle in new-project
