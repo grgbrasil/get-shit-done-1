@@ -130,8 +130,8 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md — Shared helpers (appendHistory, computeBlastRadius, refreshTree, cmdOpsSummary) + dispatcher routing + tests
-- [ ] 06-02-PLAN.md — cmdOpsInvestigate + cmdOpsDebug implementations + /ops:investigate and /ops:debug skill commands
-- [ ] 06-03-PLAN.md — cmdOpsFeature + cmdOpsModify implementations + /ops:feature and /ops:modify skill commands + init.cjs context injection
+- [x] 06-02-PLAN.md — cmdOpsInvestigate + cmdOpsDebug implementations + /ops:investigate and /ops:debug skill commands
+- [x] 06-03-PLAN.md — cmdOpsFeature + cmdOpsModify implementations + /ops:feature and /ops:modify skill commands + init.cjs context injection
 
 ### Phase 7: OPS Governance — Status + Specs + Backlog
 **Goal**: Cada area tem visibilidade de saude, regras explicitas que operacoes validam, e backlog gerenciado
