@@ -93,10 +93,10 @@
 
 ### OPS Workflows
 
-- [ ] **OPS-05**: `/ops:investigate [area/problema]` recebe descricao natural, navega o mapa, diagnostica causa raiz com contexto completo
-- [ ] **OPS-06**: `/ops:feature [area] [descricao]` adiciona capacidade nova — gera plano GSD usando contexto da arvore e executa
-- [ ] **OPS-07**: `/ops:modify [area] [o que]` altera comportamento existente com analise de impacto derivada da arvore
-- [ ] **OPS-08**: `/ops:debug [area] [sintoma]` facilita debugging dando contexto completo da area (o que existe, como conecta, specs)
+- [x] **OPS-05**: `/ops:investigate [area/problema]` recebe descricao natural, navega o mapa, diagnostica causa raiz com contexto completo
+- [x] **OPS-06**: `/ops:feature [area] [descricao]` adiciona capacidade nova — gera plano GSD usando contexto da arvore e executa
+- [x] **OPS-07**: `/ops:modify [area] [o que]` altera comportamento existente com analise de impacto derivada da arvore
+- [x] **OPS-08**: `/ops:debug [area] [sintoma]` facilita debugging dando contexto completo da area (o que existe, como conecta, specs)
 - [x] **OPS-09**: Toda operacao registra historico e atualiza mapa apos mudancas
 
 ### OPS Governance
@@ -157,10 +157,10 @@
 | OPS-02 | Phase 5 | Complete |
 | OPS-03 | Phase 5 | Complete |
 | OPS-04 | Phase 5 | Complete |
-| OPS-05 | Phase 6 | Pending |
-| OPS-06 | Phase 6 | Pending |
-| OPS-07 | Phase 6 | Pending |
-| OPS-08 | Phase 6 | Pending |
+| OPS-05 | Phase 6 | Complete |
+| OPS-06 | Phase 6 | Complete |
+| OPS-07 | Phase 6 | Complete |
+| OPS-08 | Phase 6 | Complete |
 | OPS-09 | Phase 6 | Complete |
 | OPS-10 | Phase 7 | Pending |
 | OPS-11 | Phase 7 | Pending |
