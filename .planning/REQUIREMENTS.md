@@ -27,10 +27,10 @@
 
 ### Model Routing
 
-- [ ] **MODEL-01**: Cada tipo de agente GSD possui model recommendation configuravel (catalogador -> barato, planner -> quality, executor -> balanced)
-- [ ] **MODEL-02**: Configuracao de model por agente em config.json, com defaults inteligentes que o usuario pode sobrescrever
-- [ ] **MODEL-03**: Suporte a providers terceiros (OpenRouter, local models) para agentes que nao precisam de modelos premium
-- [ ] **MODEL-04**: Se config de model por agente nao existe no projeto, sistema auto-configura com defaults na primeira execucao
+- [x] **MODEL-01**: Cada tipo de agente GSD possui model recommendation configuravel (catalogador -> barato, planner -> quality, executor -> balanced)
+- [x] **MODEL-02**: Configuracao de model por agente em config.json, com defaults inteligentes que o usuario pode sobrescrever
+- [x] **MODEL-03**: Suporte a providers terceiros (OpenRouter, local models) para agentes que nao precisam de modelos premium
+- [x] **MODEL-04**: Se config de model por agente nao existe no projeto, sistema auto-configura com defaults na primeira execucao
 
 ### Integration
 
@@ -135,10 +135,10 @@
 | IMPACT-04 | Phase 2 | Complete |
 | IMPACT-05 | Phase 2 | Complete |
 | IMPACT-06 | Phase 2 | Complete |
-| MODEL-01 | Phase 3 | Pending |
-| MODEL-02 | Phase 3 | Pending |
-| MODEL-03 | Phase 3 | Pending |
-| MODEL-04 | Phase 3 | Pending |
+| MODEL-01 | Phase 3 | Complete |
+| MODEL-02 | Phase 3 | Complete |
+| MODEL-03 | Phase 3 | Complete |
+| MODEL-04 | Phase 3 | Complete |
 | INT-01 | Phase 3 | Pending |
 | INT-02 | Phase 3 | Pending |
 | INT-03 | Phase 3 | Pending |
