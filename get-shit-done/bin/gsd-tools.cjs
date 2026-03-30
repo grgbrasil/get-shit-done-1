@@ -157,6 +157,7 @@ const profilePipeline = require('./lib/profile-pipeline.cjs');
 const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
 const docs = require('./lib/docs.cjs');
+const fmap = require('./lib/fmap.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
 
@@ -941,6 +942,22 @@ async function runCommand(command, args, cwd, raw) {
 
     case 'docs-init': {
       docs.cmdDocsInit(cwd, raw);
+      break;
+    }
+
+    case 'fmap': {
+      const subcommand = args[1];
+      if (subcommand === 'get') {
+        fmap.cmdFmapGet(cwd, args[2], raw);
+      } else if (subcommand === 'update') {
+        fmap.cmdFmapUpdate(cwd, args.slice(2), raw);
+      } else if (subcommand === 'stats') {
+        fmap.cmdFmapStats(cwd, raw);
+      } else if (subcommand === 'full-scan') {
+        fmap.cmdFmapFullScan(cwd, raw);
+      } else {
+        error(`Unknown fmap subcommand: ${subcommand}`);
+      }
       break;
     }
 
