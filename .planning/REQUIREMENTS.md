@@ -7,13 +7,13 @@
 
 ### Function Map
 
-- [ ] **FMAP-01**: Function Map armazena em JSON flat todas as funcoes/metodos/classes com assinatura, proposito e arquivo
-- [ ] **FMAP-02**: Cada entrada no Function Map inclui array de callers (arquivo:linha) e array de calls (dependencias)
+- [x] **FMAP-01**: Function Map armazena em JSON flat todas as funcoes/metodos/classes com assinatura, proposito e arquivo
+- [x] **FMAP-02**: Cada entrada no Function Map inclui array de callers (arquivo:linha) e array de calls (dependencias)
 - [ ] **FMAP-03**: Function Map e populado via Serena MCP (get_symbols_overview + find_referencing_symbols)
 - [ ] **FMAP-04**: Function Map possui grep fallback para ambientes sem Serena
 - [ ] **FMAP-05**: Function Map e atualizado automaticamente a cada execucao (nao so a cada commit)
-- [ ] **FMAP-06**: Function Map suporta lookup O(1) por chave `file::function`
-- [ ] **FMAP-07**: Agente catalogador (que popula/atualiza o Function Map) roda em modelo barato (Haiku ou terceiros via OpenRouter) para processar codebases grandes sem custo alto
+- [x] **FMAP-06**: Function Map suporta lookup O(1) por chave `file::function`
+- [x] **FMAP-07**: Agente catalogador (que popula/atualiza o Function Map) roda em modelo barato (Haiku ou terceiros via OpenRouter) para processar codebases grandes sem custo alto
 - [ ] **FMAP-08**: Usuario escolhe durante `/gsd:new-project` se ativa o sistema de Function Map + Impact Analysis (opt-in, nao forcado)
 
 ### Impact Analysis
@@ -91,13 +91,13 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FMAP-01 | Phase 1 | Pending |
-| FMAP-02 | Phase 1 | Pending |
+| FMAP-01 | Phase 1 | Complete |
+| FMAP-02 | Phase 1 | Complete |
 | FMAP-03 | Phase 1 | Pending |
 | FMAP-04 | Phase 1 | Pending |
 | FMAP-05 | Phase 1 | Pending |
-| FMAP-06 | Phase 1 | Pending |
-| FMAP-07 | Phase 1 | Pending |
+| FMAP-06 | Phase 1 | Complete |
+| FMAP-07 | Phase 1 | Complete |
 | IMPACT-01 | Phase 2 | Pending |
 | IMPACT-02 | Phase 2 | Pending |
 | IMPACT-03 | Phase 2 | Pending |
