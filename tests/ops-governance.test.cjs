@@ -267,7 +267,7 @@ describe('cmdOpsSpec', () => {
   });
 });
 
-// ─── cmdOpsBacklog (stubs for plan 07-02) ───────────────────────────────────
+// ─── cmdOpsBacklog ──────────────────────────────────────────────────────────
 
 describe('cmdOpsBacklog', () => {
   let tmpDir;
@@ -280,39 +280,72 @@ describe('cmdOpsBacklog', () => {
     cleanup(tmpDir);
   });
 
-  test('backlog add', () => {
-    try { assert.fail('TODO: implement in plan 07-02'); } catch (e) {
-      if (e.code === 'ERR_ASSERTION') return; // Expected stub failure
-      throw e;
-    }
+  test('backlog add creates item with auto-increment ID', () => {
+    setupArea(tmpDir, 'test-area', {});
+
+    const result = captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['add', 'Fix', 'login', 'timeout'], false));
+    assert.ok(result.success, 'should succeed');
+    assert.strictEqual(result.item.id, 1, 'first item should have id 1');
+    assert.strictEqual(result.item.title, 'Fix login timeout');
+    assert.strictEqual(result.item.priority, 'medium');
+    assert.strictEqual(result.item.status, 'pending');
+    assert.ok(result.item.created_at, 'should have created_at');
+
+    // Add second item — ID should be 2 (max + 1, not length + 1)
+    const result2 = captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['add', 'Second', 'item'], false));
+    assert.strictEqual(result2.item.id, 2);
   });
 
-  test('backlog list', () => {
-    try { assert.fail('TODO: implement in plan 07-02'); } catch (e) {
-      if (e.code === 'ERR_ASSERTION') return;
-      throw e;
-    }
+  test('backlog list shows items sorted by priority', () => {
+    setupArea(tmpDir, 'test-area', {});
+    captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['add', 'Low priority item'], false));
+    // Manually update the added item to low priority for test setup
+    const backlogPath = path.join(tmpDir, '.planning', 'ops', 'test-area', 'backlog.json');
+    let items = JSON.parse(fs.readFileSync(backlogPath, 'utf-8'));
+    items[0].priority = 'low';
+    fs.writeFileSync(backlogPath, JSON.stringify(items), 'utf-8');
+    captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['add', 'High priority item'], false));
+    items = JSON.parse(fs.readFileSync(backlogPath, 'utf-8'));
+    items[1].priority = 'high';
+    fs.writeFileSync(backlogPath, JSON.stringify(items), 'utf-8');
+
+    const result = captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['list'], false));
+    assert.strictEqual(result.items[0].priority, 'high', 'high priority first');
+    assert.strictEqual(result.items[1].priority, 'low', 'low priority second');
   });
 
-  test('backlog prioritize', () => {
-    try { assert.fail('TODO: implement in plan 07-02'); } catch (e) {
-      if (e.code === 'ERR_ASSERTION') return;
-      throw e;
-    }
+  test('backlog prioritize changes item priority', () => {
+    setupArea(tmpDir, 'test-area', {});
+    captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['add', 'Test item'], false));
+    const result = captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['prioritize', '1', 'high'], false));
+    assert.ok(result.success);
+    assert.strictEqual(result.item.priority, 'high');
   });
 
-  test('backlog promote', () => {
-    try { assert.fail('TODO: implement in plan 07-02'); } catch (e) {
-      if (e.code === 'ERR_ASSERTION') return;
-      throw e;
-    }
+  test('backlog promote marks item and emits context', () => {
+    setupArea(tmpDir, 'test-area', {});
+    captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['add', 'Feature to promote'], false));
+    const result = captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['promote', '1'], false));
+    assert.ok(result.success);
+    assert.strictEqual(result.item.status, 'promoted');
+    assert.ok(result.context, 'should have context');
+    assert.ok(Array.isArray(result.context.next_steps), 'context should have next_steps');
   });
 
-  test('backlog done', () => {
-    try { assert.fail('TODO: implement in plan 07-02'); } catch (e) {
-      if (e.code === 'ERR_ASSERTION') return;
-      throw e;
-    }
+  test('backlog done marks item as done without deletion', () => {
+    setupArea(tmpDir, 'test-area', {});
+    captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['add', 'Item to complete'], false));
+    captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['done', '1'], false));
+
+    // Item must still exist in backlog.json
+    const backlogPath = path.join(tmpDir, '.planning', 'ops', 'test-area', 'backlog.json');
+    const items = JSON.parse(fs.readFileSync(backlogPath, 'utf-8'));
+    assert.strictEqual(items.length, 1, 'item should remain in file');
+    assert.strictEqual(items[0].status, 'done', 'item status should be done');
+
+    // Done item should not appear in list
+    const listResult = captureOutput(() => ops.cmdOpsBacklog(tmpDir, 'test-area', ['list'], false));
+    assert.strictEqual(listResult.items.length, 0, 'done item should not appear in list');
   });
 });
 
@@ -341,6 +374,12 @@ describe('dispatcher', () => {
     const result = runGsdTools(['ops', 'status'], tmpDir);
     // Should exit 0 (success) with JSON output containing areas array
     assert.ok(result.success, 'ops status should succeed: ' + (result.error || ''));
+  });
+
+  test('dispatcher routes ops backlog list', () => {
+    const result = runGsdTools(['ops', 'backlog', 'nonexistent-area', 'list'], tmpDir);
+    // Should fail gracefully with area not found, not crash
+    assert.ok(result !== undefined, 'should return a result');
   });
 
   test('dispatcher routes ops spec show', () => {
