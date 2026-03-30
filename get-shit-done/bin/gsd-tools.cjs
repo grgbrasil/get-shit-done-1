@@ -137,6 +137,9 @@
  *
  * Documentation:
  *   docs-init                            Project context for docs-update workflow
+ *
+ * Pre-flight Checks:
+ *   preflight <command> <phase>       Check prerequisites for a phase command
  */
 
 const fs = require('fs');
