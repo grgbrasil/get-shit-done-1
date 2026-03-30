@@ -1181,6 +1181,7 @@ describe('E2E: Copilot full install verification', () => {
     const expected = [
       'gsd-advisor-researcher.agent.md',
       'gsd-assumptions-analyzer.agent.md',
+      'gsd-cataloger.agent.md',
       'gsd-codebase-mapper.agent.md',
       'gsd-debugger.agent.md',
       'gsd-doc-verifier.agent.md',

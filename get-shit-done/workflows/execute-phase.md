@@ -43,6 +43,7 @@ Always use the exact name from this list — do not fall back to 'general-purpos
 - gsd-ui-researcher — Researches UI/UX approaches
 - gsd-ui-checker — Reviews UI implementation quality
 - gsd-ui-auditor — Audits UI against design requirements
+- gsd-cataloger — Updates Function Map after wave execution
 </available_agent_types>
 
 <process>
