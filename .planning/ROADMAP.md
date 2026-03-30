@@ -110,11 +110,11 @@ Plans:
   3. `/ops:add [area]` registra area manual no registry quando auto-deteccao nao cobre
   4. Dados por area persistem em `.planning/ops/{area}/` com estrutura padrao
   5. Mapa e consultavel por outros comandos /ops como base de contexto
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01-PLAN.md — ops.cjs registry CRUD module + area detection heuristics + gsd-tools dispatcher + tests
+- [ ] 05-02-PLAN.md — cmdOpsMap tree builder (adjacency list graph) + skill commands (/ops:init, /ops:map, /ops:add)
 
 ### Phase 6: OPS Workflows — Operar por area com contexto + planejamento
 **Goal**: Usuario aponta pra uma area e descreve o que quer (investigar, adicionar, modificar, debugar) — sistema usa mapa pra contexto, gera plano GSD, e executa
