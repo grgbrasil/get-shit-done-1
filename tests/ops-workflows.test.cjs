@@ -439,3 +439,271 @@ describe('cmdOpsDebug', () => {
     assert.ok(history.some(h => h.op === 'debug'), 'should have debug entry');
   });
 });
+
+// ─── cmdOpsFeature ──────────────────────────────────────────────────────────
+
+describe('cmdOpsFeature', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject('ops-feature-');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('errors on missing area', () => {
+    const result = runGsdTools(['ops', 'feature'], tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.ok(result.error.includes('Usage:'), 'should show usage: ' + result.error);
+  });
+
+  test('errors on area not in registry', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    fs.mkdirSync(opsDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({ areas: [] }), 'utf-8');
+
+    const result = runGsdTools(['ops', 'feature', 'nonexistent', 'add login'], tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.ok(result.error.includes('Area not found'), 'should say area not found: ' + result.error);
+  });
+
+  test('errors on missing tree.json', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    fs.mkdirSync(opsDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: null, components_count: 0 }]
+    }), 'utf-8');
+
+    const result = runGsdTools(['ops', 'feature', 'auth', 'add 2fa'], tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.ok(result.error.includes('No tree.json'), 'should mention missing tree.json: ' + result.error);
+  });
+
+  test('small tree dispatches to quick', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    const authDir = path.join(opsDir, 'auth');
+    fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 3 }]
+    }), 'utf-8');
+    fs.writeFileSync(path.join(authDir, 'tree.json'), JSON.stringify({
+      area: 'auth', generated_at: '2026-01-01T00:00:00Z',
+      nodes: [
+        { id: 'component:Login', type: 'component', file_path: 'src/auth/Login.vue', name: 'Login', metadata: {} },
+        { id: 'service:AuthSvc', type: 'service', file_path: 'src/auth/AuthSvc.js', name: 'AuthSvc', metadata: {} },
+        { id: 'endpoint:auth-api', type: 'endpoint', file_path: 'src/auth/api.js', name: 'auth-api', metadata: {} }
+      ],
+      edges: [
+        { from: 'component:Login', to: 'service:AuthSvc', type: 'calls' },
+        { from: 'service:AuthSvc', to: 'endpoint:auth-api', type: 'calls' }
+      ]
+    }), 'utf-8');
+
+    const result = runGsdTools(['ops', 'feature', 'auth', 'add remember me'], tmpDir);
+    assert.ok(result.success, 'should succeed: ' + (result.error || ''));
+
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.success, true);
+    assert.strictEqual(parsed.needs_full_plan, false);
+    assert.strictEqual(parsed.dispatch, 'quick');
+    assert.ok(parsed.blast_radius, 'should have blast_radius');
+    assert.ok(parsed.context_summary, 'should have context_summary');
+    assert.ok(parsed.context_summary.nodes_by_type, 'should have nodes_by_type in context_summary');
+  });
+
+  test('large tree dispatches to plan', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    const authDir = path.join(opsDir, 'auth');
+    fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 7 }]
+    }), 'utf-8');
+    fs.writeFileSync(path.join(authDir, 'tree.json'), JSON.stringify({
+      area: 'auth', generated_at: '2026-01-01T00:00:00Z',
+      nodes: [
+        { id: 'route:login', type: 'route', file_path: 'src/routes/login.js', name: 'login', metadata: {} },
+        { id: 'view:LoginPage', type: 'view', file_path: 'src/views/LoginPage.vue', name: 'LoginPage', metadata: {} },
+        { id: 'component:LoginForm', type: 'component', file_path: 'src/auth/LoginForm.vue', name: 'LoginForm', metadata: {} },
+        { id: 'service:AuthSvc', type: 'service', file_path: 'src/auth/AuthSvc.js', name: 'AuthSvc', metadata: {} },
+        { id: 'endpoint:auth-api', type: 'endpoint', file_path: 'src/api/auth.js', name: 'auth-api', metadata: {} },
+        { id: 'model:User', type: 'model', file_path: 'src/models/User.js', name: 'User', metadata: {} },
+        { id: 'service:TokenSvc', type: 'service', file_path: 'src/shared/TokenSvc.js', name: 'TokenSvc', metadata: {} }
+      ],
+      edges: [
+        { from: 'route:login', to: 'view:LoginPage', type: 'renders' },
+        { from: 'view:LoginPage', to: 'component:LoginForm', type: 'renders' },
+        { from: 'component:LoginForm', to: 'service:AuthSvc', type: 'calls' },
+        { from: 'service:AuthSvc', to: 'endpoint:auth-api', type: 'calls' },
+        { from: 'endpoint:auth-api', to: 'model:User', type: 'uses_table' },
+        { from: 'service:AuthSvc', to: 'service:TokenSvc', type: 'calls' }
+      ]
+    }), 'utf-8');
+
+    const result = runGsdTools(['ops', 'feature', 'auth', 'add oauth provider'], tmpDir);
+    assert.ok(result.success, 'should succeed: ' + (result.error || ''));
+
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.success, true);
+    assert.strictEqual(parsed.needs_full_plan, true);
+    assert.strictEqual(parsed.dispatch, 'plan');
+    assert.ok(parsed.plan_dir, 'should have plan_dir when needs_full_plan');
+    assert.ok(parsed.plan_dir.includes('.planning/ops/auth/plans'), 'plan_dir should point to ops area plans');
+  });
+
+  test('appends history with op feature', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    const authDir = path.join(opsDir, 'auth');
+    fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 2 }]
+    }), 'utf-8');
+    fs.writeFileSync(path.join(authDir, 'tree.json'), JSON.stringify({
+      area: 'auth', generated_at: '2026-01-01T00:00:00Z',
+      nodes: [
+        { id: 'component:A', type: 'component', file_path: 'src/auth/A.js', name: 'A', metadata: {} },
+        { id: 'component:B', type: 'component', file_path: 'src/auth/B.js', name: 'B', metadata: {} }
+      ],
+      edges: [{ from: 'component:A', to: 'component:B', type: 'imports' }]
+    }), 'utf-8');
+
+    runGsdTools(['ops', 'feature', 'auth', 'test feature'], tmpDir);
+
+    const historyPath = path.join(authDir, 'history.json');
+    assert.ok(fs.existsSync(historyPath), 'history.json should exist');
+    const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+    assert.ok(history.some(h => h.op === 'feature'), 'should have feature entry');
+  });
+
+  test('includes context_summary with nodes_by_type', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    const authDir = path.join(opsDir, 'auth');
+    fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 3 }]
+    }), 'utf-8');
+    fs.writeFileSync(path.join(authDir, 'tree.json'), JSON.stringify({
+      area: 'auth', generated_at: '2026-01-01T00:00:00Z',
+      nodes: [
+        { id: 'component:Login', type: 'component', file_path: 'src/auth/Login.vue', name: 'Login', metadata: {} },
+        { id: 'service:AuthSvc', type: 'service', file_path: 'src/auth/AuthSvc.js', name: 'AuthSvc', metadata: {} },
+        { id: 'endpoint:auth-api', type: 'endpoint', file_path: 'src/auth/api.js', name: 'auth-api', metadata: {} }
+      ],
+      edges: [
+        { from: 'component:Login', to: 'service:AuthSvc', type: 'calls' },
+        { from: 'service:AuthSvc', to: 'endpoint:auth-api', type: 'calls' }
+      ]
+    }), 'utf-8');
+
+    const result = runGsdTools(['ops', 'feature', 'auth', 'check summary'], tmpDir);
+    assert.ok(result.success, 'should succeed: ' + (result.error || ''));
+
+    const parsed = JSON.parse(result.output);
+    assert.ok(parsed.context_summary, 'should have context_summary');
+    assert.strictEqual(parsed.context_summary.nodes_by_type.component, 1);
+    assert.strictEqual(parsed.context_summary.nodes_by_type.service, 1);
+    assert.strictEqual(parsed.context_summary.nodes_by_type.endpoint, 1);
+    assert.strictEqual(parsed.context_summary.edges_count, 2);
+    assert.strictEqual(parsed.context_summary.total_nodes, 3);
+  });
+});
+
+// ─── cmdOpsModify ──────────────────────────────────────────────────────────
+
+describe('cmdOpsModify', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject('ops-modify-');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('errors on missing area', () => {
+    const result = runGsdTools(['ops', 'modify'], tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.ok(result.error.includes('Usage:'), 'should show usage: ' + result.error);
+  });
+
+  test('returns affected_nodes from tree traversal', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    const authDir = path.join(opsDir, 'auth');
+    fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 3 }]
+    }), 'utf-8');
+    fs.writeFileSync(path.join(authDir, 'tree.json'), JSON.stringify({
+      area: 'auth', generated_at: '2026-01-01T00:00:00Z',
+      nodes: [
+        { id: 'component:Login', type: 'component', file_path: 'src/auth/Login.vue', name: 'Login', metadata: {} },
+        { id: 'service:AuthSvc', type: 'service', file_path: 'src/auth/AuthSvc.js', name: 'AuthSvc', metadata: {} },
+        { id: 'endpoint:auth-api', type: 'endpoint', file_path: 'src/auth/api.js', name: 'auth-api', metadata: {} }
+      ],
+      edges: [
+        { from: 'component:Login', to: 'service:AuthSvc', type: 'calls' },
+        { from: 'service:AuthSvc', to: 'endpoint:auth-api', type: 'calls' }
+      ]
+    }), 'utf-8');
+
+    const result = runGsdTools(['ops', 'modify', 'auth', 'change token expiry'], tmpDir);
+    assert.ok(result.success, 'should succeed: ' + (result.error || ''));
+
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.success, true);
+    assert.ok(Array.isArray(parsed.affected_nodes), 'should have affected_nodes array');
+    assert.ok(parsed.affected_count > 0, 'should have affected_count > 0');
+  });
+
+  test('computes blast radius for dispatch', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    const authDir = path.join(opsDir, 'auth');
+    fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 2 }]
+    }), 'utf-8');
+    fs.writeFileSync(path.join(authDir, 'tree.json'), JSON.stringify({
+      area: 'auth', generated_at: '2026-01-01T00:00:00Z',
+      nodes: [
+        { id: 'component:A', type: 'component', file_path: 'src/auth/A.js', name: 'A', metadata: {} },
+        { id: 'component:B', type: 'component', file_path: 'src/auth/B.js', name: 'B', metadata: {} }
+      ],
+      edges: [{ from: 'component:A', to: 'component:B', type: 'imports' }]
+    }), 'utf-8');
+
+    const result = runGsdTools(['ops', 'modify', 'auth', 'refactor service'], tmpDir);
+    assert.ok(result.success, 'should succeed: ' + (result.error || ''));
+
+    const parsed = JSON.parse(result.output);
+    assert.ok(parsed.blast_radius, 'should have blast_radius');
+    assert.ok('needs_full_plan' in parsed.blast_radius, 'blast_radius should have needs_full_plan');
+    assert.ok('total_nodes' in parsed.blast_radius, 'blast_radius should have total_nodes');
+    assert.ok(parsed.dispatch, 'should have dispatch field');
+  });
+
+  test('appends history with op modify', () => {
+    const opsDir = path.join(tmpDir, '.planning', 'ops');
+    const authDir = path.join(opsDir, 'auth');
+    fs.mkdirSync(authDir, { recursive: true });
+    fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 2 }]
+    }), 'utf-8');
+    fs.writeFileSync(path.join(authDir, 'tree.json'), JSON.stringify({
+      area: 'auth', generated_at: '2026-01-01T00:00:00Z',
+      nodes: [
+        { id: 'component:A', type: 'component', file_path: 'src/auth/A.js', name: 'A', metadata: {} },
+        { id: 'component:B', type: 'component', file_path: 'src/auth/B.js', name: 'B', metadata: {} }
+      ],
+      edges: [{ from: 'component:A', to: 'component:B', type: 'imports' }]
+    }), 'utf-8');
+
+    runGsdTools(['ops', 'modify', 'auth', 'test modify'], tmpDir);
+
+    const historyPath = path.join(authDir, 'history.json');
+    assert.ok(fs.existsSync(historyPath), 'history.json should exist');
+    const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+    assert.ok(history.some(h => h.op === 'modify'), 'should have modify entry');
+  });
+});
