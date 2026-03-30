@@ -89,6 +89,27 @@ When `CONTEXT_WINDOW >= 500000` (1M-class models), subagent prompts include rich
 - Verifier agents receive all PLAN.md, SUMMARY.md, CONTEXT.md files plus REQUIREMENTS.md
 - This enables cross-phase awareness and history-aware verification
 
+## Pre-flight Check
+
+```bash
+PREFLIGHT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" preflight execute-phase "${PHASE_NUMBER}" 2>/dev/null || echo '{"ready":true,"blockers":[]}')
+```
+
+If `ready` is `false` and any blocker has `skippable: false`:
+
+```
+Pre-flight check failed for Phase {N}:
+
+{blocker.message}
+
+Run first: {blocker.command}
+Then re-run: /gsd:execute-phase {N}
+```
+
+Exit workflow. If all blockers are skippable warnings, display and continue.
+
+If `ready` is `true` or preflight unavailable: continue to existing validation.
+
 **If `phase_found` is false:** Error — phase directory not found.
 **If `plan_count` is 0:** Error — no plans found in phase.
 **If `state_exists` is false but `.planning/` exists:** Offer reconstruct or continue.

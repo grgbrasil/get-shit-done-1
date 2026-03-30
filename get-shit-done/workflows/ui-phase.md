@@ -50,6 +50,27 @@ Exit workflow.
 
 **If `planning_exists` is false:** Error — run `/gsd-new-project` first.
 
+## 1.5. Pre-flight Check
+
+```bash
+PREFLIGHT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" preflight ui-phase "${PHASE}" 2>/dev/null || echo '{"ready":true,"blockers":[]}')
+```
+
+If `ready` is `false` and any blocker has `skippable: false`:
+
+```
+Pre-flight check failed for Phase {N}:
+
+{blocker.message}
+
+Run first: {blocker.command}
+Then re-run: /gsd:ui-phase {N}
+```
+
+Exit workflow. If all blockers are skippable warnings, display and continue.
+
+If `ready` is `true` or preflight unavailable: continue to step 2.
+
 ## 2. Parse and Validate Phase
 
 Extract phase number from $ARGUMENTS. If not provided, detect next unplanned phase.

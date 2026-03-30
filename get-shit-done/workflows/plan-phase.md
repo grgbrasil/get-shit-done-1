@@ -187,6 +187,40 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(${padded_phase
 
 **Effect:** This completely bypasses step 4 (Load CONTEXT.md) since we just created it. The rest of the workflow (research, planning, verification) proceeds normally with the PRD-derived context.
 
+## 3.7. Pre-flight Check
+
+Run the centralized prerequisite resolver:
+
+```bash
+PREFLIGHT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" preflight plan-phase "${padded_phase}" 2>/dev/null || echo '{"ready":true,"blockers":[]}')
+```
+
+Parse the result. If preflight is not available (old install), the fallback `{"ready":true}` allows the workflow to continue normally.
+
+**If `ready` is `false`:**
+
+Check if all blockers are `skippable: true`. If so, display them as warnings but continue:
+
+```
+Pre-flight warnings for Phase {N}:
+- {blocker.message}
+
+Continuing with planning...
+```
+
+If any blocker has `skippable: false`, display the first blocking issue and exit:
+
+```
+Pre-flight check failed for Phase {N}:
+
+{blocker.message}
+
+Run first: {blocker.command}
+Then re-run: /gsd:plan-phase {N}
+```
+
+**If `ready` is `true`:** Continue to step 4.
+
 ## 4. Load CONTEXT.md
 
 **Skip if:** PRD express path was used (CONTEXT.md already created in step 3.5).
