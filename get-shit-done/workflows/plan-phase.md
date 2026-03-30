@@ -599,6 +599,14 @@ Task(
 
 ## 10. Spawn gsd-plan-checker Agent
 
+### Lean Mode: Route Plan Checker
+Before spawning gsd-plan-checker, attempt remote routing:
+1. Resolve execution mode: read `execution_mode` from `.planning/config.json` (default: `auto`). If the user passed `--full` or `--lean` to the command, use that instead.
+2. Write the plan checker task description to a temp file.
+3. Run: `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" route-agent gsd-plan-checker --prompt <temp-file> --context "{phase_dir}" --mode "{execution_mode}"`
+4. If exit code 0: checker ran remotely — use stdout as checker result, skip Agent tool spawn below.
+5. If exit code 1: spawn gsd-plan-checker Agent as normal (next section).
+
 Display banner:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
