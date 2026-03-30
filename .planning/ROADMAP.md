@@ -30,11 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The Function Map can be populated via Serena MCP, and falls back to grep-based extraction when Serena is unavailable
   4. The Function Map is refreshed automatically during each execution, not just at commit time
   5. The cataloger agent that populates the map runs on a cheap model (Haiku/OpenRouter), not on premium models
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — fmap.cjs CRUD module + gsd-tools dispatcher + model-profiles + tests
+- [ ] 01-02-PLAN.md — gsd-cataloger agent definition + changed-files incremental update support
 
 ### Phase 2: Impact Analysis
 **Goal**: No execution can silently break existing callers -- structural changes are auto-fixed, behavioral changes require human approval
