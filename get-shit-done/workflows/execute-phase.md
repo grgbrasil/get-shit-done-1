@@ -558,7 +558,17 @@ Execute each selected wave in sequence. Within a wave: parallel if `PARALLELIZAT
    CHANGED_COUNT=$(echo "$CHANGED" | node -e "d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{console.log(JSON.parse(d).count)}catch{console.log(0)}})")
    ```
 
-   If `CHANGED_COUNT` > 0, spawn a cataloger subagent:
+   If `CHANGED_COUNT` > 0:
+
+   ### Lean Mode: Route Cataloger
+   Before spawning gsd-cataloger, resolve execution mode and attempt remote routing:
+   1. Resolve execution mode: read `execution_mode` from `.planning/config.json` (default: `auto`). If the user passed `--full` or `--lean` to the command, use that instead.
+   2. Write the cataloger task description to a temp file.
+   3. Run: `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" route-agent gsd-cataloger --prompt <temp-file> --context "{phase_dir}" --mode "{execution_mode}"`
+   4. If exit code 0: cataloger ran remotely — read stdout as result, skip Agent tool spawn below.
+   5. If exit code 1: spawn gsd-cataloger Agent as normal (next section).
+
+   **Spawn gsd-cataloger (if not routed above):**
    ```
    Task(
      subagent_type="gsd-cataloger",
