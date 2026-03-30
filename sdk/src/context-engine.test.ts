@@ -171,6 +171,47 @@ describe('ContextEngine', () => {
       expect(files.config).toBeUndefined();
     });
 
+    it('returns functionMapStats when function-map-stats.json exists for execute phase', async () => {
+      const statsContent = '{"total":42,"by_kind":{"function":30,"class":12}}';
+      await createPlanningDir(projectDir, {
+        'STATE.md': '# State',
+        'config.json': '{"model":"claude"}',
+        'function-map-stats.json': statsContent,
+      });
+
+      const engine = new ContextEngine(projectDir);
+      const files = await engine.resolveContextFiles(PhaseType.Execute);
+
+      expect(files.functionMapStats).toBe(statsContent);
+    });
+
+    it('returns undefined functionMapStats when function-map-stats.json does not exist for execute phase', async () => {
+      await createPlanningDir(projectDir, {
+        'STATE.md': '# State',
+        'config.json': '{"model":"claude"}',
+      });
+
+      const engine = new ContextEngine(projectDir);
+      const files = await engine.resolveContextFiles(PhaseType.Execute);
+
+      expect(files.functionMapStats).toBeUndefined();
+    });
+
+    it('returns functionMapStats when function-map-stats.json exists for plan phase', async () => {
+      const statsContent = '{"total":10,"by_kind":{"function":8,"class":2}}';
+      await createPlanningDir(projectDir, {
+        'STATE.md': '# State',
+        'ROADMAP.md': '# Roadmap',
+        'CONTEXT.md': '# Context',
+        'function-map-stats.json': statsContent,
+      });
+
+      const engine = new ContextEngine(projectDir);
+      const files = await engine.resolveContextFiles(PhaseType.Plan);
+
+      expect(files.functionMapStats).toBe(statsContent);
+    });
+
     it('handles empty file content', async () => {
       await createPlanningDir(projectDir, {
         'STATE.md': '',

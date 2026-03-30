@@ -219,6 +219,7 @@ export class PromptFactory {
       config: 'Config (config.json)',
       plan: 'Plan (PLAN.md)',
       summary: 'Summary (SUMMARY.md)',
+      functionMapStats: 'Function Map Stats (function-map-stats.json)',
     };
 
     for (const [key, label] of Object.entries(fileLabels)) {

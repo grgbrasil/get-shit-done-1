@@ -31,6 +31,7 @@ const PHASE_FILE_MANIFEST: Record<PhaseType, FileSpec[]> = {
   [PhaseType.Execute]: [
     { key: 'state', filename: 'STATE.md', required: true },
     { key: 'config', filename: 'config.json', required: false },
+    { key: 'functionMapStats', filename: 'function-map-stats.json', required: false },
   ],
   [PhaseType.Research]: [
     { key: 'state', filename: 'STATE.md', required: true },
@@ -44,6 +45,7 @@ const PHASE_FILE_MANIFEST: Record<PhaseType, FileSpec[]> = {
     { key: 'context', filename: 'CONTEXT.md', required: true },
     { key: 'research', filename: 'RESEARCH.md', required: false },
     { key: 'requirements', filename: 'REQUIREMENTS.md', required: false },
+    { key: 'functionMapStats', filename: 'function-map-stats.json', required: false },
   ],
   [PhaseType.Verify]: [
     { key: 'state', filename: 'STATE.md', required: true },
