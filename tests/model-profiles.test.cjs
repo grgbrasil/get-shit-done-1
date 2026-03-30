@@ -51,13 +51,23 @@ describe('MODEL_PROFILES', () => {
     }
   });
 
-  test('quality profile never uses haiku', () => {
+  test('quality profile never uses haiku (except cataloger)', () => {
+    const exemptions = ['gsd-cataloger']; // cataloger always runs on haiku per FMAP-07
     for (const [agent, profiles] of Object.entries(MODEL_PROFILES)) {
+      if (exemptions.includes(agent)) continue;
       assert.notStrictEqual(
         profiles.quality, 'haiku',
         `${agent} quality profile should not use haiku`
       );
     }
+  });
+
+  test('gsd-cataloger resolves to haiku on all profiles', () => {
+    assert.deepStrictEqual(MODEL_PROFILES['gsd-cataloger'], {
+      quality: 'haiku',
+      balanced: 'haiku',
+      budget: 'haiku',
+    });
   });
 });
 
