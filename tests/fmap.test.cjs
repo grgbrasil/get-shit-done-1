@@ -7,7 +7,8 @@
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { execSync } = require('child_process');
+const { runGsdTools, createTempProject, createTempGitProject, cleanup } = require('./helpers.cjs');
 const fs = require('fs');
 const path = require('path');
 
@@ -233,5 +234,43 @@ describe('key normalization', () => {
     // Key should be stored without ./
     assert.ok(mapOnDisk['lib/foo.ts::bar'], 'Expected normalized key lib/foo.ts::bar');
     assert.strictEqual(mapOnDisk['./lib/foo.ts::bar'], undefined, 'Should not store key with ./ prefix');
+  });
+});
+
+// ─── fmap changed-files ─────────────────────────────────────────────────────
+
+describe('fmap changed-files', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = createTempGitProject('fmap-changed-'); });
+  afterEach(() => { cleanup(tmpDir); });
+
+  test('detects staged code files as changed', () => {
+    fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'src', 'hello.ts'), 'export function hello() {}');
+    execSync('git add src/hello.ts', { cwd: tmpDir, stdio: 'pipe' });
+
+    const res = runGsdTools(['fmap', 'changed-files'], tmpDir);
+    assert.strictEqual(res.success, true);
+    const parsed = JSON.parse(res.output);
+    assert.ok(parsed.files.includes('src/hello.ts'), `Expected src/hello.ts in files: ${JSON.stringify(parsed.files)}`);
+    assert.ok(parsed.count >= 1, 'Expected at least 1 changed file');
+  });
+
+  test('filters out non-code files (e.g., .md)', () => {
+    fs.writeFileSync(path.join(tmpDir, 'notes.md'), '# Notes');
+    execSync('git add notes.md', { cwd: tmpDir, stdio: 'pipe' });
+
+    const res = runGsdTools(['fmap', 'changed-files'], tmpDir);
+    assert.strictEqual(res.success, true);
+    const parsed = JSON.parse(res.output);
+    assert.ok(!parsed.files.includes('notes.md'), `notes.md should be filtered out: ${JSON.stringify(parsed.files)}`);
+  });
+
+  test('returns count 0 when no files changed', () => {
+    const res = runGsdTools(['fmap', 'changed-files'], tmpDir);
+    assert.strictEqual(res.success, true);
+    const parsed = JSON.parse(res.output);
+    assert.strictEqual(parsed.count, 0);
+    assert.deepStrictEqual(parsed.files, []);
   });
 });
