@@ -12,13 +12,12 @@ Nenhuma execução pode quebrar silenciosamente o que já funciona — mudanças
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Function Map (JSON) — mapa estruturado de todas as funções, assinaturas, propósito e callers, consultável instantaneamente (Validated in Phase 01: function-map)
+- [x] Atualização automática do Function Map a cada execução — detecção incremental via git diff (Validated in Phase 01: function-map)
 
 ### Active
 
 - [ ] ADR compartilhado — registro de decisões arquiteturais lido por todos os agentes/executores antes de agir
-- [ ] Function Map (JSON) — mapa estruturado de todas as funções, assinaturas, propósito e callers, consultável instantaneamente
-- [ ] Atualização automática do Function Map a cada execução (não só a cada commit)
 - [ ] Impact Analysis mid-execution — executor consulta Function Map antes de modificar qualquer função
 - [ ] Auto-resolve de mudanças estruturais (assinatura, argumentos, tipo de retorno) sem perguntar ao usuário
 - [ ] Escalação para o usuário quando mudança altera lógica de negócio/comportamento semântico
@@ -53,11 +52,11 @@ Nenhuma execução pode quebrar silenciosamente o que já funciona — mudanças
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Function Map como JSON flat | Performance de leitura instantânea, sem dependência externa | — Pending |
+| Function Map como JSON flat | Performance de leitura instantânea, sem dependência externa | ✓ Validated Phase 01 |
 | Impact analysis mid-execution (não pré-commit hook) | Permite abortar antes de fazer a mudança, não depois | — Pending |
 | Auto-resolve estrutural vs escalação comportamental | Equilibra autonomia com segurança — como dev senior faria | — Pending |
 | ADR como markdown compartilhado | Legível por humanos e LLMs, versionado no git | — Pending |
-| Serena como engine de análise simbólica | Já disponível via MCP, faz find_referencing_symbols nativamente | — Pending |
+| Serena como engine de análise simbólica | Já disponível via MCP, faz find_referencing_symbols nativamente | ✓ Validated Phase 01 (with grep fallback) |
 
 ## Evolution
 
@@ -77,4 +76,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-29 after initialization*
+*Last updated: 2026-03-30 after Phase 01 completion*
