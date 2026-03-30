@@ -22,7 +22,7 @@ Nenhuma execução pode quebrar silenciosamente o que já funciona — mudanças
 - [x] Auto-resolve de mudanças estruturais (assinatura, argumentos, tipo de retorno) sem perguntar ao usuário (Validated in Phase 02: impact-analysis)
 - [x] Escalação para o usuário quando mudança altera lógica de negócio/comportamento semântico (Validated in Phase 02: impact-analysis)
 - [ ] Memória cross-plan — decisões e descobertas de um plan acessíveis por todos os plans subsequentes
-- [ ] Integração com workflow GSD existente (plan-phase, execute-phase, discuss-phase)
+- [x] Integração com workflow GSD existente (plan-phase, execute-phase, discuss-phase) (Validated in Phase 03: model-routing-integration)
 - [ ] Sistema /ops — mapa do sistema por area com comandos de investigação, feature, modify, debug, specs e backlog
 
 ### Out of Scope
@@ -77,4 +77,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-30 — Phase 5 complete: OPS foundation (registry + map + skill commands)*
+*Last updated: 2026-03-30 — Phase 3 complete: model routing & integration (config, context engine, workflow wiring)*
