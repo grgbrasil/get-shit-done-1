@@ -18,9 +18,9 @@ Nenhuma execução pode quebrar silenciosamente o que já funciona — mudanças
 ### Active
 
 - [ ] ADR compartilhado — registro de decisões arquiteturais lido por todos os agentes/executores antes de agir
-- [ ] Impact Analysis mid-execution — executor consulta Function Map antes de modificar qualquer função
-- [ ] Auto-resolve de mudanças estruturais (assinatura, argumentos, tipo de retorno) sem perguntar ao usuário
-- [ ] Escalação para o usuário quando mudança altera lógica de negócio/comportamento semântico
+- [x] Impact Analysis mid-execution — executor consulta Function Map antes de modificar qualquer função (Validated in Phase 02: impact-analysis)
+- [x] Auto-resolve de mudanças estruturais (assinatura, argumentos, tipo de retorno) sem perguntar ao usuário (Validated in Phase 02: impact-analysis)
+- [x] Escalação para o usuário quando mudança altera lógica de negócio/comportamento semântico (Validated in Phase 02: impact-analysis)
 - [ ] Memória cross-plan — decisões e descobertas de um plan acessíveis por todos os plans subsequentes
 - [ ] Integração com workflow GSD existente (plan-phase, execute-phase, discuss-phase)
 
@@ -53,8 +53,8 @@ Nenhuma execução pode quebrar silenciosamente o que já funciona — mudanças
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Function Map como JSON flat | Performance de leitura instantânea, sem dependência externa | ✓ Validated Phase 01 |
-| Impact analysis mid-execution (não pré-commit hook) | Permite abortar antes de fazer a mudança, não depois | — Pending |
-| Auto-resolve estrutural vs escalação comportamental | Equilibra autonomia com segurança — como dev senior faria | — Pending |
+| Impact analysis mid-execution (não pré-commit hook) | Permite abortar antes de fazer a mudança, não depois | ✓ Validated Phase 02 |
+| Auto-resolve estrutural vs escalação comportamental | Equilibra autonomia com segurança — como dev senior faria | ✓ Validated Phase 02 |
 | ADR como markdown compartilhado | Legível por humanos e LLMs, versionado no git | — Pending |
 | Serena como engine de análise simbólica | Já disponível via MCP, faz find_referencing_symbols nativamente | ✓ Validated Phase 01 (with grep fallback) |
 
@@ -76,4 +76,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-30 after Phase 01 completion*
+*Last updated: 2026-03-30 after Phase 02 completion*
