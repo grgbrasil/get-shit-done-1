@@ -16,6 +16,8 @@ const { output, error, planningRoot, generateSlugInternal } = require('./core.cj
 const REGISTRY_FILENAME = 'registry.json';
 const BLAST_RADIUS_THRESHOLD = 5;
 
+const SPECS_TEMPLATE = (name) => `# Specs: ${name}\n\n## Regras de Negocio\n\n- (add business rules here)\n\n## Contratos de API\n\n- (add API contracts here)\n\n## Invariantes\n\n- (add system invariants here)\n\n## Notas\n\n- (add general notes here)\n`;
+
 const FRAMEWORK_PATTERNS = {
   'vue-router': {
     files: ['src/router/**/*.{js,ts}', 'src/routes/**/*.{js,ts}'],
@@ -1171,8 +1173,153 @@ function cmdOpsModify(cwd, area, description, raw) {
   output(result, raw);
 }
 
+// ─── OPS Governance: Status + Spec ──────────────────────────────────────────
+
+/**
+ * Compute health status for a single OPS area.
+ * Returns object with all D-02 fields including health scoring per D-05.
+ */
+function computeAreaStatus(cwd, entry) {
+  const slug = entry.slug;
+  const tree = readTreeJson(cwd, slug);
+  const specsPath = path.join(areaDir(cwd, slug), 'specs.md');
+  const backlogPath = path.join(areaDir(cwd, slug), 'backlog.json');
+  const historyPath = path.join(areaDir(cwd, slug), 'history.json');
+
+  // Read specs
+  const specsExist = fs.existsSync(specsPath);
+  let specRulesCount = 0;
+  if (specsExist) {
+    const content = fs.readFileSync(specsPath, 'utf-8');
+    specRulesCount = (content.match(/^- .+/gm) || []).length;
+  }
+
+  // Read backlog
+  let backlogItems = [];
+  if (fs.existsSync(backlogPath)) {
+    try { backlogItems = JSON.parse(fs.readFileSync(backlogPath, 'utf-8')); } catch (_) { /* ignore */ }
+  }
+  const pending = backlogItems.filter(i => i.status === 'pending');
+
+  // Read history
+  let history = [];
+  if (fs.existsSync(historyPath)) {
+    try { history = JSON.parse(fs.readFileSync(historyPath, 'utf-8')); } catch (_) { /* ignore */ }
+  }
+  const lastOp = history.length > 0 ? history[history.length - 1] : null;
+  const daysSinceLastOp = lastOp
+    ? Math.floor((Date.now() - new Date(lastOp.timestamp).getTime()) / 86400000)
+    : null;
+
+  // Health scoring per D-05
+  const flags = [];
+  if (!specsExist) flags.push('no_specs');
+  if (daysSinceLastOp !== null && daysSinceLastOp > 30) flags.push('stale');
+  if (pending.length > 10) flags.push('backlog_overflow');
+  const health = flags.length >= 2 ? 'red' : flags.length === 1 ? 'yellow' : 'green';
+
+  return {
+    slug,
+    name: entry.name,
+    nodes_count: tree ? tree.nodes.length : 0,
+    edges_count: tree ? tree.edges.length : 0,
+    specs_defined: specsExist,
+    spec_rules_count: specRulesCount,
+    backlog_items_count: pending.length,
+    backlog_by_priority: {
+      high: pending.filter(i => i.priority === 'high').length,
+      medium: pending.filter(i => i.priority === 'medium').length,
+      low: pending.filter(i => i.priority === 'low').length
+    },
+    last_operation: lastOp,
+    days_since_last_op: daysSinceLastOp,
+    tree_last_scanned: entry.last_scanned || null,
+    health,
+    health_flags: flags
+  };
+}
+
+/**
+ * Show health status of OPS areas.
+ * Without area: returns summary for all registered areas.
+ * With area: returns full detail for that specific area.
+ */
+function cmdOpsStatus(cwd, area, raw) {
+  const registry = readRegistry(cwd);
+
+  if (!area) {
+    // All-areas summary per D-04
+    const areas = (registry.areas || []).map(a => computeAreaStatus(cwd, a));
+    output({ areas }, raw);
+    return;
+  }
+
+  const slug = slugify(area);
+  const entry = (registry.areas || []).find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  const detail = computeAreaStatus(cwd, entry);
+  output(detail, raw);
+}
+
+/**
+ * Manage specs.md for an OPS area.
+ * Subcommands: show, edit, add <rule>
+ */
+function cmdOpsSpec(cwd, area, args, raw) {
+  if (!area) { error('Usage: gsd-tools ops spec <area> <show|edit|add> [rule]'); return; }
+
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const entry = (registry.areas || []).find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  ensureAreaDir(cwd, slug);
+  const specsPath = path.join(areaDir(cwd, slug), 'specs.md');
+  const subcommand = args[0];
+
+  if (subcommand === 'show') {
+    if (!fs.existsSync(specsPath)) {
+      output({ found: false, message: 'No specs.md for area ' + slug + '. Run: gsd-tools ops spec ' + slug + ' edit' }, raw);
+      return;
+    }
+    const content = fs.readFileSync(specsPath, 'utf-8');
+    output({ found: true, area: slug, content }, raw);
+    return;
+  }
+
+  if (subcommand === 'edit') {
+    const existed = fs.existsSync(specsPath);
+    if (!existed) {
+      fs.writeFileSync(specsPath, SPECS_TEMPLATE(entry.name), 'utf-8');
+    }
+    output({ created: !existed, area: slug, path: path.relative(cwd, specsPath) }, raw);
+    return;
+  }
+
+  if (subcommand === 'add') {
+    const rule = args.slice(1).join(' ').trim();
+    if (!rule) { error('Usage: gsd-tools ops spec <area> add <rule text>'); return; }
+
+    // Ensure specs.md exists
+    if (!fs.existsSync(specsPath)) {
+      fs.writeFileSync(specsPath, SPECS_TEMPLATE(entry.name), 'utf-8');
+    }
+
+    let content = fs.readFileSync(specsPath, 'utf-8');
+    content = content.trimEnd() + '\n- ' + rule + '\n';
+    fs.writeFileSync(specsPath, content, 'utf-8');
+    output({ success: true, area: slug, rule_added: rule, path: path.relative(cwd, specsPath) }, raw);
+    return;
+  }
+
+  error('Unknown spec subcommand: ' + subcommand + '. Available: show, edit, add');
+}
+
 module.exports = {
   cmdOpsInit, cmdOpsMap, cmdOpsAdd, cmdOpsList, cmdOpsGet,
   cmdOpsInvestigate, cmdOpsFeature, cmdOpsModify, cmdOpsDebug, cmdOpsSummary,
+  cmdOpsStatus, cmdOpsSpec,
+  computeAreaStatus,
   appendHistory, computeBlastRadius, refreshTree
 };

@@ -992,6 +992,10 @@ async function runCommand(command, args, cwd, raw) {
         ops.cmdOpsDebug(cwd, args[2], args.slice(3).join(' '), raw);
       } else if (subcommand === 'summary') {
         ops.cmdOpsSummary(cwd, raw);
+      } else if (subcommand === 'status') {
+        ops.cmdOpsStatus(cwd, args[2], raw);
+      } else if (subcommand === 'spec') {
+        ops.cmdOpsSpec(cwd, args[2], args.slice(3), raw);
       } else {
         error(`Unknown ops subcommand: ${subcommand}`);
       }
