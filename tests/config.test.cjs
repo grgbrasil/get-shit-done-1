@@ -12,6 +12,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { buildNewProjectConfig, isValidConfigKey } = require('../get-shit-done/bin/lib/config.cjs');
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -859,5 +860,72 @@ describe('config-set/config-get workflow.use_worktrees', () => {
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output, true);
+  });
+});
+
+// ─── buildNewProjectConfig: model_overrides and impact_analysis defaults ─────
+
+describe('buildNewProjectConfig model_overrides and impact_analysis', () => {
+  test('returns model_overrides as empty object by default', () => {
+    const config = buildNewProjectConfig({});
+    assert.deepStrictEqual(config.model_overrides, {});
+  });
+
+  test('returns impact_analysis.enabled as false by default', () => {
+    const config = buildNewProjectConfig({});
+    assert.strictEqual(config.impact_analysis.enabled, false);
+  });
+
+  test('returns impact_analysis.auto_resolve_threshold as 10 by default', () => {
+    const config = buildNewProjectConfig({});
+    assert.strictEqual(config.impact_analysis.auto_resolve_threshold, 10);
+  });
+
+  test('returns impact_analysis.escalation_threshold as 50 by default', () => {
+    const config = buildNewProjectConfig({});
+    assert.strictEqual(config.impact_analysis.escalation_threshold, 50);
+  });
+
+  test('three-level merge works for impact_analysis', () => {
+    const config = buildNewProjectConfig({ impact_analysis: { enabled: true } });
+    assert.strictEqual(config.impact_analysis.enabled, true);
+    // Other defaults should still be present from hardcoded
+    assert.strictEqual(config.impact_analysis.auto_resolve_threshold, 10);
+    assert.strictEqual(config.impact_analysis.escalation_threshold, 50);
+  });
+
+  test('preserves user default model_overrides', () => {
+    // buildNewProjectConfig takes userChoices; userDefaults come from ~/.gsd/defaults.json
+    // but we can test choices override
+    const config = buildNewProjectConfig({ model_overrides: { 'gsd-cataloger': 'haiku' } });
+    assert.deepStrictEqual(config.model_overrides, { 'gsd-cataloger': 'haiku' });
+  });
+});
+
+// ─── isValidConfigKey: impact_analysis and model_overrides patterns ──────────
+
+describe('isValidConfigKey for impact_analysis and model_overrides', () => {
+  test('accepts impact_analysis.enabled', () => {
+    assert.strictEqual(isValidConfigKey('impact_analysis.enabled'), true);
+  });
+
+  test('accepts impact_analysis.auto_resolve_threshold', () => {
+    assert.strictEqual(isValidConfigKey('impact_analysis.auto_resolve_threshold'), true);
+  });
+
+  test('accepts impact_analysis.escalation_threshold', () => {
+    assert.strictEqual(isValidConfigKey('impact_analysis.escalation_threshold'), true);
+  });
+
+  test('accepts model_overrides.gsd-cataloger (dynamic key)', () => {
+    assert.strictEqual(isValidConfigKey('model_overrides.gsd-cataloger'), true);
+  });
+
+  test('accepts model_overrides.gsd-executor (dynamic key)', () => {
+    assert.strictEqual(isValidConfigKey('model_overrides.gsd-executor'), true);
+  });
+
+  test('rejects bare model_overrides key without agent suffix', () => {
+    assert.strictEqual(isValidConfigKey('model_overrides'), false);
   });
 });

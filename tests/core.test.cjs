@@ -93,10 +93,30 @@ describe('loadConfig', () => {
     assert.deepStrictEqual(config.model_overrides, { 'gsd-executor': 'opus' });
   });
 
-  test('returns model_overrides as null when not in config', () => {
+  test('returns model_overrides as empty object when not in config', () => {
     writeConfig({ model_profile: 'balanced' });
     const config = loadConfig(tmpDir);
-    assert.strictEqual(config.model_overrides, null);
+    assert.deepStrictEqual(config.model_overrides, {});
+  });
+
+  test('returns impact_analysis with defaults when absent from config.json', () => {
+    writeConfig({ model_profile: 'balanced' });
+    const config = loadConfig(tmpDir);
+    assert.deepStrictEqual(config.impact_analysis, {
+      enabled: false,
+      auto_resolve_threshold: 10,
+      escalation_threshold: 50,
+    });
+  });
+
+  test('returns impact_analysis from config.json when present', () => {
+    writeConfig({ impact_analysis: { enabled: true, auto_resolve_threshold: 5, escalation_threshold: 25 } });
+    const config = loadConfig(tmpDir);
+    assert.deepStrictEqual(config.impact_analysis, {
+      enabled: true,
+      auto_resolve_threshold: 5,
+      escalation_threshold: 25,
+    });
   });
 
   test('reads response_language when set', () => {
