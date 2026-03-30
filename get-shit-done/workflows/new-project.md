@@ -194,6 +194,15 @@ AskUserQuestion([
     ]
   },
   {
+    header: "Impact Analysis",
+    question: "Activate Function Map + Impact Analysis? (Prevents silent breakage when agents modify shared functions)",
+    multiSelect: false,
+    options: [
+      { label: "No (Default)", description: "Standard execution without impact tracking" },
+      { label: "Yes", description: "Track function dependencies, warn before breaking changes" }
+    ]
+  },
+  {
     header: "AI Models",
     question: "Which AI models for planning agents?",
     multiSelect: false,
@@ -207,11 +216,15 @@ AskUserQuestion([
 ])
 ```
 
+Map Impact Analysis choice to config:
+- "Yes" → `impact_analysis: { enabled: true }`
+- "No" or default → `impact_analysis: { enabled: false }`
+
 Create `.planning/config.json` with all settings (CLI fills in remaining defaults automatically):
 
 ```bash
 mkdir -p .planning
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode":"yolo","granularity":"[selected]","parallelization":true|false,"commit_docs":true|false,"model_profile":"quality|balanced|budget|inherit","workflow":{"research":true|false,"plan_check":true|false,"verifier":true|false,"nyquist_validation":true|false,"auto_advance":true}}'
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode":"yolo","granularity":"[selected]","parallelization":true|false,"commit_docs":true|false,"model_profile":"quality|balanced|budget|inherit","workflow":{"research":true|false,"plan_check":true|false,"verifier":true|false,"nyquist_validation":true|false,"auto_advance":true},"impact_analysis":{"enabled":true|false}}'
 ```
 
 **If commit_docs = No:** Add `.planning/` to `.gitignore`.
@@ -514,6 +527,15 @@ questions: [
     ]
   },
   {
+    header: "Impact Analysis",
+    question: "Activate Function Map + Impact Analysis? (Prevents silent breakage when agents modify shared functions)",
+    multiSelect: false,
+    options: [
+      { label: "No (Default)", description: "Standard execution without impact tracking" },
+      { label: "Yes", description: "Track function dependencies, warn before breaking changes" }
+    ]
+  },
+  {
     header: "AI Models",
     question: "Which AI models for planning agents?",
     multiSelect: false,
@@ -527,11 +549,15 @@ questions: [
 ]
 ```
 
+Map Impact Analysis choice to config:
+- "Yes" → `impact_analysis: { enabled: true }`
+- "No" or default → `impact_analysis: { enabled: false }`
+
 Create `.planning/config.json` with all settings (CLI fills in remaining defaults automatically):
 
 ```bash
 mkdir -p .planning
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode":"[yolo|interactive]","granularity":"[selected]","parallelization":true|false,"commit_docs":true|false,"model_profile":"quality|balanced|budget|inherit","workflow":{"research":true|false,"plan_check":true|false,"verifier":true|false,"nyquist_validation":[false if granularity=coarse, true otherwise]}}'
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-new-project '{"mode":"[yolo|interactive]","granularity":"[selected]","parallelization":true|false,"commit_docs":true|false,"model_profile":"quality|balanced|budget|inherit","workflow":{"research":true|false,"plan_check":true|false,"verifier":true|false,"nyquist_validation":[false if granularity=coarse, true otherwise]},"impact_analysis":{"enabled":true|false}}'
 ```
 
 **Note:** Run `/gsd-settings` anytime to update model profile, workflow agents, branching strategy, and other preferences.

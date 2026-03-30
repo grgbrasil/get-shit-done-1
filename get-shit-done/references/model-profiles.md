@@ -43,6 +43,40 @@ Model profiles control which Claude model each GSD agent uses. This allows balan
 - **Required when using non-Anthropic providers** (OpenRouter, local models, etc.) — otherwise GSD may call Anthropic models directly, incurring unexpected costs
 - Use when: you want GSD to follow your currently selected runtime model
 
+## Third-Party Providers
+
+GSD passes model IDs verbatim to the AI runtime. To use third-party providers (OpenRouter, local models, etc.), set fully-qualified model IDs in `model_overrides`:
+
+```json
+// .planning/config.json
+{
+  "model_overrides": {
+    "gsd-cataloger": "openrouter/meta-llama/llama-3.1-70b",
+    "gsd-codebase-mapper": "openrouter/google/gemini-flash-1.5",
+    "gsd-executor": "anthropic/claude-sonnet-4-20250514"
+  }
+}
+```
+
+**How it works:**
+- `model_overrides.<agent-type>` takes absolute precedence over the profile-based resolution
+- The model ID string is passed as-is to the AI runtime (Claude Code, OpenCode, Copilot)
+- The runtime handles provider routing, API keys, and authentication
+- GSD does not validate model IDs — if the runtime cannot resolve a model, it will error at execution time
+
+**Common patterns:**
+- Use cheap models for high-volume agents: `"gsd-cataloger": "haiku"`, `"gsd-codebase-mapper": "haiku"`
+- Use premium models for critical decisions: `"gsd-planner": "opus"`
+- Use third-party for cost optimization: `"gsd-cataloger": "openrouter/meta-llama/llama-3.1-70b"`
+
+**Setting overrides via CLI:**
+```bash
+gsd-tools config-set model_overrides.gsd-cataloger haiku
+gsd-tools config-set model_overrides.gsd-executor openrouter/google/gemini-flash-1.5
+```
+
+To remove an override and fall back to profile-based resolution, edit config.json manually and delete the key.
+
 ## Using Non-Claude Runtimes (Codex, OpenCode, Gemini CLI, Kilo)
 
 When installed for a non-Claude runtime, the GSD installer sets `resolve_model_ids: "omit"` in `~/.gsd/defaults.json`. This returns an empty model parameter for all agents, so each agent uses the runtime's default model. No manual setup is needed.
