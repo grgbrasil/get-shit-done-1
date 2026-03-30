@@ -65,12 +65,12 @@ Plans:
   6. Impact Analysis runs as an automatic step within execute-phase when the user has opted in
   7. Parallel execution (waves) works without write conflicts on shared files
   8. `/gsd:new-project` asks the user whether to activate Function Map + Impact Analysis (opt-in)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md — Config defaults (model_overrides, impact_analysis) + VALID_CONFIG_KEYS + tests
+- [ ] 03-02-PLAN.md — Context Engine functionMapStats injection + init stats file write
+- [ ] 03-03-PLAN.md — Post-wave cataloger + new-project opt-in + provider docs + hook validation
 
 ## Progress
 
