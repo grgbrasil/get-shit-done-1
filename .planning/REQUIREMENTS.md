@@ -97,7 +97,7 @@
 - [ ] **OPS-06**: `/ops:feature [area] [descricao]` adiciona capacidade nova — gera plano GSD usando contexto da arvore e executa
 - [ ] **OPS-07**: `/ops:modify [area] [o que]` altera comportamento existente com analise de impacto derivada da arvore
 - [ ] **OPS-08**: `/ops:debug [area] [sintoma]` facilita debugging dando contexto completo da area (o que existe, como conecta, specs)
-- [ ] **OPS-09**: Toda operacao registra historico e atualiza mapa apos mudancas
+- [x] **OPS-09**: Toda operacao registra historico e atualiza mapa apos mudancas
 
 ### OPS Governance
 
@@ -161,7 +161,7 @@
 | OPS-06 | Phase 6 | Pending |
 | OPS-07 | Phase 6 | Pending |
 | OPS-08 | Phase 6 | Pending |
-| OPS-09 | Phase 6 | Pending |
+| OPS-09 | Phase 6 | Complete |
 | OPS-10 | Phase 7 | Pending |
 | OPS-11 | Phase 7 | Pending |
 | OPS-12 | Phase 7 | Pending |
