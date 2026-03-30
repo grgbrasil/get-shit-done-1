@@ -28,6 +28,38 @@ const MODEL_PROFILES = {
 };
 const VALID_PROFILES = Object.keys(MODEL_PROFILES['gsd-planner']);
 
+const AGENT_ROUTING = {
+  // SIMPLE → remote when lean mode active
+  'gsd-cataloger':            { route: 'remote', provider: 'deepseek-v3' },
+  'gsd-nyquist-auditor':      { route: 'remote', provider: 'deepseek-v3' },
+  'gsd-assumptions-analyzer': { route: 'remote', provider: 'deepseek-v3' },
+  'gsd-advisor-researcher':   { route: 'remote', provider: 'deepseek-v3' },
+  'gsd-ui-checker':           { route: 'remote', provider: 'deepseek-v3' },
+  'gsd-research-synthesizer': { route: 'remote', provider: 'deepseek-v3' },
+  // MEDIUM/COMPLEX → always local
+  'gsd-planner':              { route: 'local' },
+  'gsd-executor':             { route: 'local' },
+  'gsd-debugger':             { route: 'local' },
+  'gsd-verifier':             { route: 'local' },
+  'gsd-plan-checker':         { route: 'local' },
+  'gsd-phase-researcher':     { route: 'local' },
+  'gsd-roadmapper':           { route: 'local' },
+  'gsd-project-researcher':   { route: 'local' },
+  'gsd-codebase-mapper':      { route: 'local' },
+  'gsd-integration-checker':  { route: 'local' },
+  'gsd-ui-researcher':        { route: 'local' },
+  'gsd-ui-auditor':           { route: 'local' },
+};
+
+const LEAN_MODEL_OVERRIDES = {
+  'gsd-cataloger':            'haiku',
+  'gsd-nyquist-auditor':      'haiku',
+  'gsd-assumptions-analyzer': 'haiku',
+  'gsd-advisor-researcher':   'haiku',
+  'gsd-ui-checker':           'haiku',
+  'gsd-research-synthesizer': 'haiku',
+};
+
 /**
  * Formats the agent-to-model mapping as a human-readable table (in string format).
  *
@@ -63,9 +95,25 @@ function getAgentToModelMapForProfile(normalizedProfile) {
   return agentToModelMap;
 }
 
+/**
+ * Resolves the execution mode from CLI flag and config.
+ * Priority: CLI flag > config > default (auto).
+ *
+ * @param {{ cliFlag?: string|null, configMode?: string|null }} opts
+ * @returns {'full'|'lean'|'auto'}
+ */
+function resolveExecutionMode({ cliFlag, configMode } = {}) {
+  if (cliFlag === 'full' || cliFlag === 'lean') return cliFlag;
+  if (configMode === 'full' || configMode === 'lean' || configMode === 'auto') return configMode;
+  return 'auto';
+}
+
 module.exports = {
   MODEL_PROFILES,
   VALID_PROFILES,
+  AGENT_ROUTING,
+  LEAN_MODEL_OVERRIDES,
   formatAgentToModelMapAsTable,
   getAgentToModelMapForProfile,
+  resolveExecutionMode,
 };
