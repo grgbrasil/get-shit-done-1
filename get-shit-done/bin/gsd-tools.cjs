@@ -138,7 +138,7 @@
 const fs = require('fs');
 const path = require('path');
 const core = require('./lib/core.cjs');
-const { error, findProjectRoot, getActiveWorkstream } = core;
+const { error, output, findProjectRoot, getActiveWorkstream } = core;
 const state = require('./lib/state.cjs');
 const phase = require('./lib/phase.cjs');
 const roadmap = require('./lib/roadmap.cjs');
@@ -941,6 +941,41 @@ async function runCommand(command, args, cwd, raw) {
         ops.cmdOpsBacklog(cwd, args[2], args.slice(3), raw);
       } else {
         error(`Unknown ops subcommand: ${subcommand}`);
+      }
+      break;
+    }
+
+    case 'route-agent': {
+      const agentName = args[1];
+      const promptIdx = args.indexOf('--prompt');
+      const contextIdx = args.indexOf('--context');
+      const modeIdx = args.indexOf('--mode');
+      const providersIdx = args.indexOf('--providers-path');
+
+      if (!agentName || promptIdx === -1 || contextIdx === -1) {
+        error('Usage: route-agent <agentName> --prompt <file> --context <dir> --mode <mode>');
+        process.exit(2);
+      }
+
+      const taskPrompt = fs.readFileSync(args[promptIdx + 1], 'utf8');
+      const contextDir = args[contextIdx + 1];
+      const mode = modeIdx !== -1 ? args[modeIdx + 1] : 'auto';
+      const opts = {};
+      if (providersIdx !== -1) opts.providersPath = args[providersIdx + 1];
+
+      const { routeAgent } = require('./lib/llm-router.cjs');
+      try {
+        const { routed, result, outputFile } = await routeAgent(agentName, taskPrompt, contextDir, mode, opts);
+        if (routed) {
+          if (outputFile) output({ routed: true, outputFile });
+          else output(result);
+          process.exit(0);
+        } else {
+          process.exit(1);
+        }
+      } catch (err) {
+        fs.writeSync(2, 'Error: ' + err.message + '\n');
+        process.exit(2);
       }
       break;
     }
