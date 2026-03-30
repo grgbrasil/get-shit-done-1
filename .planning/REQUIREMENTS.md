@@ -14,7 +14,7 @@
 - [x] **FMAP-05**: Function Map e atualizado automaticamente a cada execucao (nao so a cada commit)
 - [x] **FMAP-06**: Function Map suporta lookup O(1) por chave `file::function`
 - [x] **FMAP-07**: Agente catalogador (que popula/atualiza o Function Map) roda em modelo barato (Haiku ou terceiros via OpenRouter) para processar codebases grandes sem custo alto
-- [ ] **FMAP-08**: Usuario escolhe durante `/gsd:new-project` se ativa o sistema de Function Map + Impact Analysis (opt-in, nao forcado)
+- [x] **FMAP-08**: Usuario escolhe durante `/gsd:new-project` se ativa o sistema de Function Map + Impact Analysis (opt-in, nao forcado)
 
 ### Impact Analysis
 
@@ -34,11 +34,11 @@
 
 ### Integration
 
-- [ ] **INT-01**: Todos os componentes se integram com workflow GSD existente (plan-phase, execute-phase, discuss-phase)
+- [x] **INT-01**: Todos os componentes se integram com workflow GSD existente (plan-phase, execute-phase, discuss-phase)
 - [x] **INT-02**: Function Map e injetado no contexto via extensao do Context Engine existente
-- [ ] **INT-03**: Impact Analysis roda como step obrigatorio dentro do execute-phase (quando ativado pelo usuario)
-- [ ] **INT-04**: Guardrails funcionam com execucao paralela (waves) sem conflitos de escrita
-- [ ] **INT-05**: `/gsd:new-project` inclui pergunta de opt-in para Function Map + Impact Analysis
+- [x] **INT-03**: Impact Analysis roda como step obrigatorio dentro do execute-phase (quando ativado pelo usuario)
+- [x] **INT-04**: Guardrails funcionam com execucao paralela (waves) sem conflitos de escrita
+- [x] **INT-05**: `/gsd:new-project` inclui pergunta de opt-in para Function Map + Impact Analysis
 
 ### Pre-flight Resolver
 
@@ -139,12 +139,12 @@
 | MODEL-02 | Phase 3 | Complete |
 | MODEL-03 | Phase 3 | Complete |
 | MODEL-04 | Phase 3 | Complete |
-| INT-01 | Phase 3 | Pending |
+| INT-01 | Phase 3 | Complete |
 | INT-02 | Phase 3 | Complete |
-| INT-03 | Phase 3 | Pending |
-| INT-04 | Phase 3 | Pending |
-| INT-05 | Phase 3 | Pending |
-| FMAP-08 | Phase 3 | Pending |
+| INT-03 | Phase 3 | Complete |
+| INT-04 | Phase 3 | Complete |
+| INT-05 | Phase 3 | Complete |
+| FMAP-08 | Phase 3 | Complete |
 | PF-01 | Phase 4 | Complete |
 | PF-02 | Phase 4 | Complete |
 | PF-03 | Phase 4 | Complete |

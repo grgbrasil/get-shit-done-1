@@ -70,7 +70,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — Config defaults (model_overrides, impact_analysis) + VALID_CONFIG_KEYS + tests
 - [x] 03-02-PLAN.md — Context Engine functionMapStats injection + init stats file write
-- [ ] 03-03-PLAN.md — Post-wave cataloger + new-project opt-in + provider docs + hook validation
+- [x] 03-03-PLAN.md — Post-wave cataloger + new-project opt-in + provider docs + hook validation
 
 ## Progress
 
