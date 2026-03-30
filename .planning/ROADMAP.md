@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — fmap.cjs CRUD module + gsd-tools dispatcher + model-profiles + tests
+- [x] 01-01-PLAN.md — fmap.cjs CRUD module + gsd-tools dispatcher + model-profiles + tests
 - [ ] 01-02-PLAN.md — gsd-cataloger agent definition + changed-files incremental update support
 
 ### Phase 2: Impact Analysis
