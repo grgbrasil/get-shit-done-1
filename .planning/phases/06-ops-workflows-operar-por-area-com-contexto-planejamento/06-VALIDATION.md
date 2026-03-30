@@ -2,8 +2,8 @@
 phase: 6
 slug: ops-workflows-operar-por-area-com-contexto-planejamento
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-30
 ---
 
@@ -17,20 +17,20 @@ created: 2026-03-30
 
 | Property | Value |
 |----------|-------|
-| **Framework** | vitest 4.1.2 |
-| **Config file** | `vitest.config.ts` |
-| **Quick run command** | `npx vitest run --reporter=verbose` |
-| **Full suite command** | `npx vitest run --reporter=verbose` |
-| **Estimated runtime** | ~30 seconds |
+| **Framework** | node:test + node:assert (project convention for CLI tests) |
+| **Config file** | N/A (uses built-in node --test runner) |
+| **Quick run command** | `node --test tests/ops-workflows.test.cjs` |
+| **Full suite command** | `npm test` |
+| **Estimated runtime** | ~15 seconds |
 
 ---
 
 ## Sampling Rate
 
-- **After every task commit:** Run `npx vitest run --reporter=verbose`
-- **After every plan wave:** Run `npx vitest run --reporter=verbose`
+- **After every task commit:** Run `node --test tests/ops-workflows.test.cjs`
+- **After every plan wave:** Run `npm test` (full suite)
 - **Before `/gsd:verify-work`:** Full suite must be green
-- **Max feedback latency:** 30 seconds
+- **Max feedback latency:** 15 seconds
 
 ---
 
@@ -38,22 +38,21 @@ created: 2026-03-30
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 06-01-01 | 01 | 1 | OPS-05 | unit | `npx vitest run` | ❌ W0 | ⬜ pending |
-| 06-01-02 | 01 | 1 | OPS-06 | unit | `npx vitest run` | ❌ W0 | ⬜ pending |
-| 06-02-01 | 02 | 1 | OPS-07 | unit | `npx vitest run` | ❌ W0 | ⬜ pending |
-| 06-02-02 | 02 | 1 | OPS-08 | unit | `npx vitest run` | ❌ W0 | ⬜ pending |
-| 06-03-01 | 03 | 2 | OPS-09 | integration | `npx vitest run` | ❌ W0 | ⬜ pending |
+| 06-01-01 | 01 | 1 | OPS-09 | unit | `node --test tests/ops-workflows.test.cjs` | W0 (this task creates it) | pending |
+| 06-02-01 | 02 | 2 | OPS-05, OPS-08, OPS-09 | unit | `node --test tests/ops-workflows.test.cjs` | yes (from 06-01-01) | pending |
+| 06-02-02 | 02 | 2 | OPS-05, OPS-08 | file check | `test -f commands/gsd/ops-investigate.md && test -f commands/gsd/ops-debug.md && echo PASS` | N/A (markdown files) | pending |
+| 06-03-01 | 03 | 3 | OPS-06, OPS-07, OPS-09 | unit | `node --test tests/ops-workflows.test.cjs` | yes (from 06-01-01) | pending |
+| 06-03-02 | 03 | 3 | OPS-06, OPS-07 | integration | `test -f commands/gsd/ops-feature.md && test -f commands/gsd/ops-modify.md && grep -q ops-summary.json get-shit-done/bin/lib/init.cjs && echo PASS` | N/A | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] Test stubs for OPS-05 through OPS-09 covering cmd* functions
-- [ ] Test fixtures for mock tree.json and registry.json data
+Plan 01, Task 1 creates `tests/ops-workflows.test.cjs` as part of its TDD execution — this serves as Wave 0 test infrastructure for all subsequent plans.
 
-*If none: "Existing infrastructure covers all phase requirements."*
+*Existing infrastructure (tests/helpers.cjs with runGsdTools, createTempProject) covers test utility needs.*
 
 ---
 
@@ -61,18 +60,18 @@ created: 2026-03-30
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| /ops:investigate autonomous loop | OPS-05 | Requires interactive agent spawning | Run `/ops:investigate` on test area, verify diagnosis.md output |
-| /ops:debug context-pack output | OPS-08 | Requires reading generated markdown | Run `/ops:debug` on test area, verify context-pack.md completeness |
+| /ops:investigate autonomous agent loop | OPS-05 | Requires interactive agent spawning beyond CLI | Run `/ops:investigate` on a test area with real codebase, verify diagnosis.md output |
+| /ops:debug context-pack composability with /gsd:debug | OPS-08 | Requires reading generated markdown quality | Run `/ops:debug` on test area, verify context-pack.md has all 4 sections, then chain to `/gsd:debug` |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (Plan 01 Task 1 creates test file)
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
