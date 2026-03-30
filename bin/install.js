@@ -4399,7 +4399,7 @@ function uninstall(isGlobal, runtime = 'claude') {
   // 4. Remove GSD hooks
   const hooksDir = path.join(targetDir, 'hooks');
   if (fs.existsSync(hooksDir)) {
-    const gsdHooks = ['gsd-statusline.js', 'gsd-check-update.js', 'gsd-check-update.sh', 'gsd-context-monitor.js', 'gsd-prompt-guard.js', 'gsd-read-guard.js', 'gsd-session-state.sh', 'gsd-validate-commit.sh', 'gsd-phase-boundary.sh'];
+    const gsdHooks = ['gsd-statusline.js', 'gsd-check-update.js', 'gsd-check-update.sh', 'gsd-context-monitor.js', 'gsd-prompt-guard.js', 'gsd-read-guard.js', 'gsd-impact-guard.js', 'gsd-session-state.sh', 'gsd-validate-commit.sh', 'gsd-phase-boundary.sh'];
     let hookCount = 0;
     for (const hook of gsdHooks) {
       const hookPath = path.join(hooksDir, hook);
@@ -4501,7 +4501,7 @@ function uninstall(isGlobal, runtime = 'claude') {
         settings.hooks[eventName] = settings.hooks[eventName].filter(entry => {
           if (entry.hooks && Array.isArray(entry.hooks)) {
             const hasGsdHook = entry.hooks.some(h =>
-              h.command && (h.command.includes('gsd-prompt-guard') || h.command.includes('gsd-read-guard'))
+              h.command && (h.command.includes('gsd-prompt-guard') || h.command.includes('gsd-read-guard') || h.command.includes('gsd-impact-guard'))
             );
             return !hasGsdHook;
           }
@@ -5677,6 +5677,29 @@ function install(isGlobal, runtime = 'claude') {
         ]
       });
       console.log(`  ${green}✓${reset} Configured read-before-edit guard hook`);
+    }
+
+    // Configure PreToolUse hook for impact analysis advisory (D-01 safety net)
+    const impactGuardCommand = isGlobal
+      ? buildHookCommand(targetDir, 'gsd-impact-guard.js')
+      : 'node ' + dirName + '/hooks/gsd-impact-guard.js';
+
+    const hasImpactGuardHook = settings.hooks[preToolEvent].some(entry =>
+      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-impact-guard'))
+    );
+
+    if (!hasImpactGuardHook) {
+      settings.hooks[preToolEvent].push({
+        matcher: 'Write|Edit',
+        hooks: [
+          {
+            type: 'command',
+            command: impactGuardCommand,
+            timeout: 5
+          }
+        ]
+      });
+      console.log(`  ${green}✓${reset} Configured impact analysis guard hook`);
     }
 
     // Community hooks — registered on install but opt-in at runtime.
