@@ -955,6 +955,8 @@ async function runCommand(command, args, cwd, raw) {
         fmap.cmdFmapStats(cwd, raw);
       } else if (subcommand === 'full-scan') {
         fmap.cmdFmapFullScan(cwd, raw);
+      } else if (subcommand === 'changed-files') {
+        fmap.cmdFmapChangedFiles(cwd, args.slice(2), raw);
       } else {
         error(`Unknown fmap subcommand: ${subcommand}`);
       }
