@@ -142,3 +142,52 @@ describe('formatAgentToModelMapAsTable', () => {
     assert.ok(table.includes('Agent'), 'should still have header');
   });
 });
+
+// ─── AGENT_ROUTING ───────────────────────────────────────────────────────────
+
+test('AGENT_ROUTING maps simple agents to remote', () => {
+  const { AGENT_ROUTING } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(AGENT_ROUTING['gsd-cataloger'].route, 'remote');
+  assert.strictEqual(AGENT_ROUTING['gsd-research-synthesizer'].route, 'remote');
+  assert.strictEqual(AGENT_ROUTING['gsd-ui-checker'].route, 'remote');
+});
+
+test('AGENT_ROUTING maps complex agents to local', () => {
+  const { AGENT_ROUTING } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(AGENT_ROUTING['gsd-planner'].route, 'local');
+  assert.strictEqual(AGENT_ROUTING['gsd-executor'].route, 'local');
+  assert.strictEqual(AGENT_ROUTING['gsd-debugger'].route, 'local');
+});
+
+test('AGENT_ROUTING defaults to undefined for unknown agents', () => {
+  const { AGENT_ROUTING } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(AGENT_ROUTING['unknown-agent'], undefined);
+});
+
+// ─── LEAN_MODEL_OVERRIDES ────────────────────────────────────────────────────
+
+test('LEAN_MODEL_OVERRIDES downgrades simple agents to haiku', () => {
+  const { LEAN_MODEL_OVERRIDES } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-nyquist-auditor'], 'haiku');
+  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-ui-checker'], 'haiku');
+  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-research-synthesizer'], 'haiku');
+});
+
+// ─── resolveExecutionMode ────────────────────────────────────────────────────
+
+test('resolveExecutionMode: CLI flag takes priority over config', () => {
+  const { resolveExecutionMode } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(resolveExecutionMode({ cliFlag: 'full', configMode: 'lean' }), 'full');
+  assert.strictEqual(resolveExecutionMode({ cliFlag: 'lean', configMode: 'full' }), 'lean');
+});
+
+test('resolveExecutionMode: config fallback when no CLI flag', () => {
+  const { resolveExecutionMode } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(resolveExecutionMode({ cliFlag: null, configMode: 'lean' }), 'lean');
+});
+
+test('resolveExecutionMode: defaults to auto', () => {
+  const { resolveExecutionMode } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(resolveExecutionMode({ cliFlag: null, configMode: null }), 'auto');
+  assert.strictEqual(resolveExecutionMode({}), 'auto');
+});
