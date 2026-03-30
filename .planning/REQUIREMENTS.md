@@ -103,7 +103,7 @@
 
 - [x] **OPS-10**: `/ops:status [area]` mostra saude — cobertura de specs, backlog pendente, mudancas recentes
 - [x] **OPS-11**: `/ops:spec [area]` gerencia regras/contratos da area que operacoes validam
-- [ ] **OPS-12**: `/ops:backlog [area]` gerencia items pendentes — adicionar, priorizar, promover
+- [x] **OPS-12**: `/ops:backlog [area]` gerencia items pendentes — adicionar, priorizar, promover
 
 ## Out of Scope
 
@@ -164,7 +164,7 @@
 | OPS-09 | Phase 6 | Complete |
 | OPS-10 | Phase 7 | Complete |
 | OPS-11 | Phase 7 | Complete |
-| OPS-12 | Phase 7 | Pending |
+| OPS-12 | Phase 7 | Complete |
 
 **Coverage:**
 - v1 requirements: 42 total
