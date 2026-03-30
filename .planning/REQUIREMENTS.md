@@ -20,8 +20,8 @@
 
 - [x] **IMPACT-01**: Executor consulta Function Map ANTES de modificar qualquer funcao/service/controller/model
 - [x] **IMPACT-02**: Impact Analysis identifica todos os callers da funcao sendo modificada
-- [ ] **IMPACT-03**: Mudancas estruturais (assinatura, argumentos, tipo retorno) sao auto-resolvidas -- executor atualiza todos os callers automaticamente
-- [ ] **IMPACT-04**: Mudancas comportamentais (logica de negocio, resultado semantico diferente) sao escaladas ao usuario com explicacao do impacto
+- [x] **IMPACT-03**: Mudancas estruturais (assinatura, argumentos, tipo retorno) sao auto-resolvidas -- executor atualiza todos os callers automaticamente
+- [x] **IMPACT-04**: Mudancas comportamentais (logica de negocio, resultado semantico diferente) sao escaladas ao usuario com explicacao do impacto
 - [x] **IMPACT-05**: Cascade de callers -- quando um caller e atualizado, verificar se essa atualizacao impacta callers do caller (1 nivel)
 - [x] **IMPACT-06**: Apos resolver impactos, Function Map e atualizado com as novas assinaturas/callers
 
@@ -100,8 +100,8 @@
 | FMAP-07 | Phase 1 | Complete |
 | IMPACT-01 | Phase 2 | Complete |
 | IMPACT-02 | Phase 2 | Complete |
-| IMPACT-03 | Phase 2 | Pending |
-| IMPACT-04 | Phase 2 | Pending |
+| IMPACT-03 | Phase 2 | Complete |
+| IMPACT-04 | Phase 2 | Complete |
 | IMPACT-05 | Phase 2 | Complete |
 | IMPACT-06 | Phase 2 | Complete |
 | MODEL-01 | Phase 3 | Pending |
