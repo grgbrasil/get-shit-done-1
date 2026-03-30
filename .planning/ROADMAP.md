@@ -145,4 +145,4 @@ Plans:
 
 Plans:
 - [x] 07-01: TBD
-- [ ] 07-02: TBD
+- [x] 07-02: TBD
