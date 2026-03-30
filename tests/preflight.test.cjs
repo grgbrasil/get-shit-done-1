@@ -221,6 +221,99 @@ describe('preflight', () => {
     });
   });
 
+  // ─── Integration Tests ──────────────────────────────────────────────────
+
+  describe('preflight integration', () => {
+    it('returns valid JSON with all required fields for plan-phase', () => {
+      seedPhaseDir(tmpDir, 5, 'integ-test');
+      seedRoadmap(tmpDir, '## Phase 5: Integ Test\n\n**Goal**: Integration test\n\n**Depends on:** nothing\n');
+      const result = runGsdTools(['preflight', 'plan-phase', '5'], tmpDir);
+      assert.ok(result.success, `Expected success but got: ${result.error}`);
+      const json = JSON.parse(result.output);
+      assert.ok('ready' in json, 'missing ready field');
+      assert.ok('blockers' in json, 'missing blockers field');
+      assert.ok('next_action' in json, 'missing next_action field');
+      assert.ok('next_command' in json, 'missing next_command field');
+      assert.ok('phase_number' in json, 'missing phase_number field');
+      assert.ok('command_checked' in json, 'missing command_checked field');
+      assert.equal(json.command_checked, 'plan-phase');
+      assert.equal(json.phase_number, '5');
+    });
+
+    it('returns ready:true for plan-phase with complete setup', () => {
+      seedContext(tmpDir, 6, 'complete-phase');
+      seedRoadmap(tmpDir, '## Phase 6: Complete Phase\n\n**Goal**: Fully ready\n\n**Depends on:** nothing\n');
+      const result = runGsdTools(['preflight', 'plan-phase', '6'], tmpDir);
+      assert.ok(result.success, `Expected success but got: ${result.error}`);
+      const json = JSON.parse(result.output);
+      assert.equal(json.ready, true);
+      assert.deepEqual(json.blockers, []);
+      assert.equal(json.next_action, null);
+      assert.equal(json.next_command, null);
+    });
+
+    it('returns ready:false with no_plans blocker for execute-phase without plans', () => {
+      seedPhaseDir(tmpDir, 7, 'no-plans-phase');
+      seedRoadmap(tmpDir, '## Phase 7: No Plans Phase\n\n**Goal**: Nothing planned\n\n**Depends on:** nothing\n');
+      const result = runGsdTools(['preflight', 'execute-phase', '7'], tmpDir);
+      assert.ok(result.success, `Expected success but got: ${result.error}`);
+      const json = JSON.parse(result.output);
+      assert.equal(json.ready, false);
+      assert.ok(json.blockers.length > 0, 'Expected at least one blocker');
+      const noPlanBlocker = json.blockers.find(b => b.type === 'no_plans');
+      assert.ok(noPlanBlocker, 'Expected no_plans blocker');
+      assert.equal(noPlanBlocker.severity, 'blocking');
+      assert.equal(noPlanBlocker.skippable, false);
+      assert.equal(json.command_checked, 'execute-phase');
+    });
+
+    it('returns ready:true for execute-phase with plan files', () => {
+      seedPlans(tmpDir, 8, 'planned-phase', ['08-01-PLAN.md']);
+      seedRoadmap(tmpDir, '## Phase 8: Planned Phase\n\n**Goal**: Has plans\n\n**Depends on:** nothing\n');
+      const result = runGsdTools(['preflight', 'execute-phase', '8'], tmpDir);
+      assert.ok(result.success, `Expected success but got: ${result.error}`);
+      const json = JSON.parse(result.output);
+      assert.equal(json.ready, true);
+      assert.equal(json.command_checked, 'execute-phase');
+    });
+
+    it('returns error with missing args', () => {
+      const result = runGsdTools(['preflight'], tmpDir);
+      assert.equal(result.success, false, 'Expected failure with missing args');
+    });
+
+    it('returns incomplete_dependency blocker when dependent phase is incomplete', () => {
+      // Phase 10 depends on Phase 9, but Phase 9 has no SUMMARY
+      seedPhaseDir(tmpDir, 9, 'base-phase');
+      seedPlans(tmpDir, 9, 'base-phase', ['09-01-PLAN.md']); // no summary = incomplete
+      seedContext(tmpDir, 10, 'dep-phase');
+      seedPhaseDir(tmpDir, 10, 'dep-phase');
+      seedRoadmap(tmpDir, [
+        '## Phase 9: Base Phase',
+        '',
+        '**Goal**: Foundation work',
+        '',
+        '**Depends on:** nothing',
+        '',
+        '## Phase 10: Dep Phase',
+        '',
+        '**Goal**: Depends on base',
+        '',
+        '**Depends on:** Phase 9',
+        '',
+      ].join('\n'));
+      const result = runGsdTools(['preflight', 'plan-phase', '10'], tmpDir);
+      assert.ok(result.success, `Expected success but got: ${result.error}`);
+      const json = JSON.parse(result.output);
+      assert.equal(json.ready, false);
+      const depBlocker = json.blockers.find(b => b.type === 'incomplete_dependency');
+      assert.ok(depBlocker, 'Expected incomplete_dependency blocker');
+      assert.equal(depBlocker.severity, 'blocking');
+      assert.equal(depBlocker.skippable, false);
+      assert.ok(depBlocker.command, 'Expected command in blocker');
+    });
+  });
+
   describe('output structure', () => {
     it('all blockers have required fields', () => {
       seedPhaseDir(tmpDir, 1, 'test-phase');
