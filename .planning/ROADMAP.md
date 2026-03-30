@@ -49,7 +49,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — fmap impact CLI subcommand + normalizeSignature helper + TDD tests
+- [x] 02-01-PLAN.md — fmap impact CLI subcommand + normalizeSignature helper + TDD tests
 - [ ] 02-02-PLAN.md — PreToolUse hook (gsd-impact-guard.js) + executor prompt impact analysis protocol + install.js registration
 
 ### Phase 3: Model Routing & Integration
