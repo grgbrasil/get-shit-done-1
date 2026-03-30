@@ -85,10 +85,17 @@ Phase 1 -> 2 -> 3
 
 ### Phase 4: Pre-flight dependency resolver for phase commands
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Centralized prerequisite checker that validates all dependencies before any phase command executes, eliminating scattered inline checks and enabling consistent prerequisite resolution
 **Depends on:** Phase 3
-**Plans:** 0 plans
+**Requirements**: PF-01, PF-02, PF-03, PF-04, PF-05, PF-06, PF-07
+**Success Criteria** (what must be TRUE):
+  1. Running `gsd-tools preflight <command> <phase>` returns structured JSON indicating readiness or blockers
+  2. Missing CONTEXT.md, UI-SPEC.md, plans, and incomplete dependencies are all detected
+  3. Config gates (skip_discuss, ui_safety_gate) correctly suppress optional checks
+  4. UI detection avoids false positives on programming terms
+  5. All three phase workflows (plan-phase, execute-phase, ui-phase) call preflight as first validation step
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 4 to break down)
+- [ ] 04-01-PLAN.md — preflight.cjs module + gsd-tools dispatcher + TDD tests
+- [ ] 04-02-PLAN.md — Wire preflight into plan-phase, execute-phase, ui-phase workflows + integration tests
