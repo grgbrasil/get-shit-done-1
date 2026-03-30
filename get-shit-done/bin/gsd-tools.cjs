@@ -923,6 +923,8 @@ async function runCommand(command, args, cwd, raw) {
         fmap.cmdFmapFullScan(cwd, raw);
       } else if (subcommand === 'changed-files') {
         fmap.cmdFmapChangedFiles(cwd, args.slice(2), raw);
+      } else if (subcommand === 'impact') {
+        fmap.cmdFmapImpact(cwd, args[2], raw);
       } else {
         error(`Unknown fmap subcommand: ${subcommand}`);
       }
