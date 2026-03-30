@@ -129,7 +129,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Shared helpers (appendHistory, computeBlastRadius, refreshTree, cmdOpsSummary) + dispatcher routing + tests
+- [x] 06-01-PLAN.md — Shared helpers (appendHistory, computeBlastRadius, refreshTree, cmdOpsSummary) + dispatcher routing + tests
 - [ ] 06-02-PLAN.md — cmdOpsInvestigate + cmdOpsDebug implementations + /ops:investigate and /ops:debug skill commands
 - [ ] 06-03-PLAN.md — cmdOpsFeature + cmdOpsModify implementations + /ops:feature and /ops:modify skill commands + init.cjs context injection
 
