@@ -158,6 +158,7 @@ const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
 const docs = require('./lib/docs.cjs');
 const fmap = require('./lib/fmap.cjs');
+const preflight = require('./lib/preflight.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
 
@@ -962,6 +963,16 @@ async function runCommand(command, args, cwd, raw) {
       } else {
         error(`Unknown fmap subcommand: ${subcommand}`);
       }
+      break;
+    }
+
+    case 'preflight': {
+      const preflightCmd = args[1];
+      const preflightPhase = args[2];
+      if (!preflightCmd || !preflightPhase) {
+        error('Usage: gsd-tools preflight <command> <phase>');
+      }
+      preflight.cmdPreflight(cwd, preflightCmd, preflightPhase, raw);
       break;
     }
 
