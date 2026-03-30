@@ -133,6 +133,9 @@
  *   init milestone-op                  All context for milestone operations
  *   init map-codebase                  All context for map-codebase workflow
  *   init progress                      All context for progress workflow
+ *
+ * Pre-flight Checks:
+ *   preflight <command> <phase>       Check prerequisites for a phase command
  */
 
 const fs = require('fs');
@@ -153,6 +156,7 @@ const profilePipeline = require('./lib/profile-pipeline.cjs');
 const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
 const fmap = require('./lib/fmap.cjs');
+const preflight = require('./lib/preflight.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
 
@@ -928,6 +932,16 @@ async function runCommand(command, args, cwd, raw) {
       } else {
         error(`Unknown fmap subcommand: ${subcommand}`);
       }
+      break;
+    }
+
+    case 'preflight': {
+      const preflightCmd = args[1];
+      const preflightPhase = args[2];
+      if (!preflightCmd || !preflightPhase) {
+        error('Usage: gsd-tools preflight <command> <phase>');
+      }
+      preflight.cmdPreflight(cwd, preflightCmd, preflightPhase, raw);
       break;
     }
 

@@ -42,13 +42,13 @@
 
 ### Pre-flight Resolver
 
-- [ ] **PF-01**: Preflight detecta CONTEXT.md ausente antes de plan-phase e retorna blocker com comando upstream
-- [ ] **PF-02**: Preflight detecta UI-SPEC.md ausente quando fase tem indicadores de UI e ui_safety_gate esta ativo
-- [ ] **PF-03**: Preflight detecta fases dependentes incompletas antes de plan-phase e execute-phase
-- [ ] **PF-04**: Preflight respeita config gates (skip_discuss, ui_phase, ui_safety_gate) e suprime checks opcionais
-- [ ] **PF-05**: Preflight retorna JSON estruturado com ready, blockers, next_action, next_command
-- [ ] **PF-06**: Deteccao de UI evita falsos positivos em termos de programacao (interface, form, view)
-- [ ] **PF-07**: Preflight detecta ausencia de PLANs antes de execute-phase
+- [x] **PF-01**: Preflight detecta CONTEXT.md ausente antes de plan-phase e retorna blocker com comando upstream
+- [x] **PF-02**: Preflight detecta UI-SPEC.md ausente quando fase tem indicadores de UI e ui_safety_gate esta ativo
+- [x] **PF-03**: Preflight detecta fases dependentes incompletas antes de plan-phase e execute-phase
+- [x] **PF-04**: Preflight respeita config gates (skip_discuss, ui_phase, ui_safety_gate) e suprime checks opcionais
+- [x] **PF-05**: Preflight retorna JSON estruturado com ready, blockers, next_action, next_command
+- [x] **PF-06**: Deteccao de UI evita falsos positivos em termos de programacao (interface, form, view)
+- [x] **PF-07**: Preflight detecta ausencia de PLANs antes de execute-phase
 
 ## v2 Requirements (Milestone 2: ADR & Global Memory)
 
@@ -124,13 +124,13 @@
 | INT-04 | Phase 3 | Pending |
 | INT-05 | Phase 3 | Pending |
 | FMAP-08 | Phase 3 | Pending |
-| PF-01 | Phase 4 | Pending |
-| PF-02 | Phase 4 | Pending |
-| PF-03 | Phase 4 | Pending |
-| PF-04 | Phase 4 | Pending |
-| PF-05 | Phase 4 | Pending |
-| PF-06 | Phase 4 | Pending |
-| PF-07 | Phase 4 | Pending |
+| PF-01 | Phase 4 | Complete |
+| PF-02 | Phase 4 | Complete |
+| PF-03 | Phase 4 | Complete |
+| PF-04 | Phase 4 | Complete |
+| PF-05 | Phase 4 | Complete |
+| PF-06 | Phase 4 | Complete |
+| PF-07 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 30 total
