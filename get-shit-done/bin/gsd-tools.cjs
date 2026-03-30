@@ -152,6 +152,7 @@ const frontmatter = require('./lib/frontmatter.cjs');
 const profilePipeline = require('./lib/profile-pipeline.cjs');
 const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
+const ops = require('./lib/ops.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
 
@@ -906,6 +907,24 @@ async function runCommand(command, args, cwd, raw) {
         workstream.cmdWorkstreamProgress(cwd, raw);
       } else {
         error('Unknown workstream subcommand. Available: create, list, status, complete, set, get, progress');
+      }
+      break;
+    }
+
+    case 'ops': {
+      const subcommand = args[1];
+      if (subcommand === 'init') {
+        ops.cmdOpsInit(cwd, args.slice(2), raw);
+      } else if (subcommand === 'map') {
+        ops.cmdOpsMap(cwd, args[2], raw);
+      } else if (subcommand === 'add') {
+        ops.cmdOpsAdd(cwd, args[2], args.slice(3), raw);
+      } else if (subcommand === 'list') {
+        ops.cmdOpsList(cwd, raw);
+      } else if (subcommand === 'get') {
+        ops.cmdOpsGet(cwd, args[2], raw);
+      } else {
+        error(`Unknown ops subcommand: ${subcommand}`);
       }
       break;
     }

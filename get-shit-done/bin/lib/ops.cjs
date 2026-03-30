@@ -137,11 +137,13 @@ function matchGlob(pattern, filePath) {
   }
 
   // Convert glob to regex
+  // Normalize: replace /**/ with a token, then handle ** at start/end
   let regex = pattern
     .replace(/\./g, '\\.')
-    .replace(/\*\*/g, '<<<GLOBSTAR>>>')
-    .replace(/\*/g, '[^/]*')
-    .replace(/<<<GLOBSTAR>>>/g, '.*');
+    .replace(/\/\*\*\//g, '(?:/.*?/|/)')   // /**/ matches zero or more dirs
+    .replace(/^\*\*\//, '(?:.*?/|)')        // **/ at start matches zero or more leading dirs
+    .replace(/\/\*\*$/, '(?:/.*)?')         // /** at end matches zero or more trailing segments
+    .replace(/\*/g, '[^/]*');               // * matches within one segment
 
   return new RegExp('^' + regex + '$').test(filePath);
 }
