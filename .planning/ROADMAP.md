@@ -113,8 +113,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — ops.cjs registry CRUD module + area detection heuristics + gsd-tools dispatcher + tests
-- [ ] 05-02-PLAN.md — cmdOpsMap tree builder (adjacency list graph) + skill commands (/ops:init, /ops:map, /ops:add)
+- [x] 05-01-PLAN.md — ops.cjs registry CRUD module + area detection heuristics + gsd-tools dispatcher + tests
+- [x] 05-02-PLAN.md — cmdOpsMap tree builder (adjacency list graph) + skill commands (/ops:init, /ops:map, /ops:add)
 
 ### Phase 6: OPS Workflows — Operar por area com contexto + planejamento
 **Goal**: Usuario aponta pra uma area e descreve o que quer (investigar, adicionar, modificar, debugar) — sistema usa mapa pra contexto, gera plano GSD, e executa

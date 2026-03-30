@@ -87,7 +87,7 @@
 ### OPS Foundation
 
 - [x] **OPS-01**: `/ops:init` escaneia codebase e constroi mapa do sistema — agrupa codigo por tela/feature detectando routes, views, endpoints, services, models
-- [ ] **OPS-02**: `/ops:map [area]` reconstroi arvore de dependencias de uma area (view→component→endpoint→service→model→table)
+- [x] **OPS-02**: `/ops:map [area]` reconstroi arvore de dependencias de uma area (view→component→endpoint→service→model→table)
 - [x] **OPS-03**: `/ops:add [area]` registra nova area manualmente quando auto-deteccao nao cobre
 - [x] **OPS-04**: Dados por area persistem em `.planning/ops/{area}/` com tree, specs, backlog e historico
 
@@ -154,7 +154,7 @@
 | PF-07 | Phase 4 | Complete |
 
 | OPS-01 | Phase 5 | Complete |
-| OPS-02 | Phase 5 | Pending |
+| OPS-02 | Phase 5 | Complete |
 | OPS-03 | Phase 5 | Complete |
 | OPS-04 | Phase 5 | Complete |
 | OPS-05 | Phase 6 | Pending |
