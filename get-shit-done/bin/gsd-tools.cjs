@@ -152,6 +152,7 @@ const frontmatter = require('./lib/frontmatter.cjs');
 const profilePipeline = require('./lib/profile-pipeline.cjs');
 const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
+const preflight = require('./lib/preflight.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
 
@@ -907,6 +908,16 @@ async function runCommand(command, args, cwd, raw) {
       } else {
         error('Unknown workstream subcommand. Available: create, list, status, complete, set, get, progress');
       }
+      break;
+    }
+
+    case 'preflight': {
+      const preflightCmd = args[1];
+      const preflightPhase = args[2];
+      if (!preflightCmd || !preflightPhase) {
+        error('Usage: gsd-tools preflight <command> <phase>');
+      }
+      preflight.cmdPreflight(cwd, preflightCmd, preflightPhase, raw);
       break;
     }
 
