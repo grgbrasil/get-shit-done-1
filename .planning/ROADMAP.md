@@ -97,5 +97,5 @@ Phase 1 -> 2 -> 3
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — preflight.cjs module + gsd-tools dispatcher + TDD tests
-- [ ] 04-02-PLAN.md — Wire preflight into plan-phase, execute-phase, ui-phase workflows + integration tests
+- [x] 04-01-PLAN.md — preflight.cjs module + gsd-tools dispatcher + TDD tests
+- [x] 04-02-PLAN.md — Wire preflight into plan-phase, execute-phase, ui-phase workflows + integration tests
