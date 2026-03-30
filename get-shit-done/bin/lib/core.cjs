@@ -308,7 +308,12 @@ function loadConfig(cwd) {
       resolve_model_ids: get('resolve_model_ids') ?? defaults.resolve_model_ids,
       context_window: get('context_window') ?? defaults.context_window,
       phase_naming: get('phase_naming') ?? defaults.phase_naming,
-      model_overrides: parsed.model_overrides || null,
+      model_overrides: parsed.model_overrides || {},
+      impact_analysis: parsed.impact_analysis || {
+        enabled: false,
+        auto_resolve_threshold: 10,
+        escalation_threshold: 50,
+      },
       agent_skills: parsed.agent_skills || {},
     };
   } catch {

@@ -25,6 +25,9 @@ const VALID_CONFIG_KEYS = new Set([
   'git.branching_strategy', 'git.phase_branch_template', 'git.milestone_branch_template', 'git.quick_branch_template',
   'planning.commit_docs', 'planning.search_gitignored',
   'hooks.context_warnings',
+  'impact_analysis.enabled',
+  'impact_analysis.auto_resolve_threshold',
+  'impact_analysis.escalation_threshold',
 ]);
 
 /**
@@ -36,6 +39,8 @@ function isValidConfigKey(keyPath) {
   if (VALID_CONFIG_KEYS.has(keyPath)) return true;
   // Allow agent_skills.<agent-type> with any agent type string
   if (/^agent_skills\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
+  // Allow model_overrides.<agent-type> with any agent type string
+  if (/^model_overrides\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
   return false;
 }
 
@@ -133,6 +138,12 @@ function buildNewProjectConfig(userChoices) {
       context_warnings: true,
     },
     agent_skills: {},
+    model_overrides: {},
+    impact_analysis: {
+      enabled: false,
+      auto_resolve_threshold: 10,
+      escalation_threshold: 50,
+    },
   };
 
   // Three-level deep merge: hardcoded <- userDefaults <- choices
@@ -159,6 +170,16 @@ function buildNewProjectConfig(userChoices) {
       ...hardcoded.agent_skills,
       ...(userDefaults.agent_skills || {}),
       ...(choices.agent_skills || {}),
+    },
+    model_overrides: {
+      ...hardcoded.model_overrides,
+      ...(userDefaults.model_overrides || {}),
+      ...(choices.model_overrides || {}),
+    },
+    impact_analysis: {
+      ...hardcoded.impact_analysis,
+      ...(userDefaults.impact_analysis || {}),
+      ...(choices.impact_analysis || {}),
     },
   };
 }
@@ -439,4 +460,6 @@ module.exports = {
   cmdConfigGet,
   cmdConfigSetModelProfile,
   cmdConfigNewProject,
+  buildNewProjectConfig,
+  isValidConfigKey,
 };
