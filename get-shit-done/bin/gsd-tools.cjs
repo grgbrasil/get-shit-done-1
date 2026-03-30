@@ -133,6 +133,9 @@
  *   init milestone-op                  All context for milestone operations
  *   init map-codebase                  All context for map-codebase workflow
  *   init progress                      All context for progress workflow
+ *
+ * Pre-flight Checks:
+ *   preflight <command> <phase>       Check prerequisites for a phase command
  */
 
 const fs = require('fs');
