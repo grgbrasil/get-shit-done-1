@@ -14,12 +14,15 @@ const ops = require('../get-shit-done/bin/lib/ops.cjs');
 
 function captureOutput(fn) {
   const chunks = [];
-  const orig = process.stdout.write.bind(process.stdout);
-  process.stdout.write = (c) => { chunks.push(c); return true; };
+  const origWriteSync = fs.writeSync;
+  fs.writeSync = (fd, data, ...rest) => {
+    if (fd === 1) { chunks.push(data); return data.length; }
+    return origWriteSync(fd, data, ...rest);
+  };
   try {
     fn();
   } finally {
-    process.stdout.write = orig;
+    fs.writeSync = origWriteSync;
   }
   const raw = chunks.join('');
   try { return JSON.parse(raw); } catch { return raw; }
