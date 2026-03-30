@@ -99,12 +99,21 @@ function shouldRouteRemote(agentName, mode) {
 
 // ─── Message Building ───────────────────────────────────────────
 
+const REMOTE_MODE_PREFIX = `CRITICAL INSTRUCTION — YOU HAVE NO TOOLS.
+You are running as a REMOTE text-completion API. You have ZERO tool access.
+You MUST NOT output XML tags like <Read>, <Write>, <Bash>, <Edit>, <Grep>, <Glob>, <Task>, etc.
+Any such tags will be treated as errors and discarded.
+All the context you need is provided in the user message. Do NOT ask for more files.
+Output ONLY your final result as clean markdown. No preamble, no "let me read the files", no tool invocations.
+Start your response directly with the content.`;
+
 function buildMessages(agentPrompt, taskPrompt, collectedContext) {
+  const systemContent = `${REMOTE_MODE_PREFIX}\n\n---\n\n${agentPrompt}`;
   const userContent = collectedContext
     ? `${taskPrompt}\n\n---\n\n# Collected Context\n\n${collectedContext}`
     : taskPrompt;
   return [
-    { role: 'system', content: agentPrompt },
+    { role: 'system', content: systemContent },
     { role: 'user', content: userContent },
   ];
 }
@@ -153,14 +162,33 @@ async function callGoogleAPI(provider, apiKey, messages) {
   return data.candidates[0].content.parts[0].text;
 }
 
+/**
+ * Strip tool-call XML tags that LLMs sometimes emit despite instructions.
+ * Removes <Read>, <Write>, <Bash>, <Edit>, etc. and their content.
+ */
+function sanitizeResponse(text) {
+  const toolTags = ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob', 'Task', 'WebSearch', 'WebFetch'];
+  let cleaned = text;
+  for (const tag of toolTags) {
+    // Remove self-closing and paired tags with content
+    cleaned = cleaned.replace(new RegExp(`<${tag}>[\\s\\S]*?</${tag}>`, 'gi'), '');
+    cleaned = cleaned.replace(new RegExp(`<${tag}\\s*/?>`, 'gi'), '');
+  }
+  // Remove lines that are just "I'll read the file" / "Let me read" preamble before actual content
+  cleaned = cleaned.replace(/^.*(?:I'll|Let me|I need to)\s+(?:read|check|look at|analyze).*\n*/gim, '');
+  return cleaned.trim();
+}
+
 async function callProvider(provider, apiKey, messages) {
+  let result;
   if (provider.format === 'openai-compatible') {
-    return callOpenAICompatible(provider, apiKey, messages);
+    result = await callOpenAICompatible(provider, apiKey, messages);
+  } else if (provider.format === 'google') {
+    result = await callGoogleAPI(provider, apiKey, messages);
+  } else {
+    throw new Error(`Unknown provider format: ${provider.format}`);
   }
-  if (provider.format === 'google') {
-    return callGoogleAPI(provider, apiKey, messages);
-  }
-  throw new Error(`Unknown provider format: ${provider.format}`);
+  return sanitizeResponse(result);
 }
 
 // ─── Context Collectors ─────────────────────────────────────────
@@ -295,6 +323,7 @@ module.exports = {
   callProvider,
   callOpenAICompatible,
   callGoogleAPI,
+  sanitizeResponse,
   routeAgent,
   findProjectRoot,
   resolveModifiedFiles,
