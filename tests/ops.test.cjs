@@ -300,6 +300,164 @@ describe('ops get', () => {
   });
 });
 
+// ─── ops map ──────────────────────────────────────────────────────────────
+
+describe('ops map', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject('ops-map-');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('produces tree.json with nodes and edges', () => {
+    // Register area manually
+    runGsdTools(['ops', 'add', 'users'], tmpDir);
+
+    // Seed files for the users area
+    const viewsDir = path.join(tmpDir, 'src', 'views', 'users');
+    fs.mkdirSync(viewsDir, { recursive: true });
+    const apiDir = path.join(tmpDir, 'src', 'api');
+    fs.mkdirSync(apiDir, { recursive: true });
+
+    fs.writeFileSync(path.join(viewsDir, 'UsersView.js'),
+      `import UserTable from './UserTable';\nexport default {};\n`);
+    fs.writeFileSync(path.join(viewsDir, 'UserTable.js'),
+      `import userApi from '../../api/userApi';\nexport default {};\n`);
+    fs.writeFileSync(path.join(apiDir, 'userApi.js'),
+      `export default { fetchUsers() {} };\n`);
+
+    const result = runGsdTools(['ops', 'map', 'users'], tmpDir);
+    assert.ok(result.success, 'ops map should succeed: ' + (result.error || ''));
+
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.success, true);
+    assert.strictEqual(parsed.area, 'users');
+    assert.ok(parsed.nodes >= 3, 'Should have at least 3 nodes');
+    assert.ok(parsed.edges >= 2, 'Should have at least 2 edges');
+
+    // Verify tree.json exists
+    const treePath = path.join(tmpDir, '.planning', 'ops', 'users', 'tree.json');
+    assert.ok(fs.existsSync(treePath), 'tree.json should exist');
+
+    const tree = JSON.parse(fs.readFileSync(treePath, 'utf-8'));
+    assert.ok(Array.isArray(tree.nodes), 'nodes should be array');
+    assert.ok(Array.isArray(tree.edges), 'edges should be array');
+    assert.ok(tree.nodes.length >= 3, 'Should have at least 3 nodes in tree.json');
+    assert.ok(tree.edges.length >= 2, 'Should have at least 2 edges in tree.json');
+  });
+
+  test('tree.json follows adjacency list schema', () => {
+    runGsdTools(['ops', 'add', 'products'], tmpDir);
+
+    const viewsDir = path.join(tmpDir, 'src', 'views', 'products');
+    fs.mkdirSync(viewsDir, { recursive: true });
+    fs.writeFileSync(path.join(viewsDir, 'ProductList.js'),
+      `export default {};\n`);
+
+    runGsdTools(['ops', 'map', 'products'], tmpDir);
+
+    const treePath = path.join(tmpDir, '.planning', 'ops', 'products', 'tree.json');
+    const tree = JSON.parse(fs.readFileSync(treePath, 'utf-8'));
+
+    // Validate node schema
+    for (const node of tree.nodes) {
+      assert.ok(node.id, 'node must have id');
+      assert.ok(node.type, 'node must have type');
+      assert.ok(node.file_path, 'node must have file_path');
+      assert.ok(node.name, 'node must have name');
+      assert.ok('metadata' in node, 'node must have metadata');
+      assert.ok(
+        ['route', 'view', 'component', 'endpoint', 'service', 'model', 'table'].includes(node.type),
+        'node type must be valid: ' + node.type
+      );
+    }
+
+    // Validate edge schema
+    for (const edge of tree.edges) {
+      assert.ok(edge.from, 'edge must have from');
+      assert.ok(edge.to, 'edge must have to');
+      assert.ok(edge.type, 'edge must have type');
+      assert.ok(
+        ['imports', 'calls', 'renders', 'serves', 'uses_table'].includes(edge.type),
+        'edge type must be valid: ' + edge.type
+      );
+    }
+
+    // Validate top-level fields
+    assert.ok(tree.area, 'tree must have area');
+    assert.ok(tree.generated_at, 'tree must have generated_at');
+  });
+
+  test('creates per-area directory on first map', () => {
+    // Add area manually but note: cmdOpsAdd already creates the dir
+    // Instead, create registry entry without directory
+    const registryDir = path.join(tmpDir, '.planning', 'ops');
+    fs.mkdirSync(registryDir, { recursive: true });
+    const registry = {
+      areas: [{
+        slug: 'reports',
+        name: 'Reports',
+        source: 'manual',
+        detected_by: 'manual',
+        confidence: 'high',
+        created_at: new Date().toISOString(),
+        last_scanned: null,
+        components_count: 0
+      }]
+    };
+    fs.writeFileSync(path.join(registryDir, 'registry.json'), JSON.stringify(registry, null, 2));
+
+    // Seed a file for the area
+    const reportsDir = path.join(tmpDir, 'src', 'views', 'reports');
+    fs.mkdirSync(reportsDir, { recursive: true });
+    fs.writeFileSync(path.join(reportsDir, 'ReportsView.js'), `export default {};\n`);
+
+    const areaPath = path.join(tmpDir, '.planning', 'ops', 'reports');
+    assert.ok(!fs.existsSync(areaPath), 'Per-area directory should NOT exist before map');
+
+    const result = runGsdTools(['ops', 'map', 'reports'], tmpDir);
+    assert.ok(result.success, 'ops map should succeed: ' + (result.error || ''));
+
+    assert.ok(fs.existsSync(areaPath), 'Per-area directory should exist after map');
+    assert.ok(fs.existsSync(path.join(areaPath, 'tree.json')), 'tree.json should exist after map');
+  });
+
+  test('updates registry components_count after map', () => {
+    runGsdTools(['ops', 'add', 'settings'], tmpDir);
+
+    const viewsDir = path.join(tmpDir, 'src', 'views', 'settings');
+    fs.mkdirSync(viewsDir, { recursive: true });
+    fs.writeFileSync(path.join(viewsDir, 'SettingsView.js'), `export default {};\n`);
+    fs.writeFileSync(path.join(viewsDir, 'SettingsForm.js'), `export default {};\n`);
+
+    runGsdTools(['ops', 'map', 'settings'], tmpDir);
+
+    const registryPath = path.join(tmpDir, '.planning', 'ops', 'registry.json');
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+    const entry = registry.areas.find(a => a.slug === 'settings');
+
+    assert.ok(entry.components_count >= 2, 'components_count should be at least 2, got: ' + entry.components_count);
+    assert.ok(entry.last_scanned, 'last_scanned should be set');
+  });
+
+  test('errors on non-existent area', () => {
+    const result = runGsdTools(['ops', 'map', 'nonexistent'], tmpDir);
+    assert.strictEqual(result.success, false, 'Should fail for non-existent area');
+    assert.ok(result.error.includes('not found') || result.error.includes('Area not found'),
+      'Error should mention area not found');
+  });
+
+  test('errors on missing area argument', () => {
+    const result = runGsdTools(['ops', 'map'], tmpDir);
+    assert.strictEqual(result.success, false, 'Should fail without area argument');
+    assert.ok(result.error.includes('Usage'), 'Error should show usage');
+  });
+});
+
 // ─── dispatcher ─────────────────────────────────────────────────────────────
 
 describe('ops dispatcher', () => {
