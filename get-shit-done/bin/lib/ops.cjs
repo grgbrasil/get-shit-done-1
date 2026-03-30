@@ -1316,10 +1316,126 @@ function cmdOpsSpec(cwd, area, args, raw) {
   error('Unknown spec subcommand: ' + subcommand + '. Available: show, edit, add');
 }
 
+// ─── OPS Governance: Backlog ────────────────────────────────────────────────
+
+function readBacklog(cwd, slug) {
+  const backlogPath = path.join(areaDir(cwd, slug), 'backlog.json');
+  if (!fs.existsSync(backlogPath)) return [];
+  try { return JSON.parse(fs.readFileSync(backlogPath, 'utf-8')); } catch (_) { return []; }
+}
+
+function writeBacklog(cwd, slug, items) {
+  ensureAreaDir(cwd, slug);
+  const backlogPath = path.join(areaDir(cwd, slug), 'backlog.json');
+  fs.writeFileSync(backlogPath, JSON.stringify(items, null, 2), 'utf-8');
+}
+
+/**
+ * Manage per-area backlog: list, add, prioritize, promote, done.
+ */
+function cmdOpsBacklog(cwd, area, args, raw) {
+  if (!area) { error('Usage: gsd-tools ops backlog <area> <list|add|prioritize|promote|done> [args]'); return; }
+
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const entry = (registry.areas || []).find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  const subcommand = args[0];
+
+  if (subcommand === 'list') {
+    const items = readBacklog(cwd, slug);
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    const visible = items
+      .filter(i => i.status !== 'done')
+      .sort((a, b) => {
+        const pd = (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1);
+        if (pd !== 0) return pd;
+        return new Date(a.created_at) - new Date(b.created_at);
+      });
+    output({ area: slug, items: visible }, raw);
+    return;
+  }
+
+  if (subcommand === 'add') {
+    const title = args.slice(1).join(' ').trim();
+    if (!title) { error('Usage: gsd-tools ops backlog <area> add <title>'); return; }
+    const items = readBacklog(cwd, slug);
+    const nextId = Math.max(0, ...items.map(i => i.id)) + 1;
+    const newItem = {
+      id: nextId,
+      title,
+      description: null,
+      priority: 'medium',
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      promoted_to: null
+    };
+    items.push(newItem);
+    writeBacklog(cwd, slug, items);
+    output({ success: true, area: slug, item: newItem }, raw);
+    return;
+  }
+
+  if (subcommand === 'prioritize') {
+    const id = parseInt(args[1], 10);
+    const priority = args[2];
+    if (isNaN(id) || !priority) { error('Usage: gsd-tools ops backlog <area> prioritize <id> <high|medium|low>'); return; }
+    if (!['high', 'medium', 'low'].includes(priority)) { error('Priority must be: high, medium, or low'); return; }
+    const items = readBacklog(cwd, slug);
+    const item = items.find(i => i.id === id);
+    if (!item) { error('Item not found: ' + id); return; }
+    item.priority = priority;
+    writeBacklog(cwd, slug, items);
+    output({ success: true, area: slug, item }, raw);
+    return;
+  }
+
+  if (subcommand === 'promote') {
+    const id = parseInt(args[1], 10);
+    if (isNaN(id)) { error('Usage: gsd-tools ops backlog <area> promote <id>'); return; }
+    const items = readBacklog(cwd, slug);
+    const item = items.find(i => i.id === id);
+    if (!item) { error('Item not found: ' + id); return; }
+    item.status = 'promoted';
+    writeBacklog(cwd, slug, items);
+    const tree = readTreeJson(cwd, slug);
+    const context = {
+      area_name: entry.name,
+      item_title: item.title,
+      item_description: item.description,
+      tree_summary: tree
+        ? { nodes_count: tree.nodes.length, edges_count: tree.edges.length }
+        : null,
+      next_steps: [
+        'Use /gsd:quick for small self-contained changes',
+        'Use /ops:feature for larger features requiring a full plan',
+        'Use /ops:modify to analyse impact before changing existing behavior'
+      ]
+    };
+    output({ success: true, area: slug, item, context }, raw);
+    return;
+  }
+
+  if (subcommand === 'done') {
+    const id = parseInt(args[1], 10);
+    if (isNaN(id)) { error('Usage: gsd-tools ops backlog <area> done <id>'); return; }
+    const items = readBacklog(cwd, slug);
+    const item = items.find(i => i.id === id);
+    if (!item) { error('Item not found: ' + id); return; }
+    item.status = 'done';
+    writeBacklog(cwd, slug, items);
+    output({ success: true, area: slug, item }, raw);
+    return;
+  }
+
+  error('Unknown backlog subcommand: ' + subcommand + '. Available: list, add, prioritize, promote, done');
+}
+
 module.exports = {
   cmdOpsInit, cmdOpsMap, cmdOpsAdd, cmdOpsList, cmdOpsGet,
   cmdOpsInvestigate, cmdOpsFeature, cmdOpsModify, cmdOpsDebug, cmdOpsSummary,
-  cmdOpsStatus, cmdOpsSpec,
+  cmdOpsStatus, cmdOpsSpec, cmdOpsBacklog,
   computeAreaStatus,
   appendHistory, computeBlastRadius, refreshTree
 };
