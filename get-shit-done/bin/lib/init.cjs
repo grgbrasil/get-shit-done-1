@@ -131,6 +131,22 @@ function cmdInitExecutePhase(cwd, phase, raw) {
     config_path: toPosixPath(path.relative(cwd, path.join(planningDir(cwd), 'config.json'))),
   };
 
+  // Write function-map-stats.json for Context Engine injection (INT-02)
+  try {
+    const fmapPath = path.join(planningRoot(cwd), 'function-map.json');
+    if (fs.existsSync(fmapPath)) {
+      const mapData = JSON.parse(fs.readFileSync(fmapPath, 'utf-8'));
+      const entries = Object.values(mapData);
+      const byKind = {};
+      for (const e of entries) { byKind[e.kind || 'unknown'] = (byKind[e.kind || 'unknown'] || 0) + 1; }
+      const stats = { total: entries.length, by_kind: byKind, path: fmapPath };
+      const statsPath = path.join(planningRoot(cwd), 'function-map-stats.json');
+      fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2), 'utf-8');
+    }
+  } catch {
+    // Non-fatal: stats file is optional context enrichment
+  }
+
   output(withProjectRoot(cwd, result), raw);
 }
 
@@ -233,6 +249,22 @@ function cmdInitPlanPhase(cwd, phase, raw) {
         result.reviews_path = toPosixPath(path.join(phaseInfo.directory, reviewsFile));
       }
     } catch { /* intentionally empty */ }
+  }
+
+  // Write function-map-stats.json for Context Engine injection (INT-02)
+  try {
+    const fmapPath = path.join(planningRoot(cwd), 'function-map.json');
+    if (fs.existsSync(fmapPath)) {
+      const mapData = JSON.parse(fs.readFileSync(fmapPath, 'utf-8'));
+      const entries = Object.values(mapData);
+      const byKind = {};
+      for (const e of entries) { byKind[e.kind || 'unknown'] = (byKind[e.kind || 'unknown'] || 0) + 1; }
+      const stats = { total: entries.length, by_kind: byKind, path: fmapPath };
+      const statsPath = path.join(planningRoot(cwd), 'function-map-stats.json');
+      fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2), 'utf-8');
+    }
+  } catch {
+    // Non-fatal: stats file is optional context enrichment
   }
 
   output(withProjectRoot(cwd, result), raw);

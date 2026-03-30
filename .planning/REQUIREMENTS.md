@@ -35,7 +35,7 @@
 ### Integration
 
 - [ ] **INT-01**: Todos os componentes se integram com workflow GSD existente (plan-phase, execute-phase, discuss-phase)
-- [ ] **INT-02**: Function Map e injetado no contexto via extensao do Context Engine existente
+- [x] **INT-02**: Function Map e injetado no contexto via extensao do Context Engine existente
 - [ ] **INT-03**: Impact Analysis roda como step obrigatorio dentro do execute-phase (quando ativado pelo usuario)
 - [ ] **INT-04**: Guardrails funcionam com execucao paralela (waves) sem conflitos de escrita
 - [ ] **INT-05**: `/gsd:new-project` inclui pergunta de opt-in para Function Map + Impact Analysis
@@ -140,7 +140,7 @@
 | MODEL-03 | Phase 3 | Complete |
 | MODEL-04 | Phase 3 | Complete |
 | INT-01 | Phase 3 | Pending |
-| INT-02 | Phase 3 | Pending |
+| INT-02 | Phase 3 | Complete |
 | INT-03 | Phase 3 | Pending |
 | INT-04 | Phase 3 | Pending |
 | INT-05 | Phase 3 | Pending |
