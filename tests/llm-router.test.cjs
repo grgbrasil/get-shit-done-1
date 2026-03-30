@@ -67,11 +67,12 @@ describe('llm-router', () => {
   });
 
   describe('buildMessages', () => {
-    it('builds system + user messages from agent prompt and task', () => {
+    it('builds system + user messages with REMOTE_MODE_PREFIX', () => {
       const { buildMessages } = require('../get-shit-done/bin/lib/llm-router.cjs');
       const msgs = buildMessages('You are a helper.', 'Do the thing.', 'context data');
       assert.strictEqual(msgs.length, 2);
       assert.strictEqual(msgs[0].role, 'system');
+      assert.ok(msgs[0].content.includes('REMOTE'));
       assert.ok(msgs[0].content.includes('You are a helper.'));
       assert.strictEqual(msgs[1].role, 'user');
       assert.ok(msgs[1].content.includes('Do the thing.'));
@@ -82,6 +83,38 @@ describe('llm-router', () => {
       const { buildMessages } = require('../get-shit-done/bin/lib/llm-router.cjs');
       const msgs = buildMessages('System prompt', 'Task prompt', '');
       assert.strictEqual(msgs[1].content, 'Task prompt');
+    });
+
+    it('system message instructs not to use tools', () => {
+      const { buildMessages } = require('../get-shit-done/bin/lib/llm-router.cjs');
+      const msgs = buildMessages('Agent prompt', 'Task', '');
+      assert.ok(msgs[0].content.includes('ZERO tool access'));
+      assert.ok(msgs[0].content.includes('MUST NOT output XML'));
+    });
+  });
+
+  describe('sanitizeResponse', () => {
+    it('strips Read/Write tool tags and their content', () => {
+      const { sanitizeResponse } = require('../get-shit-done/bin/lib/llm-router.cjs');
+      const input = '<Read>\n<path>foo.md</path>\n</Read>\n\n# Real Content\nHello';
+      const result = sanitizeResponse(input);
+      assert.ok(!result.includes('<Read>'));
+      assert.ok(result.includes('# Real Content'));
+      assert.ok(result.includes('Hello'));
+    });
+
+    it('strips preamble lines like "I\'ll read the file"', () => {
+      const { sanitizeResponse } = require('../get-shit-done/bin/lib/llm-router.cjs');
+      const input = "I'll read the files to analyze them.\n\n# Summary\nDone";
+      const result = sanitizeResponse(input);
+      assert.ok(!result.includes("I'll read"));
+      assert.ok(result.includes('# Summary'));
+    });
+
+    it('preserves clean content unchanged', () => {
+      const { sanitizeResponse } = require('../get-shit-done/bin/lib/llm-router.cjs');
+      const input = '# Summary\n\nKey findings:\n- Item 1\n- Item 2';
+      assert.strictEqual(sanitizeResponse(input), input);
     });
   });
 
