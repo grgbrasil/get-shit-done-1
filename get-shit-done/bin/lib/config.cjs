@@ -30,6 +30,9 @@ const VALID_CONFIG_KEYS = new Set([
   'project_code', 'phase_naming',
   'manager.flags.discuss', 'manager.flags.plan', 'manager.flags.execute',
   'response_language',
+  'impact_analysis.enabled',
+  'impact_analysis.auto_resolve_threshold',
+  'impact_analysis.escalation_threshold',
 ]);
 
 /**
@@ -41,6 +44,8 @@ function isValidConfigKey(keyPath) {
   if (VALID_CONFIG_KEYS.has(keyPath)) return true;
   // Allow agent_skills.<agent-type> with any agent type string
   if (/^agent_skills\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
+  // Allow model_overrides.<agent-type> with any agent type string
+  if (/^model_overrides\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
   return false;
 }
 
@@ -140,6 +145,12 @@ function buildNewProjectConfig(userChoices) {
     project_code: null,
     phase_naming: 'sequential',
     agent_skills: {},
+    model_overrides: {},
+    impact_analysis: {
+      enabled: false,
+      auto_resolve_threshold: 10,
+      escalation_threshold: 50,
+    },
   };
 
   // Three-level deep merge: hardcoded <- userDefaults <- choices
@@ -166,6 +177,16 @@ function buildNewProjectConfig(userChoices) {
       ...hardcoded.agent_skills,
       ...(userDefaults.agent_skills || {}),
       ...(choices.agent_skills || {}),
+    },
+    model_overrides: {
+      ...hardcoded.model_overrides,
+      ...(userDefaults.model_overrides || {}),
+      ...(choices.model_overrides || {}),
+    },
+    impact_analysis: {
+      ...hardcoded.impact_analysis,
+      ...(userDefaults.impact_analysis || {}),
+      ...(choices.impact_analysis || {}),
     },
   };
 }
@@ -447,4 +468,6 @@ module.exports = {
   cmdConfigGet,
   cmdConfigSetModelProfile,
   cmdConfigNewProject,
+  buildNewProjectConfig,
+  isValidConfigKey,
 };

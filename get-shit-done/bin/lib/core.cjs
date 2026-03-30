@@ -354,7 +354,12 @@ function loadConfig(cwd) {
       phase_naming: get('phase_naming') ?? defaults.phase_naming,
       project_code: get('project_code') ?? defaults.project_code,
       subagent_timeout: get('subagent_timeout', { section: 'workflow', field: 'subagent_timeout' }) ?? defaults.subagent_timeout,
-      model_overrides: parsed.model_overrides || null,
+      model_overrides: parsed.model_overrides || {},
+      impact_analysis: parsed.impact_analysis || {
+        enabled: false,
+        auto_resolve_threshold: 10,
+        escalation_threshold: 50,
+      },
       agent_skills: parsed.agent_skills || {},
       manager: parsed.manager || {},
       response_language: get('response_language') || null,
