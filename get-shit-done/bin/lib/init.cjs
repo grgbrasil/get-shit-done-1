@@ -121,6 +121,10 @@ function cmdInitExecutePhase(cwd, phase, raw) {
     milestone_name: milestone.name,
     milestone_slug: generateSlugInternal(milestone.name),
 
+    // Impact analysis
+    impact_analysis_enabled: config.impact_analysis?.enabled || false,
+    cataloger_model: resolveModelInternal(cwd, 'gsd-cataloger'),
+
     // File existence
     state_exists: fs.existsSync(path.join(planningDir(cwd), 'STATE.md')),
     roadmap_exists: fs.existsSync(path.join(planningDir(cwd), 'ROADMAP.md')),
