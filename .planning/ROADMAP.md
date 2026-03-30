@@ -99,3 +99,50 @@ Phase 1 -> 2 -> 3
 Plans:
 - [x] 04-01-PLAN.md — preflight.cjs module + gsd-tools dispatcher + TDD tests
 - [x] 04-02-PLAN.md — Wire preflight into plan-phase, execute-phase, ui-phase workflows + integration tests
+
+### Phase 5: OPS Foundation — Registry + Mapa do Sistema
+**Goal**: Qualquer agente ou comando pode consultar o mapa completo de uma area do sistema (route→view→component→endpoint→service→model) a partir de um registry central
+**Depends on**: Nothing (independent track)
+**Requirements**: OPS-01, OPS-02, OPS-03, OPS-04
+**Success Criteria** (what must be TRUE):
+  1. `/ops:init` escaneia codebase e produz registry.json com areas detectadas automaticamente
+  2. `/ops:map [area]` produz tree.json com cadeia completa de dependencias da area
+  3. `/ops:add [area]` registra area manual no registry quando auto-deteccao nao cobre
+  4. Dados por area persistem em `.planning/ops/{area}/` com estrutura padrao
+  5. Mapa e consultavel por outros comandos /ops como base de contexto
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: TBD
+- [ ] 05-02: TBD
+
+### Phase 6: OPS Workflows — Operar por area com contexto + planejamento
+**Goal**: Usuario aponta pra uma area e descreve o que quer (investigar, adicionar, modificar, debugar) — sistema usa mapa pra contexto, gera plano GSD, e executa
+**Depends on**: Phase 5
+**Requirements**: OPS-05, OPS-06, OPS-07, OPS-08, OPS-09
+**Success Criteria** (what must be TRUE):
+  1. `/ops:investigate` navega arvore, encontra causa raiz, e propoe fix com contexto completo
+  2. `/ops:feature` gera plano GSD com tarefas derivadas da arvore e executa com garantias
+  3. `/ops:modify` analisa impacto via arvore antes de alterar comportamento existente
+  4. `/ops:debug` fornece contexto completo da area (stack, conexoes, specs) pra facilitar diagnostico
+  5. Toda operacao registra historico e atualiza mapa apos mudancas
+**Plans**: TBD
+
+Plans:
+- [ ] 06-01: TBD
+- [ ] 06-02: TBD
+- [ ] 06-03: TBD
+
+### Phase 7: OPS Governance — Status + Specs + Backlog
+**Goal**: Cada area tem visibilidade de saude, regras explicitas que operacoes validam, e backlog gerenciado
+**Depends on**: Phase 5
+**Requirements**: OPS-10, OPS-11, OPS-12
+**Success Criteria** (what must be TRUE):
+  1. `/ops:status` mostra cobertura de specs, backlog pendente, e mudancas recentes da area
+  2. `/ops:spec` permite criar/editar regras que investigate e feature validam
+  3. `/ops:backlog` gerencia items pendentes com priorizacao e promocao pra execucao
+**Plans**: TBD
+
+Plans:
+- [ ] 07-01: TBD
+- [ ] 07-02: TBD
