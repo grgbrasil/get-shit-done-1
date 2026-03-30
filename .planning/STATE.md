@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Nenhuma execucao pode quebrar silenciosamente o que ja funciona -- mudancas estruturais sao auto-resolvidas, mudancas de comportamento exigem decisao humana.
-**Current focus:** Phase 1: ADR System & Cross-Plan Memory
+**Current focus:** Phase 1: Function Map
 
 ## Current Position
 
-Phase: 1 of 5 (ADR System & Cross-Plan Memory)
+Phase: 1 of 3 (Function Map)
 Plan: 0 of 2 in current phase
 Status: Ready to plan
-Last activity: 2026-03-29 -- Roadmap created
+Last activity: 2026-03-29 -- Roadmap restructured (2 milestones, starting with Impact Analysis)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -42,9 +42,10 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Roadmap]: ADR + Memory grouped in Phase 1 (independent data layers, no Function Map dependency)
-- [Roadmap]: FMAP-08 (opt-in toggle) assigned to Phase 5 Integration, not Phase 2, because it is a workflow UX concern
-- [Research]: Zero new dependencies -- MADR 4.0 templates + flat JSON + Serena MCP + prompt engineering
+- [Milestone split]: Two separate PRs/milestones -- Impact Analysis first (Milestone 1), ADR & Global Memory second (Milestone 2)
+- [Research]: Zero new dependencies -- flat JSON + Serena MCP + prompt engineering
+- [Research]: Function Map staleness is #1 risk -- must update during execution, not just at commit
+- [User]: No poda/truncation -- use cheap model to process full codebase instead
 
 ### Pending Todos
 
@@ -54,9 +55,10 @@ None yet.
 
 - [Research] Serena MCP exact output format for get_symbols_overview needs validation with actual calls
 - [Research] Behavioral vs structural classification prompt needs iterative refinement with real examples
+- [Research] Concurrent wave writes to Function Map need synchronization strategy
 
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Roadmap created, ready to plan Phase 1
+Stopped at: Roadmap restructured, ready to plan Phase 1
 Resume file: None

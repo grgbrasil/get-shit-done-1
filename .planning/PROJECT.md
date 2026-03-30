@@ -1,8 +1,8 @@
-# GSD Guardrails & Global Memory
+# GSD Impact Analysis (Milestone 1)
 
 ## What This Is
 
-Sistema de memória global e análise de impacto para o GSD (Get Shit Done). Resolve o problema de amnésia entre planos/fases e de efeitos colaterais silenciosos quando executores modificam funções compartilhadas. Fork local do GSD que contribui PRs upstream.
+Sistema de análise de impacto mid-execution para o GSD (Get Shit Done). Previne quebra silenciosa quando executores modificam funções compartilhadas — auto-resolve mudanças estruturais, escala mudanças comportamentais ao usuário. Fork local do GSD, entregue como PR upstream. Milestone 2 (ADR & Global Memory) será iniciado após este PR.
 
 ## Core Value
 

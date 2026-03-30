@@ -1,17 +1,9 @@
-# Requirements: GSD Guardrails & Global Memory
+# Requirements: GSD Impact Analysis (Milestone 1)
 
 **Defined:** 2026-03-29
 **Core Value:** Nenhuma execucao pode quebrar silenciosamente o que ja funciona -- mudancas estruturais sao auto-resolvidas, mudancas de comportamento exigem decisao humana.
 
 ## v1 Requirements
-
-### ADR System
-
-- [ ] **ADR-01**: Executor/planner pode criar ADR usando template MADR 4.0 em `.planning/decisions/`
-- [ ] **ADR-02**: ADRs ativos sao injetados automaticamente no contexto de planners e executors via Context Engine
-- [ ] **ADR-03**: ADRs possuem status (proposed, accepted, deprecated, superseded) e apenas ativos sao injetados
-- [ ] **ADR-04**: ADRs persistem entre milestones -- decisoes de milestone N informam milestone N+1
-- [ ] **ADR-05**: Executor verifica se acao planejada contradiz ADR existente antes de executar
 
 ### Function Map
 
@@ -33,13 +25,6 @@
 - [ ] **IMPACT-05**: Cascade de callers -- quando um caller e atualizado, verificar se essa atualizacao impacta callers do caller (1 nivel)
 - [ ] **IMPACT-06**: Apos resolver impactos, Function Map e atualizado com as novas assinaturas/callers
 
-### Cross-Plan Memory
-
-- [ ] **MEM-01**: Memoria estruturada em `.planning/memory/` com decisoes, descobertas e constraints de cada plan
-- [ ] **MEM-02**: Executor e planner leem memoria de plans anteriores antes de agir
-- [ ] **MEM-03**: Executor registra automaticamente decisoes significativas na memoria ao final de cada execucao
-- [ ] **MEM-04**: Memoria possui budget de tokens com estrategia hot/cold -- entradas recentes tem prioridade
-
 ### Model Routing
 
 - [ ] **MODEL-01**: Cada tipo de agente GSD possui model recommendation configuravel (catalogador -> barato, planner -> quality, executor -> balanced)
@@ -50,12 +35,27 @@
 ### Integration
 
 - [ ] **INT-01**: Todos os componentes se integram com workflow GSD existente (plan-phase, execute-phase, discuss-phase)
-- [ ] **INT-02**: Function Map e ADRs sao injetados no contexto via extensao do Context Engine existente
+- [ ] **INT-02**: Function Map e injetado no contexto via extensao do Context Engine existente
 - [ ] **INT-03**: Impact Analysis roda como step obrigatorio dentro do execute-phase (quando ativado pelo usuario)
 - [ ] **INT-04**: Guardrails funcionam com execucao paralela (waves) sem conflitos de escrita
-- [ ] **INT-05**: `/gsd:new-project` inclui pergunta de opt-in para Function Map + Impact Analysis + ADR system
+- [ ] **INT-05**: `/gsd:new-project` inclui pergunta de opt-in para Function Map + Impact Analysis
 
-## v2 Requirements
+## v2 Requirements (Milestone 2: ADR & Global Memory)
+
+### ADR System
+
+- **ADR-01**: Executor/planner pode criar ADR usando template MADR 4.0 em `.planning/decisions/`
+- **ADR-02**: ADRs ativos sao injetados automaticamente no contexto de planners e executors via Context Engine
+- **ADR-03**: ADRs possuem status (proposed, accepted, deprecated, superseded) e apenas ativos sao injetados
+- **ADR-04**: ADRs persistem entre milestones -- decisoes de milestone N informam milestone N+1
+- **ADR-05**: Executor verifica se acao planejada contradiz ADR existente antes de executar
+
+### Cross-Plan Memory
+
+- **MEM-01**: Memoria estruturada em `.planning/memory/` com decisoes, descobertas e constraints de cada plan
+- **MEM-02**: Executor e planner leem memoria de plans anteriores antes de agir
+- **MEM-03**: Executor registra automaticamente decisoes significativas na memoria ao final de cada execucao
+- **MEM-04**: Memoria possui budget de tokens com estrategia hot/cold -- entradas recentes tem prioridade
 
 ### Advanced Impact
 
@@ -91,44 +91,35 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ADR-01 | Phase 1 | Pending |
-| ADR-02 | Phase 1 | Pending |
-| ADR-03 | Phase 1 | Pending |
-| ADR-04 | Phase 1 | Pending |
-| ADR-05 | Phase 1 | Pending |
-| MEM-01 | Phase 1 | Pending |
-| MEM-02 | Phase 1 | Pending |
-| MEM-03 | Phase 1 | Pending |
-| MEM-04 | Phase 1 | Pending |
-| FMAP-01 | Phase 2 | Pending |
-| FMAP-02 | Phase 2 | Pending |
-| FMAP-03 | Phase 2 | Pending |
-| FMAP-04 | Phase 2 | Pending |
-| FMAP-05 | Phase 2 | Pending |
-| FMAP-06 | Phase 2 | Pending |
-| FMAP-07 | Phase 2 | Pending |
-| IMPACT-01 | Phase 3 | Pending |
-| IMPACT-02 | Phase 3 | Pending |
-| IMPACT-03 | Phase 3 | Pending |
-| IMPACT-04 | Phase 3 | Pending |
-| IMPACT-05 | Phase 3 | Pending |
-| IMPACT-06 | Phase 3 | Pending |
-| MODEL-01 | Phase 4 | Pending |
-| MODEL-02 | Phase 4 | Pending |
-| MODEL-03 | Phase 4 | Pending |
-| MODEL-04 | Phase 4 | Pending |
-| INT-01 | Phase 5 | Pending |
-| INT-02 | Phase 5 | Pending |
-| INT-03 | Phase 5 | Pending |
-| INT-04 | Phase 5 | Pending |
-| INT-05 | Phase 5 | Pending |
-| FMAP-08 | Phase 5 | Pending |
+| FMAP-01 | Phase 1 | Pending |
+| FMAP-02 | Phase 1 | Pending |
+| FMAP-03 | Phase 1 | Pending |
+| FMAP-04 | Phase 1 | Pending |
+| FMAP-05 | Phase 1 | Pending |
+| FMAP-06 | Phase 1 | Pending |
+| FMAP-07 | Phase 1 | Pending |
+| IMPACT-01 | Phase 2 | Pending |
+| IMPACT-02 | Phase 2 | Pending |
+| IMPACT-03 | Phase 2 | Pending |
+| IMPACT-04 | Phase 2 | Pending |
+| IMPACT-05 | Phase 2 | Pending |
+| IMPACT-06 | Phase 2 | Pending |
+| MODEL-01 | Phase 3 | Pending |
+| MODEL-02 | Phase 3 | Pending |
+| MODEL-03 | Phase 3 | Pending |
+| MODEL-04 | Phase 3 | Pending |
+| INT-01 | Phase 3 | Pending |
+| INT-02 | Phase 3 | Pending |
+| INT-03 | Phase 3 | Pending |
+| INT-04 | Phase 3 | Pending |
+| INT-05 | Phase 3 | Pending |
+| FMAP-08 | Phase 3 | Pending |
 
 **Coverage:**
-- v1 requirements: 31 total (FMAP-08 assigned to Phase 5 as integration concern)
-- Mapped to phases: 31/31
+- v1 requirements: 23 total
+- Mapped to phases: 23/23
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-29*
-*Last updated: 2026-03-29 after roadmap creation*
+*Last updated: 2026-03-29 after milestone split*
