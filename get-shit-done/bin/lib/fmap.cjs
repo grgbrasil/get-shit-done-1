@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { output, error, planningRoot, toPosixPath } = require('./core.cjs');
 
 const FMAP_FILENAME = 'function-map.json';
@@ -132,4 +133,51 @@ function cmdFmapFullScan(cwd, raw) {
   }, raw);
 }
 
-module.exports = { cmdFmapGet, cmdFmapUpdate, cmdFmapStats, cmdFmapFullScan };
+/**
+ * Detect files changed since last commit (both staged and unstaged).
+ * Used by gsd-cataloger for incremental updates (FMAP-05, D-04).
+ * Returns JSON array of changed file paths (POSIX-normalized, relative to project root).
+ */
+function cmdFmapChangedFiles(cwd, args, raw) {
+  const codeExtensions = ['.ts', '.js', '.cjs', '.mjs', '.tsx', '.jsx', '.vue', '.php', '.py', '.rb', '.go', '.rs', '.java'];
+
+  let files = new Set();
+
+  try {
+    // Unstaged + staged changes vs HEAD
+    const diffHead = execSync('git diff --name-only HEAD 2>/dev/null || true', { cwd, encoding: 'utf-8' }).trim();
+    if (diffHead) diffHead.split('\n').forEach(f => files.add(f));
+  } catch { /* no git or no HEAD */ }
+
+  try {
+    // Staged changes (for files added but not yet committed)
+    const diffCached = execSync('git diff --name-only --cached 2>/dev/null || true', { cwd, encoding: 'utf-8' }).trim();
+    if (diffCached) diffCached.split('\n').forEach(f => files.add(f));
+  } catch { /* no git */ }
+
+  try {
+    // Untracked new files
+    const untracked = execSync('git ls-files --others --exclude-standard 2>/dev/null || true', { cwd, encoding: 'utf-8' }).trim();
+    if (untracked) untracked.split('\n').forEach(f => files.add(f));
+  } catch { /* no git */ }
+
+  // If --since-commit <hash> is passed, use diff from that commit to HEAD instead
+  const sinceIdx = args ? args.indexOf('--since-commit') : -1;
+  if (sinceIdx !== -1 && args[sinceIdx + 1]) {
+    files = new Set();
+    try {
+      const diffSince = execSync(`git diff --name-only ${args[sinceIdx + 1]} HEAD 2>/dev/null || true`, { cwd, encoding: 'utf-8' }).trim();
+      if (diffSince) diffSince.split('\n').forEach(f => files.add(f));
+    } catch { /* bad commit ref */ }
+  }
+
+  // Filter to code files only
+  const codeFiles = [...files]
+    .filter(f => codeExtensions.some(ext => f.endsWith(ext)))
+    .map(f => toPosixPath(f))
+    .sort();
+
+  output({ files: codeFiles, count: codeFiles.length }, raw);
+}
+
+module.exports = { cmdFmapGet, cmdFmapUpdate, cmdFmapStats, cmdFmapFullScan, cmdFmapChangedFiles };
