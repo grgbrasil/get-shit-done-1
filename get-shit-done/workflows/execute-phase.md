@@ -66,7 +66,7 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 AGENT_SKILLS=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" agent-skills gsd-executor 2>/dev/null)
 ```
 
-Parse JSON for: `executor_model`, `verifier_model`, `commit_docs`, `parallelization`, `branching_strategy`, `branch_name`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `plans`, `incomplete_plans`, `plan_count`, `incomplete_count`, `state_exists`, `roadmap_exists`, `phase_req_ids`, `response_language`.
+Parse JSON for: `executor_model`, `verifier_model`, `commit_docs`, `parallelization`, `branching_strategy`, `branch_name`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `plans`, `incomplete_plans`, `plan_count`, `incomplete_count`, `state_exists`, `roadmap_exists`, `phase_req_ids`, `response_language`, `impact_analysis_enabled`, `cataloger_model`.
 
 **If `response_language` is set:** Include `response_language: {value}` in all spawned subagent prompts so any user-facing output stays in the configured language.
 
@@ -537,6 +537,38 @@ Execute each selected wave in sequence. Within a wave: parallel if `PARALLELIZAT
    Where `WAVE_PLAN_IDS` is the space-separated list of plan IDs that completed in this wave.
 
    **If `workflow.use_worktrees` is `false`:** Sequential agents already updated STATE.md and ROADMAP.md themselves — skip this step.
+
+5.7. **Post-wave Function Map update (when impact analysis enabled):**
+
+   **Skip if** the init JSON field `impact_analysis_enabled` is `false` or absent.
+
+   After each wave completes, update the Function Map with changes from that wave.
+   This ensures the impact guard hook has fresh data for the next wave's agents.
+
+   **Wave start commit capture:** Before spawning wave N agents (step 1), capture:
+   ```bash
+   WAVE_START_COMMIT=$(git rev-parse HEAD)
+   ```
+
+   After the wave completes (after step 4), check for changed code files:
+   ```bash
+   # Capture changed code files from this wave
+   CHANGED=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" fmap changed-files --since-commit ${WAVE_START_COMMIT})
+   CHANGED_COUNT=$(echo "$CHANGED" | node -e "d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{console.log(JSON.parse(d).count)}catch{console.log(0)}})")
+   ```
+
+   If `CHANGED_COUNT` > 0, spawn a cataloger subagent:
+   ```
+   Task(
+     subagent_type="gsd-cataloger",
+     model="{cataloger_model}",
+     prompt="Update Function Map for files changed in Wave ${WAVE_NUMBER}. Files: ${CHANGED_FILES}. Use gsd-tools fmap update --data to merge entries. Use gsd-tools fmap get to check existing entries first."
+   )
+   ```
+
+   Log: `Function Map updated: {CHANGED_COUNT} files cataloged after Wave {N}`
+
+   If `CHANGED_COUNT` is 0, skip silently.
 
 6. **Report completion — spot-check claims first:**
 
