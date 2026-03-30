@@ -133,9 +133,6 @@
  *   init milestone-op                  All context for milestone operations
  *   init map-codebase                  All context for map-codebase workflow
  *   init progress                      All context for progress workflow
- *
- * Pre-flight Checks:
- *   preflight <command> <phase>       Check prerequisites for a phase command
  */
 
 const fs = require('fs');
@@ -155,8 +152,6 @@ const frontmatter = require('./lib/frontmatter.cjs');
 const profilePipeline = require('./lib/profile-pipeline.cjs');
 const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
-const fmap = require('./lib/fmap.cjs');
-const preflight = require('./lib/preflight.cjs');
 const ops = require('./lib/ops.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
@@ -916,26 +911,6 @@ async function runCommand(command, args, cwd, raw) {
       break;
     }
 
-    case 'fmap': {
-      const subcommand = args[1];
-      if (subcommand === 'get') {
-        fmap.cmdFmapGet(cwd, args[2], raw);
-      } else if (subcommand === 'update') {
-        fmap.cmdFmapUpdate(cwd, args.slice(2), raw);
-      } else if (subcommand === 'stats') {
-        fmap.cmdFmapStats(cwd, raw);
-      } else if (subcommand === 'full-scan') {
-        fmap.cmdFmapFullScan(cwd, raw);
-      } else if (subcommand === 'changed-files') {
-        fmap.cmdFmapChangedFiles(cwd, args.slice(2), raw);
-      } else if (subcommand === 'impact') {
-        fmap.cmdFmapImpact(cwd, args[2], raw);
-      } else {
-        error(`Unknown fmap subcommand: ${subcommand}`);
-      }
-      break;
-    }
-
     case 'ops': {
       const subcommand = args[1];
       if (subcommand === 'init') {
@@ -948,19 +923,19 @@ async function runCommand(command, args, cwd, raw) {
         ops.cmdOpsList(cwd, raw);
       } else if (subcommand === 'get') {
         ops.cmdOpsGet(cwd, args[2], raw);
+      } else if (subcommand === 'investigate') {
+        ops.cmdOpsInvestigate(cwd, args[2], args.slice(3).join(' '), raw);
+      } else if (subcommand === 'feature') {
+        ops.cmdOpsFeature(cwd, args[2], args.slice(3).join(' '), raw);
+      } else if (subcommand === 'modify') {
+        ops.cmdOpsModify(cwd, args[2], args.slice(3).join(' '), raw);
+      } else if (subcommand === 'debug') {
+        ops.cmdOpsDebug(cwd, args[2], args.slice(3).join(' '), raw);
+      } else if (subcommand === 'summary') {
+        ops.cmdOpsSummary(cwd, raw);
       } else {
         error(`Unknown ops subcommand: ${subcommand}`);
       }
-      break;
-    }
-
-    case 'preflight': {
-      const preflightCmd = args[1];
-      const preflightPhase = args[2];
-      if (!preflightCmd || !preflightPhase) {
-        error('Usage: gsd-tools preflight <command> <phase>');
-      }
-      preflight.cmdPreflight(cwd, preflightCmd, preflightPhase, raw);
       break;
     }
 

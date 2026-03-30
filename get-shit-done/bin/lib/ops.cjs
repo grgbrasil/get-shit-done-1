@@ -14,6 +14,7 @@ const { output, error, planningRoot, generateSlugInternal } = require('./core.cj
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const REGISTRY_FILENAME = 'registry.json';
+const BLAST_RADIUS_THRESHOLD = 5;
 
 const FRAMEWORK_PATTERNS = {
   'vue-router': {
@@ -677,4 +678,237 @@ function cmdOpsMap(cwd, area, raw) {
   }, raw);
 }
 
-module.exports = { cmdOpsInit, cmdOpsMap, cmdOpsAdd, cmdOpsList, cmdOpsGet };
+// ─── Shared Workflow Helpers ───────────────────────────────────────────────
+
+/**
+ * appendHistory — Append an operation entry to an area's history.json (OPS-09).
+ */
+function appendHistory(cwd, slug, entry) {
+  ensureAreaDir(cwd, slug);
+  const historyPath = path.join(areaDir(cwd, slug), 'history.json');
+  let history = [];
+  if (fs.existsSync(historyPath)) {
+    try {
+      history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+    } catch {
+      history = [];
+    }
+  }
+  history.push({
+    ...entry,
+    area: slug,
+    timestamp: new Date().toISOString()
+  });
+  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2), 'utf-8');
+}
+
+/**
+ * computeBlastRadius — Evaluate cross-area impact of a tree (D-04).
+ * Returns { total_nodes, cross_area_edges, affected_nodes, needs_full_plan }.
+ */
+function computeBlastRadius(tree) {
+  const nodeMap = new Map();
+  for (const node of tree.nodes) {
+    nodeMap.set(node.id, node);
+  }
+
+  const crossAreaEdges = (tree.edges || []).filter(edge => {
+    const fromNode = nodeMap.get(edge.from);
+    const toNode = nodeMap.get(edge.to);
+    if (!fromNode || !toNode) return false;
+    const fromPrefix = fromNode.file_path.split('/').slice(0, 2).join('/');
+    const toPrefix = toNode.file_path.split('/').slice(0, 2).join('/');
+    return fromPrefix !== toPrefix;
+  });
+
+  return {
+    total_nodes: tree.nodes.length,
+    cross_area_edges: crossAreaEdges.length,
+    affected_nodes: tree.nodes.length,
+    needs_full_plan: crossAreaEdges.length > 0 || tree.nodes.length > BLAST_RADIUS_THRESHOLD
+  };
+}
+
+/**
+ * refreshTree — Re-generate tree.json for an area (D-12). Non-fatal on failure.
+ */
+function refreshTree(cwd, slug) {
+  try {
+    const registry = readRegistry(cwd);
+    const entry = registry.areas.find(a => a.slug === slug);
+    if (!entry) {
+      error('refreshTree: area not found in registry: ' + slug);
+      return;
+    }
+    // Delegate to cmdOpsMap logic but suppress output
+    // Re-use the mapping logic inline
+    const projectFiles = listProjectFiles(cwd);
+    let areaFiles;
+
+    if (entry.detected_by === 'route' || (Array.isArray(entry.detected_by) && entry.detected_by.includes('route'))) {
+      const routeFiles = projectFiles.filter(f => {
+        const lower = f.toLowerCase();
+        return /\/routes?\//.test(lower) || /\/router\//.test(lower);
+      });
+      const relevantRouteFiles = routeFiles.filter(f => {
+        try {
+          const content = fs.readFileSync(path.join(cwd, f), 'utf-8');
+          return content.includes('/' + entry.name) || content.includes('/' + slug);
+        } catch {
+          return false;
+        }
+      });
+      if (relevantRouteFiles.length > 0) {
+        areaFiles = followImports(relevantRouteFiles, projectFiles, cwd, 3);
+      } else {
+        areaFiles = projectFiles.filter(f => {
+          const lower = f.toLowerCase();
+          return lower.includes('/' + slug + '/') || lower.includes('/' + slug + '.') ||
+                 lower.includes('/' + entry.name.toLowerCase() + '/') || lower.includes('/' + entry.name.toLowerCase() + '.');
+        });
+      }
+    } else if (entry.detected_by === 'directory') {
+      const seedFiles = projectFiles.filter(f => {
+        const lower = f.toLowerCase();
+        return lower.includes('/' + slug + '/') || lower.includes('/' + slug + '.') ||
+               lower.includes('/' + entry.name.toLowerCase() + '/') || lower.includes('/' + entry.name.toLowerCase() + '.');
+      });
+      areaFiles = followImports(seedFiles, projectFiles, cwd, 3);
+    } else {
+      const seedFiles = projectFiles.filter(f => {
+        const lower = f.toLowerCase();
+        return lower.includes('/' + slug + '/') || lower.includes('/' + slug + '.');
+      });
+      areaFiles = followImports(seedFiles, projectFiles, cwd, 3);
+    }
+
+    const nodeMap = new Map();
+    for (const filePath of areaFiles) {
+      const type = classifyFileType(filePath);
+      const name = extractNodeName(filePath);
+      const id = buildNodeId(type, name);
+      nodeMap.set(filePath, { id, type, file_path: filePath, name, metadata: {} });
+    }
+    const nodes = Array.from(nodeMap.values());
+    const edges = [];
+    const nodeByFile = new Map();
+    for (const filePath of areaFiles) {
+      nodeByFile.set(filePath, nodeMap.get(filePath));
+    }
+    for (const filePath of areaFiles) {
+      const sourceNode = nodeMap.get(filePath);
+      const imported = scanImports(filePath, projectFiles, cwd);
+      for (const imp of imported) {
+        const targetNode = nodeByFile.get(imp);
+        if (targetNode && targetNode.id !== sourceNode.id) {
+          edges.push({
+            from: sourceNode.id,
+            to: targetNode.id,
+            type: inferEdgeType(sourceNode.type, targetNode.type)
+          });
+        }
+      }
+    }
+
+    const tree = { area: slug, generated_at: new Date().toISOString(), nodes, edges };
+    writeTreeJson(cwd, slug, tree);
+
+    const now = new Date().toISOString();
+    entry.last_scanned = now;
+    entry.components_count = nodes.length;
+    writeRegistry(cwd, registry);
+  } catch (err) {
+    error('refreshTree failed (non-fatal): ' + (err.message || err));
+  }
+}
+
+/**
+ * cmdOpsSummary — Output enriched summary of all areas (D-01/D-02).
+ */
+function cmdOpsSummary(cwd, raw) {
+  const registry = readRegistry(cwd);
+  if (!registry.areas || registry.areas.length === 0) {
+    output({ areas_count: 0, areas: [] }, raw);
+    return;
+  }
+
+  const enriched = registry.areas.map(area => {
+    const tree = readTreeJson(cwd, area.slug);
+    if (!tree) {
+      return {
+        slug: area.slug,
+        name: area.name,
+        components: area.components_count || 0,
+        last_scanned: area.last_scanned,
+        nodes_by_type: {},
+        edges_count: 0,
+        cross_refs: []
+      };
+    }
+
+    // Compute nodes_by_type
+    const nodesByType = {};
+    for (const node of tree.nodes || []) {
+      nodesByType[node.type] = (nodesByType[node.type] || 0) + 1;
+    }
+
+    // Build node map for cross-ref detection
+    const nodeMap = new Map();
+    for (const node of tree.nodes || []) {
+      nodeMap.set(node.id, node);
+    }
+
+    // Compute cross_refs: unique dir prefixes from edge targets in different areas
+    const crossRefSet = new Set();
+    for (const edge of tree.edges || []) {
+      const fromNode = nodeMap.get(edge.from);
+      const toNode = nodeMap.get(edge.to);
+      if (!fromNode || !toNode) continue;
+      const fromPrefix = fromNode.file_path.split('/').slice(0, 2).join('/');
+      const toPrefix = toNode.file_path.split('/').slice(0, 2).join('/');
+      if (fromPrefix !== toPrefix) {
+        crossRefSet.add(toPrefix);
+      }
+    }
+
+    return {
+      slug: area.slug,
+      name: area.name,
+      components: area.components_count || 0,
+      last_scanned: area.last_scanned,
+      nodes_by_type: nodesByType,
+      edges_count: (tree.edges || []).length,
+      cross_refs: Array.from(crossRefSet)
+    };
+  });
+
+  output({ areas_count: enriched.length, areas: enriched }, raw);
+}
+
+// ─── Stub Commands (Plan 02/03 will implement) ────────────────────────────
+
+function cmdOpsInvestigate(cwd, area, description, raw) {
+  if (!area) { error('Usage: gsd-tools ops investigate <area> <description>'); return; }
+  error('Not yet implemented: ops investigate');
+}
+
+function cmdOpsFeature(cwd, area, description, raw) {
+  if (!area) { error('Usage: gsd-tools ops feature <area> <description>'); return; }
+  error('Not yet implemented: ops feature');
+}
+
+function cmdOpsModify(cwd, area, description, raw) {
+  if (!area) { error('Usage: gsd-tools ops modify <area> <description>'); return; }
+  error('Not yet implemented: ops modify');
+}
+
+function cmdOpsDebug(cwd, area, description, raw) {
+  if (!area) { error('Usage: gsd-tools ops debug <area> <description>'); return; }
+  error('Not yet implemented: ops debug');
+}
+
+module.exports = {
+  cmdOpsInit, cmdOpsMap, cmdOpsAdd, cmdOpsList, cmdOpsGet,
+  cmdOpsInvestigate, cmdOpsFeature, cmdOpsModify, cmdOpsDebug, cmdOpsSummary,
+  appendHistory, computeBlastRadius, refreshTree
+};
