@@ -982,19 +982,19 @@ async function runCommand(command, args, cwd, raw) {
         ops.cmdOpsList(cwd, raw);
       } else if (subcommand === 'get') {
         ops.cmdOpsGet(cwd, args[2], raw);
+      } else if (subcommand === 'investigate') {
+        ops.cmdOpsInvestigate(cwd, args[2], args.slice(3).join(' '), raw);
+      } else if (subcommand === 'feature') {
+        ops.cmdOpsFeature(cwd, args[2], args.slice(3).join(' '), raw);
+      } else if (subcommand === 'modify') {
+        ops.cmdOpsModify(cwd, args[2], args.slice(3).join(' '), raw);
+      } else if (subcommand === 'debug') {
+        ops.cmdOpsDebug(cwd, args[2], args.slice(3).join(' '), raw);
+      } else if (subcommand === 'summary') {
+        ops.cmdOpsSummary(cwd, raw);
       } else {
         error(`Unknown ops subcommand: ${subcommand}`);
       }
-      break;
-    }
-
-    case 'preflight': {
-      const preflightCmd = args[1];
-      const preflightPhase = args[2];
-      if (!preflightCmd || !preflightPhase) {
-        error('Usage: gsd-tools preflight <command> <phase>');
-      }
-      preflight.cmdPreflight(cwd, preflightCmd, preflightPhase, raw);
       break;
     }
 
