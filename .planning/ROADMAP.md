@@ -50,7 +50,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — fmap impact CLI subcommand + normalizeSignature helper + TDD tests
-- [ ] 02-02-PLAN.md — PreToolUse hook (gsd-impact-guard.js) + executor prompt impact analysis protocol + install.js registration
+- [x] 02-02-PLAN.md — PreToolUse hook (gsd-impact-guard.js) + executor prompt impact analysis protocol + install.js registration
 
 ### Phase 3: Model Routing & Integration
 **Goal**: Cataloger runs on cheap model, all Impact Analysis components wired into GSD workflows, opt-in toggle in new-project
@@ -82,3 +82,13 @@ Phase 1 -> 2 -> 3
 | 1. Function Map | 0/2 | Not started | - |
 | 2. Impact Analysis | 0/2 | Not started | - |
 | 3. Model Routing & Integration | 0/3 | Not started | - |
+
+### Phase 4: Pre-flight dependency resolver for phase commands
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 3
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 4 to break down)
