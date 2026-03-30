@@ -23,6 +23,7 @@ Nenhuma execução pode quebrar silenciosamente o que já funciona — mudanças
 - [x] Escalação para o usuário quando mudança altera lógica de negócio/comportamento semântico (Validated in Phase 02: impact-analysis)
 - [ ] Memória cross-plan — decisões e descobertas de um plan acessíveis por todos os plans subsequentes
 - [ ] Integração com workflow GSD existente (plan-phase, execute-phase, discuss-phase)
+- [ ] Sistema /ops — mapa do sistema por area com comandos de investigação, feature, modify, debug, specs e backlog
 
 ### Out of Scope
 
@@ -76,4 +77,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-30 after Phase 02 completion*
+*Last updated: 2026-03-30 after OPS phases (5-7) added to roadmap*

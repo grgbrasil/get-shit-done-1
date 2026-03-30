@@ -84,6 +84,27 @@
 - **TOOL-V2-02**: Comando `/gsd:decisions` para listar/buscar ADRs
 - **TOOL-V2-03**: Visualizacao do Function Map via CLI (tree de dependencias)
 
+### OPS Foundation
+
+- [ ] **OPS-01**: `/ops:init` escaneia codebase e constroi mapa do sistema — agrupa codigo por tela/feature detectando routes, views, endpoints, services, models
+- [ ] **OPS-02**: `/ops:map [area]` reconstroi arvore de dependencias de uma area (view→component→endpoint→service→model→table)
+- [ ] **OPS-03**: `/ops:add [area]` registra nova area manualmente quando auto-deteccao nao cobre
+- [ ] **OPS-04**: Dados por area persistem em `.planning/ops/{area}/` com tree, specs, backlog e historico
+
+### OPS Workflows
+
+- [ ] **OPS-05**: `/ops:investigate [area/problema]` recebe descricao natural, navega o mapa, diagnostica causa raiz com contexto completo
+- [ ] **OPS-06**: `/ops:feature [area] [descricao]` adiciona capacidade nova — gera plano GSD usando contexto da arvore e executa
+- [ ] **OPS-07**: `/ops:modify [area] [o que]` altera comportamento existente com analise de impacto derivada da arvore
+- [ ] **OPS-08**: `/ops:debug [area] [sintoma]` facilita debugging dando contexto completo da area (o que existe, como conecta, specs)
+- [ ] **OPS-09**: Toda operacao registra historico e atualiza mapa apos mudancas
+
+### OPS Governance
+
+- [ ] **OPS-10**: `/ops:status [area]` mostra saude — cobertura de specs, backlog pendente, mudancas recentes
+- [ ] **OPS-11**: `/ops:spec [area]` gerencia regras/contratos da area que operacoes validam
+- [ ] **OPS-12**: `/ops:backlog [area]` gerencia items pendentes — adicionar, priorizar, promover
+
 ## Out of Scope
 
 | Feature | Reason |
@@ -132,11 +153,24 @@
 | PF-06 | Phase 4 | Complete |
 | PF-07 | Phase 4 | Complete |
 
+| OPS-01 | Phase 5 | Pending |
+| OPS-02 | Phase 5 | Pending |
+| OPS-03 | Phase 5 | Pending |
+| OPS-04 | Phase 5 | Pending |
+| OPS-05 | Phase 6 | Pending |
+| OPS-06 | Phase 6 | Pending |
+| OPS-07 | Phase 6 | Pending |
+| OPS-08 | Phase 6 | Pending |
+| OPS-09 | Phase 6 | Pending |
+| OPS-10 | Phase 7 | Pending |
+| OPS-11 | Phase 7 | Pending |
+| OPS-12 | Phase 7 | Pending |
+
 **Coverage:**
-- v1 requirements: 30 total
-- Mapped to phases: 30/30
+- v1 requirements: 42 total
+- Mapped to phases: 42/42
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-29*
-*Last updated: 2026-03-30 after Phase 4 planning*
+*Last updated: 2026-03-30 after OPS phases added*
