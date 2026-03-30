@@ -740,6 +740,7 @@ export interface ContextFiles {
   config?: string;
   plan?: string;
   summary?: string;
+  functionMapStats?: string;
 }
 
 /**
