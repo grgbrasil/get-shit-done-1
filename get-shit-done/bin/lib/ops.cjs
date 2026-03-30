@@ -885,12 +885,155 @@ function cmdOpsSummary(cwd, raw) {
   output({ areas_count: enriched.length, areas: enriched }, raw);
 }
 
-// ─── Stub Commands (Plan 02/03 will implement) ────────────────────────────
+// ─── Workflow Commands ────────────────────────────────────────────────────
 
+/**
+ * cmdOpsInvestigate — Load full tree context for autonomous investigation (OPS-05, D-03, D-07).
+ * Outputs JSON with full tree for agent consumption. Records history per OPS-09.
+ */
 function cmdOpsInvestigate(cwd, area, description, raw) {
   if (!area) { error('Usage: gsd-tools ops investigate <area> <description>'); return; }
-  error('Not yet implemented: ops investigate');
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const entry = registry.areas.find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  const tree = readTreeJson(cwd, slug);
+  if (!tree) { error('No tree.json for area: ' + slug + '. Run /ops:map first.'); return; }
+
+  // Per D-03/D-07: investigate loads full tree for deep traversal
+  const diagnosisPath = path.join(areaDir(cwd, slug), 'diagnosis.md');
+
+  // Record history per OPS-09
+  appendHistory(cwd, slug, {
+    op: 'investigate',
+    summary: description || 'Investigation initiated',
+    outcome: 'success'
+  });
+
+  // Post-op tree refresh per D-12
+  refreshTree(cwd, slug);
+
+  output({
+    success: true,
+    area: slug,
+    description: description || '',
+    tree_path: path.join('.planning/ops', slug, 'tree.json'),
+    diagnosis_path: path.relative(cwd, diagnosisPath),
+    context: {
+      nodes: tree.nodes.length,
+      edges: tree.edges.length,
+      tree: tree  // Full tree for agent consumption per D-03
+    }
+  }, raw);
 }
+
+/**
+ * cmdOpsDebug — Emit context-pack.md with area context for composable debugging (OPS-08, D-08, D-09).
+ * Does NOT duplicate /gsd:debug — only contributes OPS-specific context.
+ */
+function cmdOpsDebug(cwd, area, symptom, raw) {
+  if (!area) { error('Usage: gsd-tools ops debug <area> <symptom>'); return; }
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const entry = registry.areas.find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  const tree = readTreeJson(cwd, slug);
+  // tree may be null — debug can still provide registry context
+
+  // Build context-pack.md per D-08
+  const sections = [];
+
+  // ## Area Overview
+  sections.push('## Area Overview\n');
+  sections.push(`- **Area:** ${entry.name} (${slug})`);
+  sections.push(`- **Source:** ${entry.source || 'unknown'}`);
+  sections.push(`- **Detected by:** ${entry.detected_by || 'unknown'}`);
+  sections.push(`- **Components:** ${entry.components_count || 0}`);
+  sections.push(`- **Last scanned:** ${entry.last_scanned || 'never'}`);
+  if (symptom) sections.push(`- **Reported symptom:** ${symptom}`);
+  sections.push('');
+
+  // ## Dependency Chain (route -> model)
+  sections.push('## Dependency Chain\n');
+  if (tree) {
+    const typeOrder = ['route', 'view', 'component', 'endpoint', 'service', 'model', 'table'];
+    for (const type of typeOrder) {
+      const nodesOfType = tree.nodes.filter(n => n.type === type);
+      if (nodesOfType.length > 0) {
+        sections.push(`### ${type} (${nodesOfType.length})`);
+        for (const n of nodesOfType) {
+          const outEdges = tree.edges.filter(e => e.from === n.id);
+          const targets = outEdges.map(e => e.to).join(', ');
+          sections.push(`- \`${n.file_path}\` ${targets ? '-> ' + targets : ''}`);
+        }
+        sections.push('');
+      }
+    }
+    // Any types not in the standard order
+    const coveredTypes = new Set(typeOrder);
+    const otherNodes = tree.nodes.filter(n => !coveredTypes.has(n.type));
+    if (otherNodes.length > 0) {
+      sections.push(`### other (${otherNodes.length})`);
+      for (const n of otherNodes) {
+        sections.push(`- \`${n.file_path}\` (${n.type})`);
+      }
+      sections.push('');
+    }
+  } else {
+    sections.push('_No tree.json available. Run /ops:map first for full dependency chain._\n');
+  }
+
+  // ## Specs
+  sections.push('## Specs\n');
+  const specsPath = path.join(areaDir(cwd, slug), 'specs.md');
+  if (fs.existsSync(specsPath)) {
+    sections.push(fs.readFileSync(specsPath, 'utf-8'));
+  } else {
+    sections.push('_No specs defined for this area. Use /ops:spec to create._\n');
+  }
+
+  // ## Recent History
+  sections.push('## Recent History\n');
+  const historyPath = path.join(areaDir(cwd, slug), 'history.json');
+  if (fs.existsSync(historyPath)) {
+    try {
+      const history = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+      const recent = history.slice(-10);
+      for (const h of recent) {
+        sections.push(`- **${h.op}** (${h.timestamp}) — ${h.summary} [${h.outcome}]`);
+      }
+    } catch { sections.push('_History file corrupted._'); }
+  } else {
+    sections.push('_No operation history for this area._');
+  }
+  sections.push('');
+
+  // Write context-pack.md
+  const contextPackPath = path.join(areaDir(cwd, slug), 'context-pack.md');
+  ensureAreaDir(cwd, slug);
+  const content = `# Context Pack: ${entry.name}\n\n**Generated:** ${new Date().toISOString()}\n**Symptom:** ${symptom || 'not specified'}\n\n${sections.join('\n')}`;
+  fs.writeFileSync(contextPackPath, content, 'utf-8');
+
+  // Record history per OPS-09
+  appendHistory(cwd, slug, {
+    op: 'debug',
+    summary: symptom || 'Debug context emitted',
+    outcome: 'success'
+  });
+
+  // Post-op tree refresh per D-12
+  refreshTree(cwd, slug);
+
+  output({
+    success: true,
+    area: slug,
+    context_pack_path: path.relative(cwd, contextPackPath)
+  }, raw);
+}
+
+// ─── Stub Commands (Plan 03 will implement) ──────────────────────────────
 
 function cmdOpsFeature(cwd, area, description, raw) {
   if (!area) { error('Usage: gsd-tools ops feature <area> <description>'); return; }
@@ -900,11 +1043,6 @@ function cmdOpsFeature(cwd, area, description, raw) {
 function cmdOpsModify(cwd, area, description, raw) {
   if (!area) { error('Usage: gsd-tools ops modify <area> <description>'); return; }
   error('Not yet implemented: ops modify');
-}
-
-function cmdOpsDebug(cwd, area, description, raw) {
-  if (!area) { error('Usage: gsd-tools ops debug <area> <description>'); return; }
-  error('Not yet implemented: ops debug');
 }
 
 module.exports = {
