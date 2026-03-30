@@ -996,6 +996,8 @@ async function runCommand(command, args, cwd, raw) {
         ops.cmdOpsStatus(cwd, args[2], raw);
       } else if (subcommand === 'spec') {
         ops.cmdOpsSpec(cwd, args[2], args.slice(3), raw);
+      } else if (subcommand === 'backlog') {
+        ops.cmdOpsBacklog(cwd, args[2], args.slice(3), raw);
       } else {
         error(`Unknown ops subcommand: ${subcommand}`);
       }
