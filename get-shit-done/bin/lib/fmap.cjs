@@ -180,4 +180,53 @@ function cmdFmapChangedFiles(cwd, args, raw) {
   output({ files: codeFiles, count: codeFiles.length }, raw);
 }
 
-module.exports = { cmdFmapGet, cmdFmapUpdate, cmdFmapStats, cmdFmapFullScan, cmdFmapChangedFiles };
+/**
+ * Normalize a function signature for reliable structural comparison.
+ * Collapses whitespace (including newlines), removes trailing semicolons,
+ * and normalizes spacing around parentheses and return type colon.
+ */
+function normalizeSignature(sig) {
+  let s = sig;
+  // Replace newlines and carriage returns with spaces
+  s = s.replace(/[\n\r]/g, ' ');
+  // Collapse multiple spaces to single space
+  s = s.replace(/\s+/g, ' ');
+  // Remove spaces after ( and before )
+  s = s.replace(/\(\s+/g, '(');
+  s = s.replace(/\s+\)/g, ')');
+  // Remove spaces before : in return type position (after ))
+  s = s.replace(/\)\s+:/g, '):');
+  // Remove trailing semicolons
+  s = s.replace(/\s*;$/, '');
+  // Trim
+  return s.trim();
+}
+
+/**
+ * Return a pre-edit impact snapshot for a function map entry.
+ * Returns callers, signature, purpose, caller_count, and calls.
+ */
+function cmdFmapImpact(cwd, key, raw) {
+  if (!key) {
+    error('fmap impact requires a key argument');
+    return;
+  }
+  const map = readMap(cwd);
+  const normalized = normalizeKey(key);
+  if (!(normalized in map)) {
+    output({ key: normalized, found: false, callers: [], caller_count: 0 }, raw);
+    return;
+  }
+  const entry = map[normalized];
+  output({
+    key: normalized,
+    found: true,
+    signature: entry.signature,
+    purpose: entry.purpose,
+    callers: entry.callers || [],
+    caller_count: (entry.callers || []).length,
+    calls: entry.calls || [],
+  }, raw);
+}
+
+module.exports = { cmdFmapGet, cmdFmapUpdate, cmdFmapStats, cmdFmapFullScan, cmdFmapChangedFiles, cmdFmapImpact, normalizeSignature };
