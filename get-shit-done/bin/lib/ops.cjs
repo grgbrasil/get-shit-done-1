@@ -1033,16 +1033,142 @@ function cmdOpsDebug(cwd, area, symptom, raw) {
   }, raw);
 }
 
-// ─── Stub Commands (Plan 03 will implement) ──────────────────────────────
+// ─── Dispatch Hybrid Commands ─────────────────────────────────────────────
 
+/**
+ * cmdOpsFeature — Add capability to area with blast-radius dispatch (OPS-06, D-04/D-05).
+ * Small scope -> dispatch "quick" for /gsd:quick. Large scope -> dispatch "plan" with plan_dir.
+ */
 function cmdOpsFeature(cwd, area, description, raw) {
   if (!area) { error('Usage: gsd-tools ops feature <area> <description>'); return; }
-  error('Not yet implemented: ops feature');
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const entry = registry.areas.find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  const tree = readTreeJson(cwd, slug);
+  if (!tree) { error('No tree.json for area: ' + slug + '. Run /ops:map first.'); return; }
+
+  // Per D-04: compute blast radius from tree.json
+  const blast = computeBlastRadius(tree);
+
+  const result = {
+    success: true,
+    area: slug,
+    description: description || '',
+    blast_radius: blast,
+    needs_full_plan: blast.needs_full_plan,
+    dispatch: blast.needs_full_plan ? 'plan' : 'quick'
+  };
+
+  // Per D-06: OPS full plans live in .planning/ops/{area}/plans/
+  if (blast.needs_full_plan) {
+    const planDir = path.join(areaDir(cwd, slug), 'plans');
+    fs.mkdirSync(planDir, { recursive: true });
+    result.plan_dir = path.relative(cwd, planDir);
+  }
+
+  // Per D-03: feature uses summary context (not full tree)
+  const byType = {};
+  for (const n of tree.nodes) { byType[n.type] = (byType[n.type] || 0) + 1; }
+  result.context_summary = {
+    nodes_by_type: byType,
+    edges_count: tree.edges.length,
+    total_nodes: tree.nodes.length
+  };
+
+  // Record history per OPS-09
+  appendHistory(cwd, slug, {
+    op: 'feature',
+    summary: description || 'Feature initiated',
+    outcome: 'success'
+  });
+
+  // Post-op tree refresh per D-12
+  refreshTree(cwd, slug);
+
+  output(result, raw);
 }
 
+/**
+ * cmdOpsModify — Modify behavior in area with impact analysis from tree edges (OPS-07, D-03/D-04).
+ * Traverses edges to identify affected nodes, then dispatches based on blast radius.
+ */
 function cmdOpsModify(cwd, area, description, raw) {
   if (!area) { error('Usage: gsd-tools ops modify <area> <description>'); return; }
-  error('Not yet implemented: ops modify');
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const entry = registry.areas.find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  const tree = readTreeJson(cwd, slug);
+  if (!tree) { error('No tree.json for area: ' + slug + '. Run /ops:map first.'); return; }
+
+  // Per D-04: compute blast radius for dispatch
+  const blast = computeBlastRadius(tree);
+
+  // Impact analysis: identify all nodes that could be affected
+  // Traverse edges to find downstream dependents (nodes that import/use other nodes)
+  const affectedNodes = [];
+  const visited = new Set();
+
+  function traverseDownstream(nodeId, depth) {
+    if (depth > 3 || visited.has(nodeId)) return;
+    visited.add(nodeId);
+    const node = tree.nodes.find(n => n.id === nodeId);
+    if (node) affectedNodes.push({ id: node.id, type: node.type, file_path: node.file_path, depth });
+    // Find edges where this node is the target (dependents)
+    const dependentEdges = tree.edges.filter(e => e.to === nodeId);
+    for (const edge of dependentEdges) {
+      traverseDownstream(edge.from, depth + 1);
+    }
+  }
+
+  // Start traversal from all nodes (modify could affect any part)
+  for (const node of tree.nodes) {
+    if (!visited.has(node.id)) {
+      traverseDownstream(node.id, 0);
+    }
+  }
+
+  const result = {
+    success: true,
+    area: slug,
+    description: description || '',
+    blast_radius: blast,
+    needs_full_plan: blast.needs_full_plan,
+    dispatch: blast.needs_full_plan ? 'plan' : 'quick',
+    affected_nodes: affectedNodes,
+    affected_count: affectedNodes.length
+  };
+
+  // Per D-06: plans dir for full plan mode
+  if (blast.needs_full_plan) {
+    const planDir = path.join(areaDir(cwd, slug), 'plans');
+    fs.mkdirSync(planDir, { recursive: true });
+    result.plan_dir = path.relative(cwd, planDir);
+  }
+
+  // Per D-03: modify uses summary context
+  const byType = {};
+  for (const n of tree.nodes) { byType[n.type] = (byType[n.type] || 0) + 1; }
+  result.context_summary = {
+    nodes_by_type: byType,
+    edges_count: tree.edges.length,
+    total_nodes: tree.nodes.length
+  };
+
+  // Record history per OPS-09
+  appendHistory(cwd, slug, {
+    op: 'modify',
+    summary: description || 'Modification initiated',
+    outcome: 'success'
+  });
+
+  // Post-op tree refresh per D-12
+  refreshTree(cwd, slug);
+
+  output(result, raw);
 }
 
 module.exports = {
