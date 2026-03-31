@@ -390,3 +390,63 @@ describe('dispatcher', () => {
       'ops spec show should handle missing area gracefully');
   });
 });
+
+// ─── ops status — findings integration ─────────────────────────────────────
+
+describe('ops status — findings integration', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject('ops-governance-findings-');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('status includes findings counts and severity breakdown', () => {
+    setupArea(tmpDir, 'test-area', { tree: true, history: true, specs: true });
+
+    // Seed findings.json with 3 findings: 1 pending minor, 1 fixed major, 1 pending critical
+    const findingsPath = path.join(tmpDir, '.planning', 'ops', 'test-area', 'findings.json');
+    const findingsData = {
+      domain: 'test-area',
+      findings: [
+        { id: 'TEST-AREA-001', severity: 'minor', status: 'pending', title: 'Minor issue' },
+        { id: 'TEST-AREA-002', severity: 'major', status: 'fixed', title: 'Major issue' },
+        { id: 'TEST-AREA-003', severity: 'critical', status: 'pending', title: 'Critical issue' }
+      ]
+    };
+    fs.writeFileSync(findingsPath, JSON.stringify(findingsData), 'utf-8');
+
+    const result = captureOutput(() => {
+      ops.cmdOpsStatus(tmpDir, 'test-area', true);
+    });
+
+    assert.strictEqual(result.findings_total, 3, 'should have 3 total findings');
+    assert.strictEqual(result.findings_pending, 2, 'should have 2 pending findings');
+    assert.strictEqual(result.findings_fixed, 1, 'should have 1 fixed finding');
+    assert.strictEqual(result.findings_by_severity.critical, 1, 'should have 1 critical finding');
+    assert.strictEqual(result.findings_by_severity.major, 1, 'should have 1 major finding');
+    assert.strictEqual(result.findings_by_severity.minor, 1, 'should have 1 minor finding');
+  });
+
+  test('critical pending finding adds critical_findings health flag', () => {
+    setupArea(tmpDir, 'test-area', { tree: true, history: true, specs: true });
+
+    const findingsPath = path.join(tmpDir, '.planning', 'ops', 'test-area', 'findings.json');
+    const findingsData = {
+      domain: 'test-area',
+      findings: [
+        { id: 'TEST-AREA-001', severity: 'critical', status: 'pending', title: 'Critical issue' }
+      ]
+    };
+    fs.writeFileSync(findingsPath, JSON.stringify(findingsData), 'utf-8');
+
+    const result = captureOutput(() => {
+      ops.cmdOpsStatus(tmpDir, 'test-area', true);
+    });
+
+    assert.ok(result.health_flags.includes('critical_findings'), 'should have critical_findings flag');
+  });
+});

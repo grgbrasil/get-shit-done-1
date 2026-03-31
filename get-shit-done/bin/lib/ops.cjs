@@ -1371,11 +1371,24 @@ function computeAreaStatus(cwd, entry) {
     ? Math.floor((Date.now() - new Date(lastOp.timestamp).getTime()) / 86400000)
     : null;
 
+  // Read findings
+  const findingsData = readFindings(cwd, slug);
+  const allFindings = findingsData.findings || [];
+  const findingsTotal = allFindings.length;
+  const findingsPending = allFindings.filter(f => f.status === 'pending').length;
+  const findingsFixed = allFindings.filter(f => f.status === 'fixed').length;
+  const findingsBySeverity = {};
+  for (const f of allFindings) {
+    const sev = f.severity || 'unknown';
+    findingsBySeverity[sev] = (findingsBySeverity[sev] || 0) + 1;
+  }
+
   // Health scoring per D-05
   const flags = [];
   if (!specsExist) flags.push('no_specs');
   if (daysSinceLastOp !== null && daysSinceLastOp > 30) flags.push('stale');
   if (pending.length > 10) flags.push('backlog_overflow');
+  if (allFindings.some(f => f.status === 'pending' && f.severity === 'critical')) flags.push('critical_findings');
   const health = flags.length >= 2 ? 'red' : flags.length === 1 ? 'yellow' : 'green';
 
   return {
@@ -1394,6 +1407,10 @@ function computeAreaStatus(cwd, entry) {
     last_operation: lastOp,
     days_since_last_op: daysSinceLastOp,
     tree_last_scanned: entry.last_scanned || null,
+    findings_total: findingsTotal,
+    findings_pending: findingsPending,
+    findings_fixed: findingsFixed,
+    findings_by_severity: findingsBySeverity,
     health,
     health_flags: flags
   };
