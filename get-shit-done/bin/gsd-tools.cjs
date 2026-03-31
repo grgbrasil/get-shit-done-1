@@ -15,6 +15,8 @@
  *   state get [section]                Get STATE.md content or section
  *   state patch --field val ...        Batch update STATE.md fields
  *   state begin-phase --phase N --name S --plans C  Update STATE.md for new phase start
+ *   state begin-fix --phase N --name S --plans C    Update STATE.md to start a fix phase
+ *   state end-fix --phase N                         Restore STATE.md after fix phase completes
  *   state signal-waiting --type T --question Q --options "A|B" --phase P  Write WAITING.json signal
  *   state signal-resume                Remove WAITING.json signal
  *   resolve-model <agent-type>         Get model for agent based on profile
@@ -40,6 +42,7 @@
  *   phase insert <after> <description> Insert decimal phase after existing
  *   phase remove <phase> [--force]     Remove phase, renumber all subsequent
  *   phase complete <phase>             Mark phase done, update state + roadmap
+ *   phase freshness <phase>           Check staleness of phase plans vs codebase
  *
  * Roadmap Operations:
  *   roadmap get-phase <phase>          Extract phase section from ROADMAP.md
@@ -134,6 +137,7 @@
  *   init milestone-op                  All context for milestone operations
  *   init map-codebase                  All context for map-codebase workflow
  *   init progress                      All context for progress workflow
+ *   init fix-phase <phase>             All context for fix-phase workflow
  *
  * Documentation:
  *   docs-init                            Project context for docs-update workflow
@@ -400,6 +404,12 @@ async function runCommand(command, args, cwd, raw) {
       } else if (subcommand === 'begin-phase') {
         const { phase: p, name, plans } = parseNamedArgs(args, ['phase', 'name', 'plans']);
         state.cmdStateBeginPhase(cwd, p, name, plans !== null ? parseInt(plans, 10) : null, raw);
+      } else if (subcommand === 'begin-fix') {
+        const { phase: p, name, plans } = parseNamedArgs(args, ['phase', 'name', 'plans']);
+        state.cmdStateBeginFix(cwd, p, name, plans !== null ? parseInt(plans, 10) : null, raw);
+      } else if (subcommand === 'end-fix') {
+        const { phase: p } = parseNamedArgs(args, ['phase']);
+        state.cmdStateEndFix(cwd, p, raw);
       } else if (subcommand === 'signal-waiting') {
         const { type, question, options, phase: p } = parseNamedArgs(args, ['type', 'question', 'options', 'phase']);
         state.cmdSignalWaiting(cwd, type, question, options, p, raw);
@@ -653,8 +663,10 @@ async function runCommand(command, args, cwd, raw) {
         phase.cmdPhaseRemove(cwd, args[2], { force: forceFlag }, raw);
       } else if (subcommand === 'complete') {
         phase.cmdPhaseComplete(cwd, args[2], raw);
+      } else if (subcommand === 'freshness') {
+        phase.cmdPhaseFreshness(cwd, args[2], raw);
       } else {
-        error('Unknown phase subcommand. Available: next-decimal, add, insert, remove, complete');
+        error('Unknown phase subcommand. Available: next-decimal, add, insert, remove, complete, freshness');
       }
       break;
     }
@@ -793,8 +805,11 @@ async function runCommand(command, args, cwd, raw) {
         case 'remove-workspace':
           init.cmdInitRemoveWorkspace(cwd, args[2], raw);
           break;
+        case 'fix-phase':
+          init.cmdInitFixPhase(cwd, args[2], raw);
+          break;
         default:
-          error(`Unknown init workflow: ${workflow}\nAvailable: execute-phase, plan-phase, new-project, new-milestone, quick, resume, verify-work, phase-op, todos, milestone-op, map-codebase, progress, manager, new-workspace, list-workspaces, remove-workspace`);
+          error(`Unknown init workflow: ${workflow}\nAvailable: execute-phase, plan-phase, new-project, new-milestone, quick, resume, verify-work, phase-op, todos, milestone-op, map-codebase, progress, manager, new-workspace, list-workspaces, remove-workspace, fix-phase`);
       }
       break;
     }
