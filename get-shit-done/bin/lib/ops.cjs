@@ -1610,10 +1610,74 @@ function cmdOpsFindings(cwd, area, args, raw) {
   error('Unknown findings subcommand: ' + subcommand + '. Available: list, add, update');
 }
 
+// ─── Tree Update — Plant Knowledge ─────────────────────────────────────────
+
+/**
+ * ops tree-update — Plant a value on a tree node field.
+ *
+ * Supports dotted field paths (e.g. knowledge.framework).
+ * Auto-updates knowledge.last_investigated and knowledge.investigation_count.
+ */
+function cmdOpsTreeUpdate(cwd, area, nodeId, fieldPath, valueStr, raw) {
+  if (!area) { error('Usage: ops tree-update <area> <nodeId> <fieldPath> <value>'); return; }
+  if (!nodeId) { error('Missing nodeId'); return; }
+  if (!fieldPath) { error('Missing fieldPath'); return; }
+  if (valueStr === undefined || valueStr === null) { error('Missing value'); return; }
+
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const areaEntry = registry.areas.find(a => a.slug === slug);
+  if (!areaEntry) { error('Area not found: ' + area); return; }
+
+  const tree = readTreeJson(cwd, slug);
+  if (!tree) { error('No tree.json for area: ' + slug + '. Run /ops:map first.'); return; }
+
+  const node = tree.nodes.find(n => n.id === nodeId);
+  if (!node) { error('Node not found in tree: ' + nodeId); return; }
+
+  // Parse value: try JSON, fall back to plain string
+  let value;
+  try {
+    value = JSON.parse(valueStr);
+  } catch {
+    value = valueStr;
+  }
+
+  // Set value at field path (supports dotted paths)
+  const parts = fieldPath.split('.');
+  if (parts.length === 1) {
+    node[fieldPath] = value;
+  } else {
+    let target = node;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (target[parts[i]] === undefined || target[parts[i]] === null || typeof target[parts[i]] !== 'object') {
+        target[parts[i]] = {};
+      }
+      target = target[parts[i]];
+    }
+    target[parts[parts.length - 1]] = value;
+  }
+
+  // Auto-update investigation metadata
+  if (!node.knowledge || typeof node.knowledge !== 'object') {
+    node.knowledge = {};
+  }
+  node.knowledge.last_investigated = new Date().toISOString().slice(0, 10);
+  node.knowledge.investigation_count = (node.knowledge.investigation_count || 0) + 1;
+
+  // Write updated tree
+  writeTreeJson(cwd, slug, tree);
+
+  // Append history
+  appendHistory(cwd, slug, { op: 'tree-update', summary: 'Planted ' + fieldPath + ' on ' + nodeId });
+
+  output({ success: true, node_id: nodeId, field: fieldPath, node }, raw);
+}
+
 module.exports = {
   cmdOpsInit, cmdOpsMap, cmdOpsAdd, cmdOpsList, cmdOpsGet,
   cmdOpsInvestigate, cmdOpsFeature, cmdOpsModify, cmdOpsDebug, cmdOpsSummary,
-  cmdOpsStatus, cmdOpsSpec, cmdOpsBacklog, cmdOpsFindings,
+  cmdOpsStatus, cmdOpsSpec, cmdOpsBacklog, cmdOpsFindings, cmdOpsTreeUpdate,
   readFindings, writeFindings, nextFindingId, parseFindingRange,
   computeAreaStatus,
   appendHistory, computeBlastRadius, refreshTree
