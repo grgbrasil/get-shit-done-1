@@ -1161,7 +1161,7 @@ function cmdOpsFeature(cwd, area, description, raw) {
  * Traverses edges to identify affected nodes, then dispatches based on blast radius.
  */
 function cmdOpsModify(cwd, area, description, raw) {
-  if (!area) { error('Usage: gsd-tools ops modify <area> <description>'); return; }
+  if (!area) { error('Usage: gsd-tools ops modify <area> <description|FINDING-ID|RANGE|--all-pending>'); return; }
   const slug = slugify(area);
   const registry = readRegistry(cwd);
   const entry = registry.areas.find(a => a.slug === slug);
@@ -1172,6 +1172,101 @@ function cmdOpsModify(cwd, area, description, raw) {
 
   // Per D-04: compute blast radius for dispatch
   const blast = computeBlastRadius(tree);
+
+  // ─── Detection: findings mode vs legacy mode ───────────────────────────
+  const desc = (description || '').trim();
+  const FINDING_ID_RE = /^[A-Z0-9_]+-\d+$/;
+  const FINDING_RANGE_RE = /^[A-Z0-9_]+-\d+\.\.\d+$/;
+
+  const isFindingId = FINDING_ID_RE.test(desc);
+  const isFindingRange = FINDING_RANGE_RE.test(desc);
+  const isAllPending = desc === '--all-pending';
+  const isFindingsMode = isFindingId || isFindingRange || isAllPending;
+
+  if (isFindingsMode) {
+    // ─── Findings mode ─────────────────────────────────────────────────
+    const findingsData = readFindings(cwd, slug);
+    const allFindings = findingsData.findings || [];
+    let targetFindings = [];
+
+    if (isAllPending) {
+      targetFindings = allFindings.filter(f => f.status === 'pending');
+    } else if (isFindingRange) {
+      const ids = parseFindingRange(desc);
+      if (ids) {
+        const idSet = new Set(ids);
+        targetFindings = allFindings.filter(f => idSet.has(f.id));
+      }
+    } else {
+      // Single finding ID
+      targetFindings = allFindings.filter(f => f.id === desc);
+    }
+
+    if (targetFindings.length === 0) {
+      error('No matching findings found for: ' + desc);
+      return;
+    }
+
+    // Collect unique files affected
+    const filesAffected = [...new Set(targetFindings.map(f => f.file_path).filter(Boolean))];
+
+    // Group findings by file
+    const findingsByFile = {};
+    for (const f of targetFindings) {
+      if (f.file_path) {
+        if (!findingsByFile[f.file_path]) findingsByFile[f.file_path] = [];
+        findingsByFile[f.file_path].push(f);
+      }
+    }
+
+    // Dispatch: quick if <=5 findings, plan if >5
+    const dispatch = targetFindings.length > 5 ? 'plan' : 'quick';
+
+    // Build tool hints
+    const toolsBase = 'node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" ops findings ' + slug;
+    const firstId = targetFindings[0].id;
+    const tools = {
+      mark_fixed: toolsBase + ' update ' + firstId + ' --status fixed --resolved-by ops:modify',
+    };
+    if (targetFindings.length > 1) {
+      const lastId = targetFindings[targetFindings.length - 1].id;
+      tools.mark_range = toolsBase + ' update ' + firstId + '..' + lastId + ' --status fixed';
+    }
+
+    const result = {
+      success: true,
+      area: slug,
+      findings_mode: true,
+      target_findings: targetFindings,
+      files_affected: filesAffected,
+      findings_by_file: findingsByFile,
+      blast_radius: blast,
+      dispatch,
+      tools
+    };
+
+    // Per D-06: plans dir for plan mode
+    if (dispatch === 'plan') {
+      const planDir = path.join(areaDir(cwd, slug), 'plans');
+      fs.mkdirSync(planDir, { recursive: true });
+      result.plan_dir = path.relative(cwd, planDir);
+    }
+
+    // Record history per OPS-09
+    appendHistory(cwd, slug, {
+      op: 'modify',
+      summary: 'Findings mode: ' + desc + ' (' + targetFindings.length + ' findings)',
+      outcome: 'success'
+    });
+
+    // Post-op tree refresh per D-12
+    refreshTree(cwd, slug);
+
+    output(result, raw);
+    return;
+  }
+
+  // ─── Legacy description-based mode ───────────────────────────────────────
 
   // Impact analysis: identify all nodes that could be affected
   // Traverse edges to find downstream dependents (nodes that import/use other nodes)
@@ -1200,7 +1295,8 @@ function cmdOpsModify(cwd, area, description, raw) {
   const result = {
     success: true,
     area: slug,
-    description: description || '',
+    description: desc,
+    findings_mode: false,
     blast_radius: blast,
     needs_full_plan: blast.needs_full_plan,
     dispatch: blast.needs_full_plan ? 'plan' : 'quick',
@@ -1227,7 +1323,7 @@ function cmdOpsModify(cwd, area, description, raw) {
   // Record history per OPS-09
   appendHistory(cwd, slug, {
     op: 'modify',
-    summary: description || 'Modification initiated',
+    summary: desc || 'Modification initiated',
     outcome: 'success'
   });
 
