@@ -275,6 +275,14 @@ Commit after writing.
 ", subagent_type="gsd-research-synthesizer", model="{synthesizer_model}", description="Synthesize research")
 ```
 
+### Lean Mode: Route Research Synthesizer
+Before spawning gsd-research-synthesizer, attempt remote routing:
+1. Resolve execution mode: read `execution_mode` from `.planning/config.json` (default: `auto`). If the user passed `--full` or `--lean` to the command, use that instead.
+2. Write the synthesis task description to a temp file.
+3. Run: `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" route-agent gsd-research-synthesizer --prompt <temp-file> --context "{planning_dir}" --mode "{execution_mode}"`
+4. If exit code 0: synthesizer ran remotely — SUMMARY.md already written to research/, skip Agent tool spawn above.
+5. If exit code 1: spawn gsd-research-synthesizer Agent as normal (section above).
+
 Display key findings from SUMMARY.md:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

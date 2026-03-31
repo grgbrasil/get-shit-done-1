@@ -543,9 +543,18 @@ Continue to discuss_areas with selected areas (or advisor_research if ADVISOR_MO
 
 After user selects gray areas in present_gray_areas, spawn parallel research agents.
 
+### Lean Mode: Route Advisor Researchers
+Before spawning advisor agents, resolve execution mode and attempt remote routing:
+1. Resolve execution mode: read `execution_mode` from `.planning/config.json` (default: `auto`). If the user passed `--full` or `--lean` to the command, use that instead.
+2. For EACH gray area, write the advisor task description to a temp file.
+3. Run: `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" route-agent gsd-advisor-researcher --prompt <temp-file> --context "{phase_dir}" --mode "{execution_mode}"`
+4. If exit code 0: advisor ran remotely — use stdout as research result for that area.
+5. If exit code 1: spawn advisor Agent as normal (next section).
+6. Mix is allowed — some areas may route remotely while others spawn locally.
+
 1. Display brief status: "Researching {N} areas..."
 
-2. For EACH user-selected gray area, spawn a Task() in parallel:
+2. For EACH user-selected gray area that was NOT routed remotely, spawn a Task() in parallel:
 
    Task(
      prompt="First, read @~/.claude/agents/gsd-advisor-researcher.md for your role and instructions.

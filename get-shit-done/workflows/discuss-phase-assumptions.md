@@ -233,6 +233,14 @@ Identify reusable assets, established patterns, integration points, and creative
 Spawn a `gsd-assumptions-analyzer` agent to deeply analyze the codebase for this phase. This
 keeps raw file contents out of the main context window, protecting token budget.
 
+### Lean Mode: Route Assumptions Analyzer
+Before spawning gsd-assumptions-analyzer, resolve execution mode and attempt remote routing:
+1. Resolve execution mode: read `execution_mode` from `.planning/config.json` (default: `auto`). If the user passed `--full` or `--lean` to the command, use that instead.
+2. Write the assumptions analyzer task description to a temp file (include phase goal, prior decisions, codebase scout hints, calibration tier).
+3. Run: `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" route-agent gsd-assumptions-analyzer --prompt <temp-file> --context "{phase_dir}" --mode "{execution_mode}"`
+4. If exit code 0: analyzer ran remotely — parse stdout as structured assumptions, skip Agent tool spawn below. Continue to `present_assumptions`.
+5. If exit code 1: spawn gsd-assumptions-analyzer Agent as normal (next section).
+
 **Resolve calibration tier (if USER-PROFILE.md exists):**
 
 ```bash

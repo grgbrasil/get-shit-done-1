@@ -246,6 +246,21 @@ const COLLECTORS = {
     return `# Task\n${taskPrompt}\n\n# Existing Research\n${researchContext}`;
   },
 
+  'gsd-plan-checker': async (contextDir) => {
+    const planFiles = findFiles(contextDir, '.md').filter(f => path.basename(f).startsWith('PLAN'));
+    const roadmapPath = path.join(findProjectRoot(contextDir), '.planning', 'ROADMAP.md');
+    const contextPath = path.join(contextDir, path.basename(contextDir) + '-CONTEXT.md');
+    const parts = [];
+    const roadmap = safeRead(roadmapPath);
+    if (roadmap) parts.push(`# ROADMAP.md\n${roadmap}`);
+    const ctx = safeRead(contextPath);
+    if (ctx) parts.push(`# CONTEXT.md\n${ctx}`);
+    for (const f of planFiles) {
+      parts.push(`## ${path.basename(f)}\n${fs.readFileSync(f, 'utf8')}`);
+    }
+    return parts.join('\n\n');
+  },
+
   'gsd-cataloger': async (contextDir) => {
     const projectRoot = findProjectRoot(contextDir);
     const existingMap = safeReadJSON(path.join(projectRoot, '.planning/function-map.json')) || {};

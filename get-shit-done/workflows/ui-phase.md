@@ -189,6 +189,14 @@ Display:
 ◆ Spawning UI checker...
 ```
 
+### Lean Mode: Route UI Checker
+Before spawning gsd-ui-checker, resolve execution mode and attempt remote routing:
+1. Resolve execution mode: read `execution_mode` from `.planning/config.json` (default: `auto`). If the user passed `--full` or `--lean` to the command, use that instead.
+2. Write the UI checker task description to a temp file.
+3. Run: `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" route-agent gsd-ui-checker --prompt <temp-file> --context "{phase_dir}" --mode "{execution_mode}"`
+4. If exit code 0: checker ran remotely — parse stdout as checker result (APPROVED/BLOCKED), skip Agent tool spawn below. Continue to step 8.
+5. If exit code 1: spawn gsd-ui-checker Agent as normal (next section).
+
 Build prompt:
 
 ```markdown
@@ -212,6 +220,7 @@ ui_safety_gate: {ui_safety_gate config value}
 </config>
 ```
 
+**Spawn gsd-ui-checker (if not routed above):**
 ```
 Task(
   prompt=ui_checker_prompt,
