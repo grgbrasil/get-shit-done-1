@@ -32,6 +32,7 @@ These are the valid GSD subagent types registered in .claude/agents/ (or equival
 Always use the exact name from this list — do not fall back to 'general-purpose' or other built-in types:
 
 - gsd-executor — Executes plan tasks, commits, creates SUMMARY.md
+- gsd-gap-analyzer — Cross-references phase artifacts to identify scope gaps
 - gsd-verifier — Verifies phase completion, checks quality gates
 - gsd-planner — Creates detailed plans from phase scope
 - gsd-phase-researcher — Researches technical approaches for a phase
