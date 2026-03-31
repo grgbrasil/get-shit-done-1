@@ -20,7 +20,7 @@ const SPECS_TEMPLATE = (name) => `# Specs: ${name}\n\n## Regras de Negocio\n\n- 
 
 const FRAMEWORK_PATTERNS = {
   'vue-router': {
-    files: ['src/router/**/*.{js,ts}', 'src/routes/**/*.{js,ts}'],
+    files: ['**/router/*.{js,ts,mjs}', '**/router/**/*.{js,ts,mjs}', '**/routes/*.{js,ts,mjs}', '**/routes/**/*.{js,ts,mjs}'],
     routeRegex: /path:\s*['"]\/([^'"]*)['"]/g,
     type: 'route'
   },
@@ -30,7 +30,7 @@ const FRAMEWORK_PATTERNS = {
     type: 'route'
   },
   'express': {
-    files: ['**/routes/**/*.{js,ts}', '**/router/**/*.{js,ts}'],
+    files: ['**/routes/*.{js,ts,mjs}', '**/routes/**/*.{js,ts,mjs}', '**/router/*.{js,ts,mjs}', '**/router/**/*.{js,ts,mjs}'],
     routeRegex: /router\.\w+\(\s*['"]\/([^'"]*)['"]/g,
     type: 'route'
   },
@@ -39,7 +39,7 @@ const FRAMEWORK_PATTERNS = {
     type: 'directory'
   },
   'directory-convention': {
-    directories: ['src/views/', 'src/pages/', 'src/features/', 'src/modules/'],
+    directories: ['src/views/', 'src/pages/', 'src/features/', 'src/modules/', 'views/', 'pages/', 'features/', 'modules/'],
     type: 'directory'
   }
 };
@@ -92,7 +92,7 @@ function slugify(text) {
  */
 function listProjectFiles(cwd) {
   try {
-    const result = execSync('git ls-files', { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const result = execSync('git ls-files', { cwd, encoding: 'utf-8', maxBuffer: 50 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] });
     return result.trim().split('\n').filter(Boolean);
   } catch {
     // Fallback: recursive directory scan
@@ -183,6 +183,16 @@ function detectFramework(cwd, files) {
 /**
  * Extract top-level path segments from route files as areas.
  */
+// Segments that are technical/internal, not functional areas
+const IGNORED_ROUTE_SEGMENTS = new Set([
+  'api', 'auth', 'sync', 'token', 'validate', 'callback', 'webhook', 'webhooks',
+  'health', 'healthcheck', 'status', 'ping', 'metrics', 'debug', 'test',
+  'static', 'assets', 'public', 'uploads', 'download', 'downloads',
+  'socket', 'ws', 'sse', 'events', 'stream',
+  'oauth', 'logout', 'register', 'reset-password', 'verify-email',
+  'soon', 'test-drawer', 'error'
+]);
+
 function detectAreasFromRoutes(cwd, frameworkMatch) {
   const areas = [];
   const seen = new Set();
@@ -202,6 +212,13 @@ function detectAreasFromRoutes(cwd, frameworkMatch) {
       if (!fullPath) continue;
       const topSegment = fullPath.split('/')[0];
       if (!topSegment) continue;
+
+      // Skip route parameters (:id, :slug, etc.)
+      if (topSegment.startsWith(':')) continue;
+      // Skip ignored technical segments
+      if (IGNORED_ROUTE_SEGMENTS.has(topSegment.toLowerCase())) continue;
+      // Skip very short segments (likely params or IDs)
+      if (topSegment.length < 2) continue;
 
       const slug = slugify(topSegment);
       if (!slug || seen.has(slug)) continue;
@@ -1432,10 +1449,172 @@ function cmdOpsBacklog(cwd, area, args, raw) {
   error('Unknown backlog subcommand: ' + subcommand + '. Available: list, add, prioritize, promote, done');
 }
 
+// ─── OPS Governance: Findings ─────────────────────────────────────────────
+
+function readFindings(cwd, slug) {
+  const findingsPath = path.join(areaDir(cwd, slug), 'findings.json');
+  if (!fs.existsSync(findingsPath)) return { domain: slug, findings: [] };
+  try { return JSON.parse(fs.readFileSync(findingsPath, 'utf-8')); } catch (_) { return { domain: slug, findings: [] }; }
+}
+
+function writeFindings(cwd, slug, data) {
+  ensureAreaDir(cwd, slug);
+  const findingsPath = path.join(areaDir(cwd, slug), 'findings.json');
+  fs.writeFileSync(findingsPath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function nextFindingId(slug, findings) {
+  const prefix = slug.toUpperCase();
+  let max = 0;
+  for (const f of findings) {
+    const match = f.id && f.id.match(/-(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > max) max = num;
+    }
+  }
+  const next = max + 1;
+  return prefix + '-' + String(next).padStart(3, '0');
+}
+
+/**
+ * Parse a finding range like "PRAZOS-001..003" into an array of IDs.
+ */
+function parseFindingRange(rangeStr) {
+  const match = rangeStr.match(/^([A-Z0-9_]+-?)(\d+)\.\.(\d+)$/);
+  if (!match) return null;
+  const prefix = match[1];
+  const start = parseInt(match[2], 10);
+  const end = parseInt(match[3], 10);
+  const padLen = match[2].length;
+  const ids = [];
+  for (let i = start; i <= end; i++) {
+    ids.push(prefix + String(i).padStart(padLen, '0'));
+  }
+  return ids;
+}
+
+/**
+ * Parse --key value pairs from args array, converting kebab-case keys to snake_case.
+ */
+function parseFindingArgs(args) {
+  const result = {};
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--') && args[i] !== '--raw' && args[i] !== '--all-pending') {
+      const key = args[i].slice(2).replace(/-/g, '_');
+      const val = args[i + 1];
+      if (val !== undefined && !val.startsWith('--')) {
+        result[key] = val;
+        i++;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Manage per-area findings: list, add, update.
+ */
+function cmdOpsFindings(cwd, area, args, raw) {
+  if (!area) { error('Usage: gsd-tools ops findings <area> <list|add|update> [args]'); return; }
+
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const entry = (registry.areas || []).find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  const subcommand = args[0];
+
+  if (subcommand === 'list') {
+    const data = readFindings(cwd, slug);
+    const parsedArgs = parseFindingArgs(args.slice(1));
+    let items = data.findings;
+    if (parsedArgs.status) {
+      items = items.filter(f => f.status === parsedArgs.status);
+    }
+    output({ area: slug, findings: items }, raw);
+    return;
+  }
+
+  if (subcommand === 'add') {
+    const parsedArgs = parseFindingArgs(args.slice(1));
+    if (!parsedArgs.title) { error('Usage: gsd-tools ops findings <area> add --title <title> [--severity ...] [--category ...]'); return; }
+    const data = readFindings(cwd, slug);
+    const id = nextFindingId(slug, data.findings);
+    const finding = {
+      id,
+      status: 'pending',
+      severity: parsedArgs.severity || 'minor',
+      category: parsedArgs.category || null,
+      title: parsedArgs.title,
+      description: parsedArgs.description || null,
+      node_id: parsedArgs.node_id || null,
+      file: parsedArgs.file || null,
+      lines: [],
+      spec_ref: parsedArgs.spec_ref || null,
+      created: new Date().toISOString(),
+      created_by: parsedArgs.created_by || 'manual',
+      resolved: null,
+      resolved_by: null
+    };
+    data.findings.push(finding);
+    writeFindings(cwd, slug, data);
+    appendHistory(cwd, slug, { op: 'finding-add', id: finding.id, title: finding.title, ts: finding.created });
+    output({ success: true, area: slug, finding }, raw);
+    return;
+  }
+
+  if (subcommand === 'update') {
+    const data = readFindings(cwd, slug);
+    const targetArg = args[1];
+    let targetIds = [];
+    let extraArgsStart = 2;
+
+    if (targetArg === '--all-pending') {
+      targetIds = data.findings.filter(f => f.status === 'pending').map(f => f.id);
+    } else {
+      const range = parseFindingRange(targetArg);
+      if (range) {
+        targetIds = range;
+      } else {
+        targetIds = [targetArg];
+      }
+    }
+
+    const parsedArgs = parseFindingArgs(args.slice(extraArgsStart));
+
+    if (targetIds.length === 0) { error('No findings matched the target'); return; }
+
+    const updated = [];
+    const now = new Date().toISOString();
+    for (const id of targetIds) {
+      const finding = data.findings.find(f => f.id === id);
+      if (!finding) continue;
+      if (parsedArgs.status) {
+        finding.status = parsedArgs.status;
+        if (parsedArgs.status === 'resolved') {
+          finding.resolved = now;
+          finding.resolved_by = parsedArgs.resolved_by || 'manual';
+        }
+      }
+      if (parsedArgs.resolved_by) finding.resolved_by = parsedArgs.resolved_by;
+      updated.push(finding);
+    }
+
+    writeFindings(cwd, slug, data);
+    appendHistory(cwd, slug, { op: 'finding-update', ids: updated.map(f => f.id), status: parsedArgs.status, ts: now });
+    output({ success: true, area: slug, updated }, raw);
+    return;
+  }
+
+  error('Unknown findings subcommand: ' + subcommand + '. Available: list, add, update');
+}
+
 module.exports = {
   cmdOpsInit, cmdOpsMap, cmdOpsAdd, cmdOpsList, cmdOpsGet,
   cmdOpsInvestigate, cmdOpsFeature, cmdOpsModify, cmdOpsDebug, cmdOpsSummary,
-  cmdOpsStatus, cmdOpsSpec, cmdOpsBacklog,
+  cmdOpsStatus, cmdOpsSpec, cmdOpsBacklog, cmdOpsFindings,
+  readFindings, writeFindings, nextFindingId, parseFindingRange,
   computeAreaStatus,
   appendHistory, computeBlastRadius, refreshTree
 };
