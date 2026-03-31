@@ -1014,6 +1014,9 @@ function cmdSignalResume(cwd, raw) {
  * while fixing a previous one.
  */
 function cmdStateBeginFix(cwd, phaseNumber, phaseName, fixPlanCount, raw) {
+  if (!phaseNumber) {
+    error('phase number required for state begin-fix');
+  }
   const statePath = planningPaths(cwd).state;
   if (!fs.existsSync(statePath)) {
     output({ error: 'STATE.md not found' }, raw);
@@ -1073,6 +1076,9 @@ function cmdStateBeginFix(cwd, phaseNumber, phaseName, fixPlanCount, raw) {
  * Restores status to "Ready to plan" and records completion.
  */
 function cmdStateEndFix(cwd, phaseNumber, raw) {
+  if (!phaseNumber) {
+    error('phase number required for state end-fix');
+  }
   const statePath = planningPaths(cwd).state;
   if (!fs.existsSync(statePath)) {
     output({ error: 'STATE.md not found' }, raw);
