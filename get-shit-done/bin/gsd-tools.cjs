@@ -1000,6 +1000,8 @@ async function runCommand(command, args, cwd, raw) {
         ops.cmdOpsBacklog(cwd, args[2], args.slice(3), raw);
       } else if (subcommand === 'findings') {
         ops.cmdOpsFindings(cwd, args[2], args.slice(3), raw);
+      } else if (subcommand === 'tree-update') {
+        ops.cmdOpsTreeUpdate(cwd, args[2], args[3], args[4], args[5], raw);
       } else {
         error(`Unknown ops subcommand: ${subcommand}`);
       }
