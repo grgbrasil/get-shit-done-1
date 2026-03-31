@@ -1,67 +1,122 @@
 # Research Summary: GSD Guardrails & Global Memory
 
-**Domain:** AI-assisted development tooling -- guardrails, code intelligence, impact analysis
-**Researched:** 2026-03-29
+**Domain:** AI-assisted development guardrails and global memory  
+**Researched:** 2026-03-29  
 **Overall confidence:** HIGH
 
 ## Executive Summary
 
-The GSD Guardrails & Global Memory project adds three capabilities to an existing meta-prompting system: Architecture Decision Records for cross-plan memory, a Function Map (JSON registry of symbols and callers) for code awareness, and mid-execution impact analysis to prevent silent breakage. The critical insight from this research is that **zero new dependencies are needed**. GSD is a meta-prompting system -- its "stack" is prompt templates, JSON schemas, and MCP tool orchestration. The intelligence lives in the LLM agents, not in library code.
+The GSD Guardrails & Global Memory system extends the existing GSD meta-prompting architecture with three new data layers and behavioral constraints to prevent silent breakage in AI-assisted development. The system adds: 1) Architecture Decision Records (ADRs) for cross-plan memory, 2) a Function Map (JSON registry of symbols and callers) for code intelligence, and 3) mid-execution impact analysis that auto-resolves structural changes while escalating behavioral changes.
 
-For ADRs, the MADR 4.0 template is the industry standard and requires nothing beyond markdown files in `.planning/decisions/`. For the Function Map, Serena MCP (already available in the GSD ecosystem) provides semantic symbol extraction via LSP for 40+ languages, with grep as a fallback for environments without Serena. The Function Map is a flat JSON file designed for O(1) symbol lookup and instant caller identification. For impact analysis, the LLM itself serves as the classification engine -- structural changes (signature modifications) are auto-resolved by updating callers, while behavioral changes (logic modifications) are escalated to the human.
+The critical architectural insight is **zero new dependencies** — GSD remains a meta-prompting system where intelligence lives in LLM agents, not library code. The Function Map uses Serena MCP (already available) for semantic extraction with grep fallback, ADRs use MADR 4.0 templates (markdown only), and impact analysis is implemented via prompt injection into existing execute-phase workflows.
 
-The primary risk is Function Map staleness -- if the map falls behind the actual code, impact analysis produces false negatives, and the core value proposition ("no silent breakage") collapses. Secondary risks include context window overflow from an overly detailed Function Map and misclassification of behavioral vs structural changes. Both are addressable with clear prompt constraints and size limits.
+The primary risk is Function Map staleness — if the map falls behind actual code, impact analysis produces false negatives, collapsing the core value proposition. Secondary risks include context window overflow from oversized maps and behavioral/structural misclassification. All are addressable with mandatory update steps, size limits, and conservative escalation rules.
 
 ## Key Findings
 
-**Stack:** Zero new npm dependencies. MADR 4.0 templates + flat JSON + Serena MCP + prompt engineering.
-**Architecture:** Flat files in `.planning/`, prompt-based guardrails injected into existing GSD workflows.
-**Critical pitfall:** Function Map staleness -- must be a mandatory (not optional) step in execute-phase.
+### From STACK.md
+- **Zero npm dependencies** — MADR 4.0 templates, flat JSON, Serena MCP, and prompt engineering only
+- **Function Map JSON schema** designed for O(1) lookup with `index` field and per-file grouping
+- **Two-tier extraction**: Serena MCP (primary) + grep/regex fallback (when Serena unavailable)
+- **Impact analysis** via JSON diff + LLM classification (no separate analysis engine)
+
+### From FEATURES.md
+- **Table stakes**: ADR registry, Function Map, impact analysis pre-modification, auto-resolve structural, escalate behavioral
+- **Differentiators**: Mid-execution (not pre-commit) impact check, structural vs behavioral classification, caller cascade updates
+- **Anti-features**: Visual dashboards, deep AST parsing engines, language-specific analyzers, pre-commit hooks
+- **Dependencies**: Function Map must exist before impact analysis can work
+
+### From ARCHITECTURE.md
+- **Pattern 1**: Prompt-as-code — inject impact analysis instructions directly into execute-phase agent
+- **Pattern 2**: Single Source of Truth — one canonical location per data type (no copies/caches)
+- **Pattern 3**: Incremental updates — update only modified file entries, not full rebuilds
+- **Pattern 4**: Graceful degradation — all features work (reduced quality) without Serena
+- **Anti-patterns**: Building separate runtime, over-indexing, synchronous map updates, ADR approval workflows
+
+### From PITFALLS.md
+- **Critical**: Function Map staleness (silent false negatives), Context window overflow, Behavioral vs structural misclassification, ADR proliferation
+- **Moderate**: Serena unavailability, Circular caller updates, Memory becoming a dump, Schema evolution without migration
+- **Minor**: ADR numbering conflicts, grep fallback quality, Upstream PR rejection due to Serena dependency
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+### Suggested Phase Structure
 
-1. **Foundation: ADR System + Function Map Schema** - Build the data layer first
-   - Addresses: ADR storage, Function Map JSON schema, initial population workflow
-   - Avoids: Building impact analysis without data to analyze (Pitfall: no map = no analysis)
+**Phase 1 — Foundation: ADR System + Function Map Schema**  
+*Rationale: Build the data layer first. Impact analysis requires Function Map to exist.*  
+- ADR system (MADR template + `.planning/decisions/` + read in plan-phase)  
+- Function Map JSON schema + initial population workflow (Serena-based)  
+- **Must avoid**: Over-indexing (map only exports), ADR proliferation (max 5 per milestone)
 
-2. **Intelligence: Impact Analysis + Auto-Resolve** - Add the behavioral layer
-   - Addresses: Mid-execution impact check, structural auto-resolve, behavioral escalation
-   - Avoids: Misclassification (start conservative, refine with usage)
+**Phase 2 — Intelligence: Impact Analysis + Auto-Resolve**  
+*Rationale: Add behavioral layer once data exists. Start conservative.*  
+- Impact analysis mid-execution (consult Function Map before modifying)  
+- Structural auto-resolve (update callers on signature change)  
+- Behavioral escalation (ask human on logic change)  
+- **Must avoid**: Misclassification (err toward escalation), Circular updates (single-level limit)
 
-3. **Persistence: Auto-Update + Cross-Plan Memory** - Close the loop
-   - Addresses: Function Map staleness, cross-plan memory, milestone memory summaries
-   - Avoids: Memory dump problem (structured schemas from day 1)
+**Phase 3 — Persistence: Auto-Update + Cross-Plan Memory**  
+*Rationale: Close the loop to prevent staleness.*  
+- Function Map auto-update after each execution (mandatory step)  
+- Cross-plan memory (`.planning/memory/` with structured schema)  
+- **Must avoid**: Memory dump (structured format, size limits), Staleness (timestamp verification)
 
-4. **Upstream: Generalize + PR** - Make it contribution-ready
-   - Addresses: Remove Serena hard dependency, test grep fallback, upstream compatibility
-   - Avoids: PR rejection due to external dependencies (Pitfall 11)
+**Phase 4 — Upstream: Generalize + PR**  
+*Rationale: Make contribution-ready after local validation.*  
+- Remove Serena hard dependency (test grep fallback thoroughly)  
+- Upstream compatibility testing  
+- PR preparation  
+- **Must avoid**: PR rejection due to external dependencies
 
-**Phase ordering rationale:**
-- Phase 1 before Phase 2: Impact analysis REQUIRES the Function Map to exist. Cannot analyze impacts without knowing callers.
-- Phase 2 before Phase 3: Auto-update makes no sense without impact analysis consuming the map.
-- Phase 3 before Phase 4: Must prove the system works locally before generalizing for upstream.
-- ADR can run in parallel with Function Map (no dependency) but both must precede impact analysis.
+### Research Flags
 
-**Research flags for phases:**
-- Phase 2: Needs deeper research on structural vs behavioral classification edge cases (default value changes, error handling changes, side effect changes)
-- Phase 3: Needs testing on real projects to validate incremental update performance
-- Phase 4: Needs upstream maintainer alignment before investing in PR preparation
+**Needs deeper research during planning:**
+- Phase 2: Structural vs behavioral classification edge cases (default value changes, error handling, side effects)
+- Phase 3: Incremental update performance on real projects (100+ file codebases)
+- Phase 4: Upstream maintainer alignment and contribution guidelines
+
+**Standard patterns (skip research):**
+- Phase 1: MADR 4.0 template implementation (well-documented standard)
+- Phase 1: JSON schema design (flat files with index pattern established)
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Zero dependencies is a constraint-driven conclusion, not a guess. MADR 4.0 and Serena are verified. |
-| Features | HIGH | Requirements come directly from PROJECT.md. Feature dependencies are structural, not speculative. |
-| Architecture | HIGH | Extends existing GSD patterns (.planning/ directory, prompt-based workflows). No new paradigms. |
-| Pitfalls | MEDIUM | Staleness and misclassification are well-understood risks. Specific thresholds (100KB limit, 5 ADR max) need validation on real projects. |
+| Stack | HIGH | Zero dependencies is constraint-driven. MADR 4.0 and Serena are verified. |
+| Features | HIGH | Requirements from PROJECT.md. Dependencies are structural, not speculative. |
+| Architecture | HIGH | Extends existing GSD patterns (`.planning/`, prompt-based workflows). |
+| Pitfalls | MEDIUM | Staleness and misclassification understood; specific thresholds need validation. |
 
 ## Gaps to Address
 
-- Serena MCP's exact output format for `get_symbols_overview` and `find_referencing_symbols` -- need to test with actual calls to validate JSON schema design
-- grep fallback accuracy across languages -- need to test regex patterns against real Vue/PHP/Python codebases
-- Context window budget -- how much of the window does a 50-file Function Map consume? Needs measurement.
-- Behavioral vs structural classification prompt -- needs iterative refinement with real examples, not just theoretical rules
-- Upstream maintainer receptiveness -- unknown whether gsd-build/get-shit-done would accept these extensions
+1. **Serena MCP output format** — Need to test actual `get_symbols_overview` and `find_referencing_symbols` calls to validate JSON schema design
+2. **Grep fallback accuracy** — Need to test regex patterns against real Vue/PHP/Python codebases
+3. **Context window budget** — Measure how much of the window a 50-file Function Map consumes
+4. **Classification prompt refinement** — Iterate on behavioral vs structural rules with real examples
+5. **Upstream maintainer receptiveness** — Unknown whether gsd-build/get-shit-done would accept these extensions
+
+## Sources
+
+**STACK.md Sources:**
+- [MADR 4.0.0 Official Documentation](https://adr.github.io/madr/)
+- [Serena MCP GitHub](https://github.com/oraios/serena)
+- [Aider Repository Map](https://aider.chat/2023/10/22/repomap.html)
+
+**FEATURES.md Sources:**
+- PROJECT.md requirements and constraints
+- [Serena MCP](https://github.com/oraios/serena)
+- [MADR 4.0](https://adr.github.io/madr/)
+- [Aider RepoMap](https://aider.chat/docs/repomap.html)
+
+**ARCHITECTURE.md Sources:**
+- [Aider RepoMap Architecture](https://aider.chat/2023/10/22/repomap.html)
+- [Serena MCP](https://github.com/oraios/serena)
+- [MADR 4.0](https://adr.github.io/madr/)
+- GSD existing workflows
+
+**PITFALLS.md Sources:**
+- PROJECT.md constraints and scope decisions
+- [Aider RepoMap](https://aider.chat/docs/repomap.html)
+- [ADR community practices](https://adr.github.io/)
+- Observed patterns from AI code review tools
