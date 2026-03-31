@@ -39,7 +39,7 @@ const AGENT_ROUTING = {
   'gsd-executor':             { route: 'local' },
   'gsd-debugger':             { route: 'local' },
   'gsd-verifier':             { route: 'local' },
-  'gsd-plan-checker':         { route: 'local' },
+  'gsd-plan-checker':         { route: 'remote', provider: 'deepseek-v3' },
   'gsd-phase-researcher':     { route: 'local' },
   'gsd-roadmapper':           { route: 'local' },
   'gsd-project-researcher':   { route: 'local' },
@@ -56,6 +56,7 @@ const LEAN_MODEL_OVERRIDES = {
   'gsd-advisor-researcher':   'haiku',
   'gsd-ui-checker':           'haiku',
   'gsd-research-synthesizer': 'haiku',
+  'gsd-plan-checker':         'haiku',
 };
 
 /**

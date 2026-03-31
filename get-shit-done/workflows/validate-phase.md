@@ -90,6 +90,15 @@ Call AskUserQuestion with gap table and options:
 
 ## 5. Spawn gsd-nyquist-auditor
 
+### Lean Mode: Route Nyquist Auditor
+Before spawning gsd-nyquist-auditor, resolve execution mode and attempt remote routing:
+1. Resolve execution mode: read `execution_mode` from `.planning/config.json` (default: `auto`). If the user passed `--full` or `--lean` to the command, use that instead.
+2. Write the auditor task description to a temp file.
+3. Run: `node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" route-agent gsd-nyquist-auditor --prompt <temp-file> --context "{phase_dir}" --mode "{execution_mode}"`
+4. If exit code 0: auditor ran remotely — read stdout as result, skip Agent tool spawn below.
+5. If exit code 1: spawn gsd-nyquist-auditor Agent as normal (next section).
+
+**Spawn gsd-nyquist-auditor (if not routed above):**
 ```
 Task(
   prompt="Read ~/.claude/agents/gsd-nyquist-auditor.md for instructions.\n\n" +
