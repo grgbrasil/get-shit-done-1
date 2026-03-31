@@ -1141,9 +1141,118 @@ function cmdStatePlannedPhase(cwd, phaseNumber, planCount, raw) {
 }
 
 /**
+ * Update STATE.md when a fix-phase begins.
+ * LATERAL operation — does NOT change Current Phase, Current Phase Name,
+ * Current Plan, or Total Plans in Phase.
+ */
+function cmdStateBeginFix(cwd, phaseNumber, phaseName, fixPlanCount, raw) {
+  const statePath = planningPaths(cwd).state;
+  if (!fs.existsSync(statePath)) {
+    output({ error: 'STATE.md not found' }, raw);
+    return;
+  }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+  const today = new Date().toISOString().split('T')[0];
+  const updated = [];
+
+  // Update Status field
+  const statusValue = `Fixing Phase ${phaseNumber}`;
+  let result = stateReplaceField(content, 'Status', statusValue);
+  if (result) { content = result; updated.push('Status'); }
+
+  // Update Last Activity
+  result = stateReplaceField(content, 'Last Activity', today);
+  if (result) { content = result; updated.push('Last Activity'); }
+
+  // Update Last Activity Description
+  const activityDesc = `Fix-phase ${phaseNumber} started (${fixPlanCount} fix plans)`;
+  result = stateReplaceField(content, 'Last Activity Description', activityDesc);
+  if (result) { content = result; updated.push('Last Activity Description'); }
+
+  // Update ## Current Position section — only Status and Last activity lines
+  const positionPattern = /(##\s*Current Position\s*\n)([\s\S]*?)(?=\n##|$)/i;
+  const positionMatch = content.match(positionPattern);
+  if (positionMatch) {
+    const header = positionMatch[1];
+    let posBody = positionMatch[2];
+
+    const newStatus = `Status: Fixing Phase ${phaseNumber}`;
+    if (/^Status:/m.test(posBody)) {
+      posBody = posBody.replace(/^Status:.*$/m, newStatus);
+    }
+
+    const newActivity = `Last activity: ${today} -- Fix-phase ${phaseNumber} started (${fixPlanCount} fix plans)`;
+    if (/^Last activity:/im.test(posBody)) {
+      posBody = posBody.replace(/^Last activity:.*$/im, newActivity);
+    }
+
+    content = content.replace(positionPattern, `${header}${posBody}`);
+    updated.push('Current Position');
+  }
+
+  if (updated.length > 0) {
+    writeStateMd(statePath, content, cwd);
+  }
+
+  output({ updated, phase: phaseNumber }, raw, updated.length > 0 ? 'true' : 'false');
+}
+
+/**
  * Gate 1: Validate STATE.md against filesystem.
  * Returns { valid, warnings, drift } JSON.
  */
+function cmdStateEndFix(cwd, phaseNumber, raw) {
+  const statePath = planningPaths(cwd).state;
+  if (!fs.existsSync(statePath)) {
+    output({ error: 'STATE.md not found' }, raw);
+    return;
+  }
+
+  let content = fs.readFileSync(statePath, 'utf-8');
+  const today = new Date().toISOString().split('T')[0];
+  const updated = [];
+
+  // Update Status field
+  let result = stateReplaceField(content, 'Status', 'Ready to plan');
+  if (result) { content = result; updated.push('Status'); }
+
+  // Update Last Activity
+  result = stateReplaceField(content, 'Last Activity', today);
+  if (result) { content = result; updated.push('Last Activity'); }
+
+  // Update Last Activity Description
+  const activityDesc = `Fix-phase ${phaseNumber} completed`;
+  result = stateReplaceField(content, 'Last Activity Description', activityDesc);
+  if (result) { content = result; updated.push('Last Activity Description'); }
+
+  // Update ## Current Position section
+  const positionPattern = /(##\s*Current Position\s*\n)([\s\S]*?)(?=\n##|$)/i;
+  const positionMatch = content.match(positionPattern);
+  if (positionMatch) {
+    const header = positionMatch[1];
+    let posBody = positionMatch[2];
+
+    if (/^Status:/m.test(posBody)) {
+      posBody = posBody.replace(/^Status:.*$/m, 'Status: Ready to plan');
+    }
+
+    const newActivity = `Last activity: ${today} -- Fix-phase ${phaseNumber} completed`;
+    if (/^Last activity:/im.test(posBody)) {
+      posBody = posBody.replace(/^Last activity:.*$/im, newActivity);
+    }
+
+    content = content.replace(positionPattern, `${header}${posBody}`);
+    updated.push('Current Position');
+  }
+
+  if (updated.length > 0) {
+    writeStateMd(statePath, content, cwd);
+  }
+
+  output({ updated, phase: phaseNumber }, raw, updated.length > 0 ? 'true' : 'false');
+}
+
 function cmdStateValidate(cwd, raw) {
   const statePath = planningPaths(cwd).state;
   if (!fs.existsSync(statePath)) {
@@ -1350,4 +1459,6 @@ module.exports = {
   cmdStateSync,
   cmdSignalWaiting,
   cmdSignalResume,
+  cmdStateBeginFix,
+  cmdStateEndFix,
 };
