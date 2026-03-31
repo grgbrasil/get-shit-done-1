@@ -829,6 +829,34 @@ function refreshTree(cwd, slug) {
       }
     }
 
+    // ─── Preserve knowledge from existing tree ──────────────────────────
+    const existingTree = readTreeJson(cwd, slug);
+    if (existingTree && Array.isArray(existingTree.nodes)) {
+      const ENRICHED_FIELDS = ['endpoints_called', 'css_classes', 'columns', 'query', 'indexes', 'props', 'emits', 'slots', 'summary'];
+      // Build lookup by id and file_path
+      const oldById = new Map();
+      const oldByFile = new Map();
+      for (const oldNode of existingTree.nodes) {
+        if (oldNode.id) oldById.set(oldNode.id, oldNode);
+        if (oldNode.file_path) oldByFile.set(oldNode.file_path, oldNode);
+      }
+      for (const newNode of nodes) {
+        const existing = oldById.get(newNode.id) || oldByFile.get(newNode.file_path);
+        if (!existing) continue;
+        // Merge knowledge: existing values spread over new (preserve existing)
+        if (existing.knowledge && typeof existing.knowledge === 'object') {
+          newNode.knowledge = { ...(newNode.knowledge || {}), ...existing.knowledge };
+        }
+        // Preserve enriched fields only if missing or empty in new node
+        for (const field of ENRICHED_FIELDS) {
+          if (existing[field] !== undefined && (newNode[field] === undefined || newNode[field] === null || newNode[field] === '')) {
+            newNode[field] = existing[field];
+          }
+        }
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────
+
     const tree = { area: slug, generated_at: new Date().toISOString(), nodes, edges };
     writeTreeJson(cwd, slug, tree);
 
