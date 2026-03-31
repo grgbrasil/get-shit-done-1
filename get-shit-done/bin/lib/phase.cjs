@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { escapeRegex, loadConfig, normalizePhaseName, comparePhaseNum, findPhaseInternal, getArchivedPhaseDirs, generateSlugInternal, getMilestonePhaseFilter, stripShippedMilestones, extractCurrentMilestone, replaceInCurrentMilestone, toPosixPath, planningDir, withPlanningLock, output, error, readSubdirectories, phaseTokenMatches } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { writeStateMd, stateExtractField, stateReplaceField, stateReplaceFieldWithFallback, updatePerformanceMetricsSection } = require('./state.cjs');
@@ -921,6 +922,150 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
   output(result, raw);
 }
 
+function cmdPhaseFreshness(cwd, phaseNum, raw) {
+  if (!phaseNum) {
+    error('phase number required for phase freshness');
+  }
+
+  const phaseInfo = findPhaseInternal(cwd, phaseNum);
+  if (!phaseInfo) {
+    error(`Phase ${phaseNum} not found`);
+  }
+
+  // 1. Determine completion date
+  let completionDate = null;
+
+  // Try ROADMAP.md first
+  const roadmapPath = path.join(planningDir(cwd), 'ROADMAP.md');
+  if (fs.existsSync(roadmapPath)) {
+    const roadmapContent = fs.readFileSync(roadmapPath, 'utf-8');
+    const dateMatch = roadmapContent.match(
+      new RegExp(`Phase\\s+${escapeRegex(phaseNum)}[^\\n]*completed\\s+(\\d{4}-\\d{2}-\\d{2})`, 'i')
+    );
+    if (dateMatch) {
+      completionDate = dateMatch[1];
+    }
+  }
+
+  // Fallback: latest SUMMARY.md mtime
+  if (!completionDate && phaseInfo.summaries.length > 0) {
+    const phaseFullDir = path.join(cwd, phaseInfo.directory);
+    let latestMtime = 0;
+    for (const summary of phaseInfo.summaries) {
+      const summaryPath = path.join(phaseFullDir, summary);
+      if (fs.existsSync(summaryPath)) {
+        const stat = fs.statSync(summaryPath);
+        if (stat.mtimeMs > latestMtime) {
+          latestMtime = stat.mtimeMs;
+        }
+      }
+    }
+    if (latestMtime > 0) {
+      completionDate = new Date(latestMtime).toISOString().split('T')[0];
+    }
+  }
+
+  if (!completionDate) {
+    error(`Could not determine completion date for Phase ${phaseNum}`);
+  }
+
+  // 2. Collect files referenced in SUMMARYs
+  const phaseFullDir = path.join(cwd, phaseInfo.directory);
+  const referencedFiles = new Set();
+  const pathPrefixes = /(?:^|\s|\/)((?:src|app|components|views|pages|lib|api|stores|services|utils|tests)\/[^\s,;)]+)/g;
+
+  for (const summary of phaseInfo.summaries) {
+    const summaryPath = path.join(phaseFullDir, summary);
+    if (!fs.existsSync(summaryPath)) continue;
+    const content = fs.readFileSync(summaryPath, 'utf-8');
+    let m;
+    while ((m = pathPrefixes.exec(content)) !== null) {
+      referencedFiles.add(m[1]);
+    }
+  }
+
+  const totalReferenced = referencedFiles.size;
+
+  if (totalReferenced === 0) {
+    output({
+      fresh: true,
+      staleness_pct: 0,
+      changed_files: [],
+      total_referenced: 0,
+      completion_date: completionDate,
+      phases_since: [],
+    }, raw, `Phase ${phaseNum}: no referenced files found in summaries`);
+    return;
+  }
+
+  // 3. Check which referenced files were modified since completion date
+  const changedFiles = [];
+  for (const file of referencedFiles) {
+    try {
+      const result = execSync(
+        `git log --since="${completionDate}" --oneline -- "${file}"`,
+        { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      ).trim();
+      if (result.length > 0) {
+        changedFiles.push(file);
+      }
+    } catch { /* file may not exist in git — skip */ }
+  }
+
+  // 4. Calculate staleness
+  const stalenessPct = Math.round((changedFiles.length / totalReferenced) * 100);
+  const fresh = stalenessPct <= 30;
+
+  // 5. Find which phases touched the changed files
+  const phasesSince = new Set();
+  if (changedFiles.length > 0) {
+    try {
+      const phasesDir = path.join(planningDir(cwd), 'phases');
+      if (fs.existsSync(phasesDir)) {
+        const entries = fs.readdirSync(phasesDir, { withFileTypes: true });
+        const dirs = entries.filter(e => e.isDirectory()).map(e => e.name)
+          .sort((a, b) => comparePhaseNum(a, b));
+
+        for (const dir of dirs) {
+          const dm = dir.match(/^(\d+[A-Z]?(?:\.\d+)*)-?(.*)/i);
+          if (dm && comparePhaseNum(dm[1], phaseNum) > 0) {
+            // Check if any changed file appears in this phase's summaries
+            const otherPhaseDir = path.join(phasesDir, dir);
+            const otherFiles = fs.readdirSync(otherPhaseDir);
+            const otherSummaries = otherFiles.filter(f => f.includes('SUMMARY') && f.endsWith('.md'));
+
+            for (const s of otherSummaries) {
+              const content = fs.readFileSync(path.join(otherPhaseDir, s), 'utf-8');
+              for (const cf of changedFiles) {
+                if (content.includes(cf)) {
+                  phasesSince.add(dm[1]);
+                  break;
+                }
+              }
+              if (phasesSince.has(dm[1])) break;
+            }
+          }
+        }
+      }
+    } catch { /* intentionally empty */ }
+  }
+
+  const result = {
+    fresh,
+    staleness_pct: stalenessPct,
+    changed_files: changedFiles,
+    total_referenced: totalReferenced,
+    completion_date: completionDate,
+    phases_since: Array.from(phasesSince),
+  };
+
+  const textFallback = fresh
+    ? `Phase ${phaseNum}: FRESH (${stalenessPct}% staleness, ${changedFiles.length}/${totalReferenced} files changed)`
+    : `Phase ${phaseNum}: STALE (${stalenessPct}% staleness, ${changedFiles.length}/${totalReferenced} files changed)`;
+
+  output(result, raw, textFallback);
+}
+
 module.exports = {
   cmdPhasesList,
   cmdPhaseNextDecimal,
@@ -930,4 +1075,5 @@ module.exports = {
   cmdPhaseInsert,
   cmdPhaseRemove,
   cmdPhaseComplete,
+  cmdPhaseFreshness,
 };
