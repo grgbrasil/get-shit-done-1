@@ -1146,6 +1146,9 @@ function cmdStatePlannedPhase(cwd, phaseNumber, planCount, raw) {
  * Current Plan, or Total Plans in Phase.
  */
 function cmdStateBeginFix(cwd, phaseNumber, phaseName, fixPlanCount, raw) {
+  if (!phaseNumber) {
+    error('phase number required for state begin-fix');
+  }
   const statePath = planningPaths(cwd).state;
   if (!fs.existsSync(statePath)) {
     output({ error: 'STATE.md not found' }, raw);
@@ -1203,6 +1206,9 @@ function cmdStateBeginFix(cwd, phaseNumber, phaseName, fixPlanCount, raw) {
  * Returns { valid, warnings, drift } JSON.
  */
 function cmdStateEndFix(cwd, phaseNumber, raw) {
+  if (!phaseNumber) {
+    error('phase number required for state end-fix');
+  }
   const statePath = planningPaths(cwd).state;
   if (!fs.existsSync(statePath)) {
     output({ error: 'STATE.md not found' }, raw);
