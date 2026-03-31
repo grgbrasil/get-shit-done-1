@@ -1610,6 +1610,142 @@ function cmdOpsFindings(cwd, area, args, raw) {
   error('Unknown findings subcommand: ' + subcommand + '. Available: list, add, update');
 }
 
+// ─── Tree Query — Filtered by Intent ───────────────────────────────────────
+
+const CARD_FIELDS = ['id', 'type', 'file_path', 'name', 'summary', 'uses', 'used_by'];
+
+const INTENT_FILTERS = {
+  visual: {
+    fields: ['css_classes', 'props', 'emits', 'slots', 'knowledge', 'specs_applicable'],
+    follow_types: ['component', 'style', 'view']
+  },
+  data: {
+    fields: ['endpoints_called', 'query', 'indexes', 'columns', 'props', 'knowledge'],
+    follow_types: ['endpoint', 'service', 'model', 'table', 'component']
+  },
+  performance: {
+    fields: ['endpoints_called', 'query', 'indexes', 'knowledge'],
+    follow_types: ['endpoint', 'service', 'model', 'table']
+  },
+  security: {
+    fields: ['endpoints_called', 'knowledge'],
+    follow_types: ['route', 'endpoint', 'service']
+  },
+  behavior: {
+    fields: ['props', 'emits', 'slots', 'endpoints_called', 'knowledge'],
+    follow_types: ['component', 'composable', 'service']
+  }
+};
+
+/**
+ * Filter a node to only include card fields + intent-specific fields.
+ * No intent or 'card' → card fields only.
+ */
+function filterNodeByIntent(node, intent) {
+  const result = {};
+  for (const key of CARD_FIELDS) {
+    if (node[key] !== undefined) result[key] = node[key];
+  }
+  if (intent && intent !== 'card' && INTENT_FILTERS[intent]) {
+    for (const key of INTENT_FILTERS[intent].fields) {
+      if (node[key] !== undefined) result[key] = node[key];
+    }
+  }
+  return result;
+}
+
+/**
+ * Walk outgoing edges from startNodeId, following only nodes whose type
+ * is in the intent's follow_types. Returns collected node IDs and edges.
+ * Max depth default 3.
+ */
+function followEdgesForIntent(tree, startNodeId, intent, maxDepth) {
+  if (maxDepth === undefined) maxDepth = 3;
+  const filter = INTENT_FILTERS[intent];
+  if (!filter) return { nodeIds: [startNodeId], edgesFollowed: [] };
+
+  const followTypes = new Set(filter.follow_types);
+  const visited = new Set([startNodeId]);
+  const queue = [{ id: startNodeId, depth: 0 }];
+  const edgesFollowed = [];
+
+  while (queue.length > 0) {
+    const { id, depth } = queue.shift();
+    if (depth >= maxDepth) continue;
+
+    for (const edge of tree.edges) {
+      if (edge.from !== id) continue;
+      if (visited.has(edge.to)) continue;
+
+      const targetNode = tree.nodes.find(n => n.id === edge.to);
+      if (!targetNode) continue;
+      if (!followTypes.has(targetNode.type)) continue;
+
+      visited.add(edge.to);
+      edgesFollowed.push(edge);
+      queue.push({ id: edge.to, depth: depth + 1 });
+    }
+  }
+
+  return { nodeIds: Array.from(visited), edgesFollowed };
+}
+
+/**
+ * Intent-filtered tree query with fast bail.
+ */
+function cmdOpsTreeQuery(cwd, area, args, raw) {
+  if (!area) { error('Usage: gsd-tools ops tree-query <area> --node <id> [--intent <category>] [--require-field <field>]'); return; }
+
+  const slug = slugify(area);
+  const registry = readRegistry(cwd);
+  const entry = (registry.areas || []).find(a => a.slug === slug);
+  if (!entry) { error('Area not found: ' + slug); return; }
+
+  const tree = readTreeJson(cwd, slug);
+  if (!tree) { error('No tree.json for area: ' + slug); return; }
+
+  // Parse args reusing parseFindingArgs (--key value parser)
+  const parsed = parseFindingArgs(args);
+  const nodeId = parsed.node;
+  const intent = parsed.intent;
+  const requireField = parsed.require_field;
+
+  if (!nodeId) { error('Missing --node argument'); return; }
+
+  // Fast bail: node not found
+  const startNode = tree.nodes.find(n => n.id === nodeId);
+  if (!startNode) {
+    output({ success: true, bail: true, missing: 'node', node_id: nodeId, action: 'Run ops map to refresh the tree, or check the node ID' }, raw);
+    return;
+  }
+
+  // Fast bail: required field undefined (but empty array is OK)
+  if (requireField && startNode[requireField] === undefined) {
+    output({ success: true, bail: true, missing: 'field', node_id: nodeId, field: requireField, action: 'Add ' + requireField + ' to the node via ops modify or tree update' }, raw);
+    return;
+  }
+
+  // Collect nodes
+  let collectedNodeIds;
+  let edgesFollowed = [];
+
+  if (intent && INTENT_FILTERS[intent]) {
+    const result = followEdgesForIntent(tree, nodeId, intent);
+    collectedNodeIds = result.nodeIds;
+    edgesFollowed = result.edgesFollowed;
+  } else {
+    collectedNodeIds = [nodeId];
+  }
+
+  // Filter each node by intent
+  const nodes = collectedNodeIds
+    .map(id => tree.nodes.find(n => n.id === id))
+    .filter(Boolean)
+    .map(n => filterNodeByIntent(n, intent));
+
+  output({ success: true, area: slug, intent: intent || null, nodes, edges_followed: edgesFollowed.length }, raw);
+}
+
 // ─── Tree Update — Plant Knowledge ─────────────────────────────────────────
 
 /**
@@ -1677,7 +1813,9 @@ function cmdOpsTreeUpdate(cwd, area, nodeId, fieldPath, valueStr, raw) {
 module.exports = {
   cmdOpsInit, cmdOpsMap, cmdOpsAdd, cmdOpsList, cmdOpsGet,
   cmdOpsInvestigate, cmdOpsFeature, cmdOpsModify, cmdOpsDebug, cmdOpsSummary,
-  cmdOpsStatus, cmdOpsSpec, cmdOpsBacklog, cmdOpsFindings, cmdOpsTreeUpdate,
+  cmdOpsStatus, cmdOpsSpec, cmdOpsBacklog, cmdOpsFindings,
+  cmdOpsTreeQuery, INTENT_FILTERS, CARD_FIELDS, filterNodeByIntent,
+  cmdOpsTreeUpdate,
   readFindings, writeFindings, nextFindingId, parseFindingRange,
   computeAreaStatus,
   appendHistory, computeBlastRadius, refreshTree
