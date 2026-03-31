@@ -363,6 +363,12 @@ function scanImports(filePath, projectFiles, cwd) {
     imports.push(match[1]);
   }
 
+  // Dynamic imports: import('...') — Vue Router lazy loading, code splitting
+  const dynamicRegex = /import\(\s*['"]([^'"]+)['"]\s*\)/g;
+  while ((match = dynamicRegex.exec(content)) !== null) {
+    imports.push(match[1]);
+  }
+
   // PHP use statements
   const phpRegex = /use\s+([A-Z][A-Za-z\\]+)/g;
   while ((match = phpRegex.exec(content)) !== null) {
