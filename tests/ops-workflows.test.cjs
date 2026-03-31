@@ -265,19 +265,20 @@ describe('cmdOpsInvestigate', () => {
     assert.ok(result.error.includes('Usage:'), 'should show usage: ' + result.error);
   });
 
-  test('errors on area not in registry', () => {
-    // Create empty registry
+  test('auto-bootstraps area not in registry (v2)', () => {
+    // Create empty registry — v2 auto-creates the area instead of erroring
     const opsDir = path.join(tmpDir, '.planning', 'ops');
     fs.mkdirSync(opsDir, { recursive: true });
     fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({ areas: [] }), 'utf-8');
 
     const result = runGsdTools(['ops', 'investigate', 'nonexistent', 'test'], tmpDir);
-    assert.strictEqual(result.success, false);
-    assert.ok(result.error.includes('Area not found'), 'should say area not found: ' + result.error);
+    assert.ok(result.success, 'should auto-bootstrap: ' + (result.error || ''));
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.bootstrapped.registry, true);
   });
 
-  test('errors on missing tree.json', () => {
-    // Create registry with area but no tree.json
+  test('auto-bootstraps missing tree.json (v2)', () => {
+    // Create registry with area but no tree.json — v2 auto-creates empty tree
     const opsDir = path.join(tmpDir, '.planning', 'ops');
     fs.mkdirSync(opsDir, { recursive: true });
     fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
@@ -285,26 +286,25 @@ describe('cmdOpsInvestigate', () => {
     }), 'utf-8');
 
     const result = runGsdTools(['ops', 'investigate', 'auth', 'test problem'], tmpDir);
-    assert.strictEqual(result.success, false);
-    assert.ok(result.error.includes('No tree.json'), 'should mention missing tree.json: ' + result.error);
+    assert.ok(result.success, 'should auto-bootstrap tree: ' + (result.error || ''));
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.bootstrapped.tree, true);
+    assert.strictEqual(parsed.bootstrapped.registry, false);
   });
 
-  test('outputs context with full tree', () => {
-    // Create registry + tree.json
+  test('outputs context with full tree and v2 fields', () => {
+    // Create registry + empty tree (avoid refreshTree side-effects in temp dir)
     const opsDir = path.join(tmpDir, '.planning', 'ops');
     const authDir = path.join(opsDir, 'auth');
     fs.mkdirSync(authDir, { recursive: true });
     fs.writeFileSync(path.join(opsDir, 'registry.json'), JSON.stringify({
-      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 2 }]
+      areas: [{ slug: 'auth', name: 'auth', source: 'manual', detected_by: 'manual', confidence: 'high', created_at: '2026-01-01T00:00:00Z', last_scanned: '2026-01-01T00:00:00Z', components_count: 0 }]
     }), 'utf-8');
     fs.writeFileSync(path.join(authDir, 'tree.json'), JSON.stringify({
       area: 'auth',
       generated_at: '2026-01-01T00:00:00Z',
-      nodes: [
-        { id: 'component:Login', type: 'component', file_path: 'src/auth/Login.vue', name: 'Login', metadata: {} },
-        { id: 'service:AuthSvc', type: 'service', file_path: 'src/auth/AuthSvc.js', name: 'AuthSvc', metadata: {} }
-      ],
-      edges: [{ from: 'component:Login', to: 'service:AuthSvc', type: 'calls' }]
+      nodes: [],
+      edges: []
     }), 'utf-8');
 
     const result = runGsdTools(['ops', 'investigate', 'auth', 'login broken'], tmpDir);
@@ -315,10 +315,10 @@ describe('cmdOpsInvestigate', () => {
     assert.strictEqual(parsed.area, 'auth');
     assert.ok(parsed.context, 'should have context');
     assert.ok(parsed.context.tree, 'should have full tree in context');
-    assert.strictEqual(parsed.context.nodes, 2);
-    assert.strictEqual(parsed.context.edges, 1);
     assert.ok(parsed.tree_path, 'should have tree_path');
-    assert.ok(parsed.diagnosis_path, 'should have diagnosis_path');
+    assert.ok(parsed.findings_path, 'should have findings_path (v2)');
+    assert.ok(parsed.tools, 'should have tools hints (v2)');
+    assert.ok(parsed.bootstrapped !== undefined, 'should have bootstrapped object (v2)');
   });
 
   test('appends history entry', () => {
