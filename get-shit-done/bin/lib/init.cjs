@@ -1615,8 +1615,102 @@ function cmdAgentSkills(cwd, agentType, raw) {
   process.exit(0);
 }
 
+function cmdInitFixPhase(cwd, phase, raw) {
+  if (!phase) {
+    error('phase required for init fix-phase');
+  }
+
+  const config = loadConfig(cwd);
+  const phaseInfo = findPhaseInternal(cwd, phase);
+
+  if (!phaseInfo) {
+    error(`Phase ${phase} not found`);
+  }
+
+  // Check if phase has been completed (has summaries for all plans)
+  const isCompleted = phaseInfo.plans.length > 0 && phaseInfo.incomplete_plans.length === 0;
+
+  // Inventory existing artifacts in the phase directory
+  const phaseDir = path.join(cwd, phaseInfo.directory);
+  const artifactInventory = {
+    has_context: phaseInfo.has_context,
+    has_research: phaseInfo.has_research,
+    has_verification: phaseInfo.has_verification,
+    has_ui_spec: false,
+    has_discussion_log: false,
+    fix_gaps_exists: false,
+    fix_context_exists: false,
+    fix_codebase_exists: false,
+  };
+
+  try {
+    const files = fs.readdirSync(phaseDir);
+    artifactInventory.has_ui_spec = files.some(f => f.includes('UI-SPEC'));
+    artifactInventory.has_discussion_log = files.some(f => f.includes('DISCUSSION-LOG'));
+    artifactInventory.fix_gaps_exists = files.some(f => f === 'FIX-GAPS.md');
+    artifactInventory.fix_context_exists = files.some(f => f === 'FIX-CONTEXT.md');
+    artifactInventory.fix_codebase_exists = files.some(f => f === 'FIX-CODEBASE.md');
+  } catch { /* intentionally empty */ }
+
+  // Count existing fix plans (plans with "fix: true" in frontmatter)
+  const fixPlans = phaseInfo.plans.filter(p => {
+    const planPath = path.join(phaseDir, p);
+    if (!fs.existsSync(planPath)) return false;
+    const content = fs.readFileSync(planPath, 'utf-8');
+    return /^fix:\s*true/m.test(content);
+  });
+
+  // Determine next plan number
+  const existingPlanNums = phaseInfo.plans.map(p => {
+    const m = p.match(/(\d+)-(\d+)/);
+    return m ? parseInt(m[2], 10) : 0;
+  });
+  const nextPlanNum = existingPlanNums.length > 0 ? Math.max(...existingPlanNums) + 1 : 1;
+
+  const result = {
+    // Models
+    executor_model: resolveModelInternal(cwd, 'gsd-executor'),
+    verifier_model: resolveModelInternal(cwd, 'gsd-verifier'),
+    planner_model: resolveModelInternal(cwd, 'gsd-planner'),
+    gap_analyzer_model: resolveModelInternal(cwd, 'gsd-gap-analyzer'),
+
+    // Config
+    parallelization: config.parallelization,
+    commit_docs: config.commit_docs,
+
+    // Phase info
+    phase_found: true,
+    phase_completed: isCompleted,
+    phase_dir: phaseInfo.directory,
+    phase_number: phaseInfo.phase_number,
+    phase_name: phaseInfo.phase_name,
+    phase_slug: phaseInfo.phase_slug,
+
+    // Plan inventory
+    plans: phaseInfo.plans,
+    summaries: phaseInfo.summaries,
+    plan_count: phaseInfo.plans.length,
+    fix_plan_count: fixPlans.length,
+    next_plan_num: nextPlanNum,
+
+    // Artifact inventory
+    artifacts: artifactInventory,
+
+    // File existence
+    state_exists: fs.existsSync(path.join(planningDir(cwd), 'STATE.md')),
+    roadmap_exists: fs.existsSync(path.join(planningDir(cwd), 'ROADMAP.md')),
+
+    // File paths
+    state_path: toPosixPath(path.relative(cwd, path.join(planningDir(cwd), 'STATE.md'))),
+    roadmap_path: toPosixPath(path.relative(cwd, path.join(planningDir(cwd), 'ROADMAP.md'))),
+  };
+
+  output(withProjectRoot(cwd, result), raw);
+}
+
 module.exports = {
   cmdInitExecutePhase,
+  cmdInitFixPhase,
   cmdInitPlanPhase,
   cmdInitNewProject,
   cmdInitNewMilestone,
