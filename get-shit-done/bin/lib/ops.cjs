@@ -907,21 +907,54 @@ function cmdOpsSummary(cwd, raw) {
 // ─── Workflow Commands ────────────────────────────────────────────────────
 
 /**
- * cmdOpsInvestigate — Load full tree context for autonomous investigation (OPS-05, D-03, D-07).
- * Outputs JSON with full tree for agent consumption. Records history per OPS-09.
+ * cmdOpsInvestigate — Auto-bootstrap + load full tree context for autonomous investigation.
+ * Auto-creates registry entry, area dir, and tree.json if missing (v2).
+ * Outputs JSON with full tree, findings_path, and CLI tool hints for agent consumption.
+ * Records history per OPS-09.
  */
 function cmdOpsInvestigate(cwd, area, description, raw) {
   if (!area) { error('Usage: gsd-tools ops investigate <area> <description>'); return; }
   const slug = slugify(area);
+
+  const bootstrapped = { registry: false, area_dir: false, tree: false };
+
+  // 1. Auto-bootstrap registry entry
   const registry = readRegistry(cwd);
-  const entry = registry.areas.find(a => a.slug === slug);
-  if (!entry) { error('Area not found: ' + slug); return; }
+  let entry = registry.areas.find(a => a.slug === slug);
+  if (!entry) {
+    entry = {
+      slug,
+      name: slug,
+      source: 'auto-bootstrap',
+      detected_by: 'investigate',
+      confidence: 'medium',
+      components_count: 0,
+      last_scanned: new Date().toISOString()
+    };
+    registry.areas.push(entry);
+    writeRegistry(cwd, registry);
+    bootstrapped.registry = true;
+  }
 
-  const tree = readTreeJson(cwd, slug);
-  if (!tree) { error('No tree.json for area: ' + slug + '. Run /ops:map first.'); return; }
+  // 2. Auto-bootstrap area dir
+  const dir = areaDir(cwd, slug);
+  if (!fs.existsSync(dir)) {
+    ensureAreaDir(cwd, slug);
+    bootstrapped.area_dir = true;
+  }
 
-  // Per D-03/D-07: investigate loads full tree for deep traversal
-  const diagnosisPath = path.join(areaDir(cwd, slug), 'diagnosis.md');
+  // 3. Auto-bootstrap tree
+  let tree = readTreeJson(cwd, slug);
+  if (!tree) {
+    tree = {
+      area: slug,
+      generated_at: new Date().toISOString(),
+      nodes: [],
+      edges: []
+    };
+    writeTreeJson(cwd, slug, tree);
+    bootstrapped.tree = true;
+  }
 
   // Record history per OPS-09
   appendHistory(cwd, slug, {
@@ -930,19 +963,33 @@ function cmdOpsInvestigate(cwd, area, description, raw) {
     outcome: 'success'
   });
 
-  // Post-op tree refresh per D-12
-  refreshTree(cwd, slug);
+  // Post-op tree refresh per D-12 — only if tree had existing nodes
+  if (tree.nodes.length > 0) {
+    refreshTree(cwd, slug);
+    // Re-read tree after refresh
+    tree = readTreeJson(cwd, slug) || tree;
+  }
+
+  // Build CLI tool hints
+  const base = 'node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs"';
 
   output({
     success: true,
     area: slug,
     description: description || '',
+    bootstrapped,
     tree_path: path.join('.planning/ops', slug, 'tree.json'),
-    diagnosis_path: path.relative(cwd, diagnosisPath),
+    findings_path: path.join('.planning/ops', slug, 'findings.json'),
     context: {
       nodes: tree.nodes.length,
       edges: tree.edges.length,
-      tree: tree  // Full tree for agent consumption per D-03
+      tree: tree
+    },
+    tools: {
+      tree_query: `${base} ops tree-query ${slug} --intent <intent> --node <node-id>`,
+      tree_update: `${base} ops tree-update ${slug} <node-id> <field> <json-value>`,
+      findings_add: `${base} ops findings ${slug} add --title "..." --severity <low|medium|high|critical> --category <bug|debt|risk|optimization|security> --description "..."`,
+      findings_list: `${base} ops findings ${slug} list [--status pending]`
     }
   }, raw);
 }
