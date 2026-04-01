@@ -111,7 +111,7 @@ Fases 1-3 independentes mas ordenadas por impacto: scoping reduz desperdício de
 
 Plans:
 - [x] 04-01-PLAN.md — Command, workflow, and template for brainstorm-phase
-- [ ] 04-02-PLAN.md — Infrastructure patches: artifact detection, discuss-phase integration, routing
+- [x] 04-02-PLAN.md — Infrastructure patches: artifact detection, discuss-phase integration, routing
 
 **Key files:**
 - `commands/gsd/brainstorm-phase.md` — novo comando

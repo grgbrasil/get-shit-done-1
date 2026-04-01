@@ -34,7 +34,7 @@
 
 - [x] **BRAIN-01**: `/gsd:brainstorm-phase N` command exists and runs interactive creative exploration with one-question-at-a-time pattern
 - [x] **BRAIN-02**: Generates `{NN}-BRAINSTORM.md` with domain_boundary, design_decisions, tradeoffs_explored, pre_context sections; artifact detected by getPhaseFileStats()
-- [ ] **BRAIN-03**: discuss-phase detects and integrates same-phase BRAINSTORM.md as Likely-confidence assumptions (not locked decisions)
+- [x] **BRAIN-03**: discuss-phase detects and integrates same-phase BRAINSTORM.md as Likely-confidence assumptions (not locked decisions)
 - [x] **BRAIN-04**: Workflow ends with `/clear` + `/gsd:discuss-phase <N>` suggestion, never transitions to plan-phase
 
 ## v2 Requirements
@@ -80,7 +80,7 @@
 | GUARD-06 | Phase 3 | Complete |
 | BRAIN-01 | Phase 4 | Complete |
 | BRAIN-02 | Phase 4 | Complete |
-| BRAIN-03 | Phase 4 | Pending |
+| BRAIN-03 | Phase 4 | Complete |
 | BRAIN-04 | Phase 4 | Complete |
 
 **Coverage:**
