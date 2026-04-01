@@ -60,6 +60,16 @@ Usage: `/gsd:map-codebase`
 
 ### Phase Planning
 
+**`/gsd:brainstorm-phase <number>`**
+Creative exploration for a phase before discuss-phase.
+
+- Asks one question at a time to explore the design space
+- Proposes 2-3 approaches with trade-offs for each decision area
+- Produces `{NN}-BRAINSTORM.md` that feeds into discuss-phase as soft assumptions
+- Optional pre-step -- skip directly to discuss-phase if you already have clear vision
+
+Usage: `/gsd:brainstorm-phase 3`
+
 **`/gsd:discuss-phase <number>`**
 Help articulate your vision for a phase before planning.
 
