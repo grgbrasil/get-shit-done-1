@@ -4,71 +4,44 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-04-01T16:17:27.850Z"
+last_updated: "2026-04-01T16:24:08.478Z"
 last_activity: 2026-04-01
 progress:
-  total_phases: 8
-  completed_phases: 7
-  total_plans: 16
-  completed_plans: 17
-  percent: 0
+  total_phases: 3
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-29)
+See: .planning/PROJECT.md (updated 2026-04-01)
 
-**Core value:** Nenhuma execucao pode quebrar silenciosamente o que ja funciona -- mudancas estruturais sao auto-resolvidas, mudancas de comportamento exigem decisao humana.
-**Current focus:** Phase 07 — ops-governance-status-specs-backlog
+**Core value:** Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela análise.
+**Current focus:** Phase 02 — model-routing-fix-model-01-through-model-04
 
 ## Current Position
 
-Phase: 07 (ops-governance-status-specs-backlog) — EXECUTING
-Plan: 2 of 2
+Phase: 3
+Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-04-01
 
-Progress: [░░░░░░░░░░] 0%
+## Research Completed
 
-## Performance Metrics
+| Research | File | Key Findings |
+|----------|------|-------------|
+| Phase Scoping | research/PHASE-SCOPING.md | Fork vs subagent, coordinator "never delegate understanding", 5-layer context management, verification agent adversarial, maxTurns limits |
+| Model Routing | research/MODEL-ROUTING.md | MODEL_ALIAS_MAP 2+ versions stale, no effort parameter, plan-checker on DeepSeek risky, 4-level effort system |
+| Hooks & Guardrails | research/HOOKS-GUARDRAILS.md | Verification agent adversarial, read-before-edit runtime enforcement, 23 bash security checks, anti-false-claims bidirectional |
+| Memory & Plugins | research/MEMORY-PLUGINS.md | 4-type memory taxonomy, 200-line/25KB index limit, AI-powered memory recall, path-conditional skills, cache boundary strategy |
 
-**Velocity:**
+## Milestone History
 
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
-
-**Recent Trend:**
-
-- Last 5 plans: -
-- Trend: -
-
-*Updated after each plan completion*
-| Phase 01 P01 | 5min | 1 tasks | 5 files |
-| Phase 01 P02 | 4min | 2 tasks | 4 files |
-| Phase 02 P01 | 1min | 1 tasks | 3 files |
-| Phase 02 P02 | 3min | 2 tasks | 3 files |
-| Phase 04 P01 | 4min | 2 tasks | 3 files |
-| Phase 04 P02 | 2min | 2 tasks | 4 files |
-| Phase 05 P01 | 4min | 2 tasks | 3 files |
-| Phase 05 P02 | 3min | 2 tasks | 5 files |
-| Phase 03 P01 | 3min | 1 tasks | 4 files |
-| Phase 03 P02 | 4min | 2 tasks | 5 files |
-| Phase 03 P03 | 3min | 2 tasks | 4 files |
-| Phase 06 P01 | 3min | 1 tasks | 3 files |
-| Phase 06 P02 | 4min | 2 tasks | 5 files |
-| Phase 06 P03 | 4min | 2 tasks | 5 files |
-| Phase 07 P01 | 5min | 3 tasks | 5 files |
-| Phase 07 P02 | 4min | 2 tasks | 4 files |
-| Phase 02 P02 | 408s | 2 tasks | 11 files |
+- v1.0: GSD Impact Analysis — 7/7 phases complete (archived to milestones/v1.0-*)
+- v2.0: Claude Code Insights — 0/3 phases (current)
 
 ## Accumulated Context
 
@@ -77,35 +50,9 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Milestone split]: Two separate PRs/milestones -- Impact Analysis first (Milestone 1), ADR & Global Memory second (Milestone 2)
-- [Research]: Zero new dependencies -- flat JSON + Serena MCP + prompt engineering
-- [Research]: Function Map staleness is #1 risk -- must update during execution, not just at commit
-- [User]: No poda/truncation -- use cheap model to process full codebase instead
-- [Phase 01]: fmap.cjs follows state.cjs lib module pattern (require core.cjs, export cmd* functions)
-- [Phase 01]: Tests use node:test + node:assert (project convention), not vitest
-- [Phase 01]: Cataloger probes Serena via get_symbols_overview, falls back to grep immediately if unavailable
-- [Phase 01]: changed-files uses three git sources (diff HEAD, diff cached, ls-files untracked) for complete working tree coverage
-- [Phase 02]: normalizeSignature handles newlines, extra whitespace, trailing semicolons, and paren spacing for reliable cross-format comparison
-- [Phase 02]: Impact guard is advisory-only (soft guard) per D-01
-- [Phase 04]: Read raw config.json instead of loadConfig() for nested workflow keys in preflight
-- [Phase 04]: Word-boundary regex for UI detection prevents false positives on programming terms
-- [Phase 04]: Preflight augments existing inline checks rather than replacing them
-- [Phase 05]: Inline glob matching for framework patterns (zero external deps)
-- [Phase 05]: OPS registry: slim registry.json index + per-area dirs for heavy data
-- [Phase 05]: followImports for directory/manual areas to discover cross-directory dependencies
-- [Phase 05]: Import scanning covers ES6/CJS/PHP with regex, consistent with anti-AST decision
-- [Phase 03]: model_overrides defaults to {} not null for consistent downstream handling
-- [Phase 03]: Inline stats computation in init.cjs instead of calling cmdFmapStats to avoid stdout pollution
-- [Phase 03]: Hook registration already present in install.js from Phase 02 — no changes needed
-- [Phase 03]: Post-wave cataloger uses fmap changed-files with --since-commit for wave-scoped detection
-- [Phase 06]: BLAST_RADIUS_THRESHOLD=5 as tunable constant for ops dispatch decisions
-- [Phase 06]: cmdOpsDebug works without tree.json for graceful degradation
-- [Phase 06]: context-pack.md uses 4 structured sections for /gsd:debug composability (D-08/D-09)
-- [Phase 06]: cmdOpsFeature/cmdOpsModify use summary context (nodes_by_type, edges_count) not full tree per D-03
-- [Phase 06]: ops-summary.json injected in both init functions following functionMapStats pattern for D-01/D-02
-- [Phase 07]: Health scoring uses flag-count thresholds: 0=green, 1=yellow, 2+=red per D-05
-- [Phase 07]: captureOutput intercepts fs.writeSync(1) since output() bypasses process.stdout.write
-- [Phase 07]: Auto-increment IDs use Math.max(0,...existingIds)+1 to avoid collisions even after deletions
+- [Phase 01]: Three complexity tiers (simple:30, medium:100, complex:200) based on Claude Code fork agent limits
+- [Phase 01]: 9-section handoff format based on Claude Code compaction prompt structure
+- [Phase 02]: EFFORT_PROFILES placed after LEAN_MODEL_OVERRIDES, before utility functions
 - [Phase 02]: resolveEffort() as pure lookup with no config/cwd dependency -- effort is static per agent
 
 ### Pending Todos
@@ -114,13 +61,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Research] Serena MCP exact output format for get_symbols_overview needs validation with actual calls
-- [Research] Behavioral vs structural classification prompt needs iterative refinement with real examples
-- [Research] Concurrent wave writes to Function Map need synchronization strategy
-
-### Roadmap Evolution
-
-- Phase 4 added: Pre-flight dependency resolver for phase commands
+None.
 
 ## Session Continuity
 
