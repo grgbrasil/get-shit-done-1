@@ -17,12 +17,12 @@ Estudo sistemático do source code do Claude Code para extrair insights acionáv
 
 **Requirements:** SCOPE-01, SCOPE-02, SCOPE-03, SCOPE-04, SCOPE-05, SCOPE-06
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 01-01-PLAN.md — Executor discipline: scope echo, commit-before-report, micro-compact awareness
 - [x] 01-02-PLAN.md — Planner synthesis step: "never delegate understanding"
-- [ ] 01-03-PLAN.md — maxTurns config, structured handoff summaries, context budget awareness
+- [x] 01-03-PLAN.md — maxTurns config, structured handoff summaries, context budget awareness
 
 **Key files:**
 - `agents/gsd-executor.md` — adicionar scope echo e commit-before-report
@@ -89,7 +89,7 @@ As fases são independentes tecnicamente mas ordenadas por impacto: scoping redu
 
 | Phase | Status | Plans | Progress |
 |-------|--------|-------|----------|
-| 1     | ○      | 0/3   | 0%       |
+| 1     | 3/3 | Complete   | 2026-04-01 |
 | 2     | ○      | 0/0   | 0%       |
 | 3     | ○      | 0/0   | 0%       |
 
