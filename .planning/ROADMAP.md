@@ -67,12 +67,12 @@ Plans:
 
 **Requirements:** GUARD-01, GUARD-02, GUARD-03, GUARD-04, GUARD-05, GUARD-06
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — CLAUDE.md global text guardrails (GUARD-01, 02, 05-text, 06-global)
 - [ ] 03-02-PLAN.md — Hook code: destructive cmd detection + read-before-edit advisory (GUARD-04, 05-runtime)
-- [ ] 03-03-PLAN.md — Agent prompts: anti-false-claims reinforcement + context_persistence (GUARD-01, 06)
+- [x] 03-03-PLAN.md — Agent prompts: anti-false-claims reinforcement + context_persistence (GUARD-01, 06)
 
 **Key files:**
 - `/Users/gg/.claude/CLAUDE.md` — global guardrails
@@ -125,7 +125,7 @@ Fases 1-3 independentes mas ordenadas por impacto: scoping reduz desperdício de
 |-------|--------|-------|----------|
 | 1     | 3/3 | Complete   | 2026-04-01 |
 | 2     | ○      | 0/2   | 0%       |
-| 3     | ○      | 0/3   | 0%       |
+| 3     | 1/3 | In Progress|  |
 | 4     | ○      | 0/0   | 0%       |
 
 ---
