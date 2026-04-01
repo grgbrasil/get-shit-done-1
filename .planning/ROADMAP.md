@@ -1,5 +1,10 @@
 # Roadmap: Claude Code Insights (Milestone 2)
 
+## Milestones
+
+- **v1.0 GSD Impact Analysis** — Phases 1-7 (shipped 2026-04-01) → [archive](milestones/v1.0-ROADMAP.md)
+- **v2.0 Claude Code Insights** — Phases 1-3 (in progress)
+
 ## Overview
 
 Estudo sistemático do source code do Claude Code para extrair insights acionáveis e aplicar como patches no GSD e CLAUDE.md global. Três fases em ordem de impacto: phase scoping → model routing → hooks/guardrails. Cada fase produz patches concretos, não documentos.
