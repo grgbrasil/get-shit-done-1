@@ -138,7 +138,7 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — lock.cjs core module with acquire/release/check/forceUnlock API + TDD tests
+- [x] 05-01-PLAN.md — lock.cjs core module with acquire/release/check/forceUnlock API + TDD tests
 - [ ] 05-02-PLAN.md — gsd-phase-lock.js PreToolUse blocking hook + gsd-tools dispatcher + unlock-phase command
 - [ ] 05-03-PLAN.md — Integration: build pipeline, install.js registration, .gitignore, progress display, init.cjs
 
