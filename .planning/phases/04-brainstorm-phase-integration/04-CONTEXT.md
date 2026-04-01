@@ -68,7 +68,7 @@ Criar comando `/gsd:brainstorm-phase <N>` que roda exploração criativa (estilo
 - `~/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/SKILL.md` — One-question-at-a-time pattern, 2-3 approaches with trade-offs, design presentation flow
 
 ### Requirements
-- `.planning/REQUIREMENTS.md` — BRAIN-01 through BRAIN-04 (not yet defined — need to be added)
+- `.planning/REQUIREMENTS.md` — BRAIN-01 through BRAIN-04 (added by plan 04-01, Task 1)
 - `.planning/ROADMAP.md` §Phase 4 — Goal, key files, success criteria
 
 </canonical_refs>
@@ -103,9 +103,9 @@ Criar comando `/gsd:brainstorm-phase <N>` que roda exploração criativa (estilo
 <specifics>
 ## Specific Ideas
 
-- BRAINSTORM.md NÃO substitui CONTEXT.md — é um pré-passo que alimenta discuss-phase com decisões exploratórias
-- Decisões no BRAINSTORM.md são "soft" (Likely confidence) vs "hard" (locked) no CONTEXT.md — discuss-phase pode desafiar/refinar
-- O brainstorm workflow deve ser útil para fases que o usuário não tem visão clara ainda — ajuda a formar a visão antes de discuss-phase capturar decisões finais
+- BRAINSTORM.md NAO substitui CONTEXT.md — e um pre-passo que alimenta discuss-phase com decisoes exploratorias
+- Decisoes no BRAINSTORM.md sao "soft" (Likely confidence) vs "hard" (locked) no CONTEXT.md — discuss-phase pode desafiar/refinar
+- O brainstorm workflow deve ser util para fases que o usuario nao tem visao clara ainda — ajuda a formar a visao antes de discuss-phase capturar decisoes finais
 - Fluxo completo fica: brainstorm-phase (opcional) → discuss-phase → plan-phase → execute-phase
 
 </specifics>
@@ -113,9 +113,8 @@ Criar comando `/gsd:brainstorm-phase <N>` que roda exploração criativa (estilo
 <deferred>
 ## Deferred Ideas
 
-- **Visual companion**: Superpowers brainstorming tem visual companion para mockups no browser — deixar para iteração futura se houver demanda
-- **Auto mode (--auto)**: Brainstorming é inerentemente interativo — auto mode não faz sentido na v1, talvez em futuro com heurísticas
-- **BRAIN requirements**: BRAIN-01 through BRAIN-04 não estão definidos em REQUIREMENTS.md — precisam ser adicionados como parte da execução desta fase
+- **Visual companion**: Superpowers brainstorming tem visual companion para mockups no browser — deixar para iteracao futura se houver demanda
+- **Auto mode (--auto)**: Brainstorming e inerentemente interativo — auto mode nao faz sentido na v1, talvez em futuro com heuristicas
 
 </deferred>
 
