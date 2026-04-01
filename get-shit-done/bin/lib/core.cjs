@@ -697,7 +697,7 @@ function searchPhaseInDir(baseDir, relBase, normalized) {
     const phaseNumber = dirMatch ? dirMatch[1] : normalized;
     const phaseName = dirMatch && dirMatch[2] ? dirMatch[2] : null;
     const phaseDir = path.join(baseDir, match);
-    const { plans: unsortedPlans, summaries: unsortedSummaries, hasResearch, hasContext, hasVerification, hasReviews } = getPhaseFileStats(phaseDir);
+    const { plans: unsortedPlans, summaries: unsortedSummaries, hasResearch, hasContext, hasVerification, hasReviews, hasBrainstorm } = getPhaseFileStats(phaseDir);
     const plans = unsortedPlans.sort();
     const summaries = unsortedSummaries.sort();
 
@@ -722,6 +722,7 @@ function searchPhaseInDir(baseDir, relBase, normalized) {
       has_context: hasContext,
       has_verification: hasVerification,
       has_reviews: hasReviews,
+      has_brainstorm: hasBrainstorm,
     };
   } catch {
     return null;
@@ -1185,6 +1186,7 @@ function getPhaseFileStats(phaseDir) {
     hasContext: files.some(f => f.endsWith('-CONTEXT.md') || f === 'CONTEXT.md'),
     hasVerification: files.some(f => f.endsWith('-VERIFICATION.md') || f === 'VERIFICATION.md'),
     hasReviews: files.some(f => f.endsWith('-REVIEWS.md') || f === 'REVIEWS.md'),
+    hasBrainstorm: files.some(f => f.endsWith('-BRAINSTORM.md') || f === 'BRAINSTORM.md'),
   };
 }
 
