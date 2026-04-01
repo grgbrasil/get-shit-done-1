@@ -69,6 +69,7 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 4 added: Integrate brainstorming skill as pre-discuss step with GSD-native output
+- Phase 5 added: Phase lock — detect active sessions to prevent duplicate work
 
 ### Blockers/Concerns
 
