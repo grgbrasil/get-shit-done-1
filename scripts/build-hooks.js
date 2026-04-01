@@ -18,6 +18,7 @@ const HOOKS_TO_COPY = [
   'gsd-check-update.js',
   'gsd-context-monitor.js',
   'gsd-impact-guard.js',
+  'gsd-phase-lock.js',
   'gsd-prompt-guard.js',
   'gsd-read-guard.js',
   'gsd-statusline.js',
