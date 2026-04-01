@@ -3,11 +3,11 @@
 ## Milestones
 
 - **v1.0 GSD Impact Analysis** — Phases 1-7 (shipped 2026-04-01) → [archive](milestones/v1.0-ROADMAP.md)
-- **v2.0 Claude Code Insights** — Phases 1-4 (in progress)
+- **v2.0 Claude Code Insights** — Phases 1-5 (in progress)
 
 ## Overview
 
-Estudo sistemático do source code do Claude Code para extrair insights acionáveis e aplicar como patches no GSD e CLAUDE.md global. Fases 1-3 em ordem de impacto: phase scoping → model routing → hooks/guardrails. Phase 4: integrar brainstorming como pré-discuss com output nativo GSD. Cada fase produz patches concretos, não documentos.
+Estudo sistemático do source code do Claude Code para extrair insights acionáveis e aplicar como patches no GSD e CLAUDE.md global. Fases 1-3 em ordem de impacto: phase scoping → model routing → hooks/guardrails. Phase 4: integrar brainstorming como pré-discuss com output nativo GSD. Phase 5: phase lock para prevenir trabalho duplicado entre sessões. Cada fase produz patches concretos, não documentos.
 
 ## Phases
 
@@ -97,9 +97,11 @@ Phase 2 (model-routing-fix)
 Phase 3 (guardrails-upgrade)
     ↓ (independente tecnicamente)
 Phase 4 (brainstorm-phase-integration)
+    ↓ (independente tecnicamente)
+Phase 5 (phase-lock)
 ```
 
-Fases 1-3 independentes mas ordenadas por impacto: scoping reduz desperdício de contexto, routing melhora qualidade de output, guardrails previnem falhas silenciosas. Phase 4 é feature nova independente.
+Fases 1-3 independentes mas ordenadas por impacto: scoping reduz desperdício de contexto, routing melhora qualidade de output, guardrails previnem falhas silenciosas. Phase 4 é feature nova independente. Phase 5 é infraestrutura de segurança para sessões concorrentes.
 
 ### Phase 4: brainstorm-phase-integration (BRAIN-01 through BRAIN-04)
 
@@ -125,6 +127,38 @@ Plans:
 - discuss-phase lê BRAINSTORM.md como prior context (decisões não são re-perguntadas)
 - Ao finalizar, sugere `/clear` + `/gsd:discuss-phase <N>` como próximo passo
 
+### Phase 5: phase-lock (LOCK-01 through LOCK-08)
+
+**Goal:** Implementar mecanismo de lock por fase que detecta sessões ativas do Claude Code e impede trabalho duplicado -- lock automático na primeira escrita, blocking de sessões concorrentes, detecção de locks stale, e comando de unlock manual.
+
+**Requirements:** LOCK-01, LOCK-02, LOCK-03, LOCK-04, LOCK-05, LOCK-06, LOCK-07, LOCK-08
+
+**Depends on:** Phase 4
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — lock.cjs core module with acquire/release/check/forceUnlock API + TDD tests
+- [ ] 05-02-PLAN.md — gsd-phase-lock.js PreToolUse blocking hook + gsd-tools dispatcher + unlock-phase command
+- [ ] 05-03-PLAN.md — Integration: build pipeline, install.js registration, .gitignore, progress display, init.cjs
+
+**Key files:**
+- `get-shit-done/bin/lib/lock.cjs` — core lock module
+- `hooks/gsd-phase-lock.js` — PreToolUse blocking hook
+- `get-shit-done/bin/gsd-tools.cjs` — lock command dispatch
+- `commands/gsd/unlock-phase.md` — manual unlock command
+- `bin/install.js` — hook registration
+- `get-shit-done/bin/lib/commands.cjs` — progress lock display
+
+**Success criteria:**
+- lock.cjs acquire/release/check/forceUnlock API funciona com atomic file creation
+- Hook bloqueia sessões concorrentes escritas na mesma fase
+- Hook permite escritas da mesma sessão (process.ppid match)
+- Hook auto-adquire lock na primeira escrita (zero patch em workflows)
+- Locks stale (PID morto) são recuperados automaticamente
+- /gsd:unlock-phase funciona como escape hatch manual
+- /gsd:progress mostra lock status por fase
+
 ## Progress
 
 | Phase | Status | Plans | Progress |
@@ -133,17 +167,8 @@ Plans:
 | 2     | ○      | 0/2   | 0%       |
 | 3     | 1/3 | In Progress|  |
 | 4     | ○      | 0/2   | 0%       |
-
-### Phase 5: Phase lock — detect active sessions to prevent duplicate work
-
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 4
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd:plan-phase 5 to break down)
+| 5     | ○      | 0/3   | 0%       |
 
 ---
 *Roadmap created: 2026-04-01*
-*Last updated: 2026-04-01 after phase 4 planning*
+*Last updated: 2026-04-01 after phase 5 planning*
