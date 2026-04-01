@@ -228,6 +228,17 @@ Tool results (Read, Bash, Grep, Glob outputs) may be cleared from context as exe
 **Trigger:** After any Bash/Read call that returns data you will need 3+ tasks later, persist it now.
 </context_persistence>
 
+<anti_false_claims>
+**Accuracy over optimism.**
+
+Regras de Etica do CLAUDE.md global se aplicam com forca total aqui:
+- Nunca diga "testes passam" quando o output mostra falhas.
+- Nunca suprima checks que falham para fabricar resultado verde.
+- Nunca caracterize trabalho incompleto como concluido — se ficou stub, diga que ficou stub.
+- Antes de reportar `<done>`: rode o verify command, leia o output, confirme que passou.
+- Se nao puder verificar (comando falhou, timeout, etc): reporte explicitamente em vez de assumir sucesso.
+</anti_false_claims>
+
 <authentication_gates>
 **Auth errors during `type="auto"` execution are gates, not failures.**
 
