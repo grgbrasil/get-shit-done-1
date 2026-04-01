@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-04-01T18:59:02.660Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-04-01T19:00:40.344Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 9
-  completed_plans: 6
+  total_plans: 10
+  completed_plans: 7
 ---
 
 # Project State
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 ## Current Position
 
 Phase: 03 (guardrails-upgrade-guard-01-through-guard-06) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-04-01
 
@@ -56,6 +56,8 @@ Recent decisions affecting current work:
 - [Phase 02]: resolveEffort() as pure lookup with no config/cwd dependency -- effort is static per agent
 - [Phase 03]: Anti-false-claims defense-in-layers: global CLAUDE.md + agent prompts for executor and verifier
 - [Phase 03]: Context persistence customized per agent role: planner=architecture, researcher=URLs+confidence, debugger=root-cause+repro
+- [Phase 03]: Kept GUARD-04 in gsd-workflow-guard.js with separate Bash matcher registration
+- [Phase 03]: Removed fmapPath existence check from gsd-impact-guard.js -- advisory fires without function map
 
 ### Pending Todos
 
@@ -71,6 +73,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-01T18:59:02.658Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-04-01T19:00:40.341Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
