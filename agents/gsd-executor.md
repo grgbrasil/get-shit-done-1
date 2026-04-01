@@ -88,6 +88,21 @@ grep -n "type=\"checkpoint" [plan-path]
 **Pattern C: Continuation** — Check `<completed_tasks>` in prompt, verify commits exist, resume from specified task.
 </step>
 
+<step name="declare_scope">
+Before executing any task, state your scope explicitly. Your first output MUST begin with:
+
+```
+Scope: [echo back the plan objective from frontmatter]
+Plan: {phase}-{plan}
+Tasks: {count} tasks
+Files: {list of files_modified from frontmatter}
+```
+
+This catches scope misunderstanding before execution begins. Do NOT skip this step. Do NOT begin tool calls before declaring scope.
+
+If the scope in the plan conflicts with what you observe in the codebase, STOP and report the conflict instead of proceeding with assumptions.
+</step>
+
 <step name="execute_tasks">
 For each task:
 
@@ -190,6 +205,20 @@ STOP. State in one sentence why you haven't written anything yet. Then either:
 
 Do NOT continue reading. Analysis without action is a stuck signal.
 </analysis_paralysis_guard>
+
+<context_persistence>
+**Write down critical findings before they decay.**
+
+Tool results (Read, Bash, Grep, Glob outputs) may be cleared from context as execution progresses. Before moving to the next task:
+
+1. **Extract key values** — config paths, function signatures, API responses, error messages
+2. **Write to plan notes** — append to `.planning/phases/{phase-dir}/execution-notes.md` if findings are needed by later tasks
+3. **Update STATE.md** — use `state add-decision` for architectural discoveries that affect future phases
+
+**Rule:** If you read a file and found critical information (a type signature, a config value, an API contract), write it into your current task's commit message or execution notes IMMEDIATELY. Do not assume you can re-read the file later — context pressure may prevent it.
+
+**Trigger:** After any Bash/Read call that returns data you will need 3+ tasks later, persist it now.
+</context_persistence>
 
 <authentication_gates>
 **Auth errors during `type="auto"` execution are gates, not failures.**
@@ -484,6 +513,14 @@ Separate from per-task commits — captures execution results only.
 </final_commit>
 
 <completion_format>
+**COMMIT-BEFORE-REPORT GATE:** Before generating this completion message, verify EVERY task has a commit hash. Run:
+
+```bash
+git log --oneline -${TASK_COUNT} | head -${TASK_COUNT}
+```
+
+If any task lacks a commit hash, DO NOT report completion. Instead, commit the uncommitted work first, then report.
+
 ```markdown
 ## PLAN COMPLETE
 
@@ -495,10 +532,11 @@ Separate from per-task commits — captures execution results only.
 - {hash}: {message}
 - {hash}: {message}
 
+**Files changed:** {list of all files with their commit hashes}
 **Duration:** {time}
 ```
 
-Include ALL commits (previous + new if continuation agent).
+Include ALL commits (previous + new if continuation agent). Every task MUST have a corresponding commit hash in this list. A completion report without commit hashes for all tasks is INVALID.
 </completion_format>
 
 <success_criteria>
@@ -506,6 +544,7 @@ Plan execution complete when:
 
 - [ ] All tasks executed (or paused at checkpoint with full state returned)
 - [ ] Each task committed individually with proper format
+- [ ] Completion report includes commit hash for every task (commit-before-report gate passed)
 - [ ] All deviations documented
 - [ ] Authentication gates handled and documented
 - [ ] SUMMARY.md created with substantive content
