@@ -28,6 +28,8 @@ Flag handling rule:
 - If a documented flag is absent from `$ARGUMENTS`, treat it as inactive
 
 Context budget: ~15% orchestrator, 100% fresh per subagent.
+
+Turn limits: Executors have maxTurns per plan complexity (simple: 30, medium: 100, complex: 200). When approaching the turn limit, the executor should prioritize completing and committing the current task over starting new ones. Complexity is read from plan frontmatter `complexity` field (default: medium).
 </objective>
 
 <execution_context>
