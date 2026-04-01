@@ -72,4 +72,4 @@ Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela 
 | Small plans (1-2 tasks, <5min) | Keep context fresh, minimize deviation risk | Validated in v1.0: avg 3.5min/plan, deviations only on plans >4min |
 
 ---
-*Last updated: 2026-04-01 after Phase 01 (executor-discipline) completion*
+*Last updated: 2026-04-01 after Phase 03 (guardrails-upgrade) completion — GUARD-01,02,04,05,06 shipped across 3 layers (prompt/hooks/agents)*
