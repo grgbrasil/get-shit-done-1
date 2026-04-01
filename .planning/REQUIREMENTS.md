@@ -37,6 +37,17 @@
 - [x] **BRAIN-03**: discuss-phase detects and integrates same-phase BRAINSTORM.md as Likely-confidence assumptions (not locked decisions)
 - [x] **BRAIN-04**: Workflow ends with `/clear` + `/gsd:discuss-phase <N>` suggestion, never transitions to plan-phase
 
+### Phase Lock (LOCK)
+
+- [ ] **LOCK-01**: lock.cjs module with acquire/release/check/forceUnlock API using atomic `{ flag: 'wx' }` file creation (D-11)
+- [ ] **LOCK-02**: gsd-phase-lock.js PreToolUse hook that blocks concurrent Write/Edit to same phase (D-12, D-04)
+- [ ] **LOCK-03**: Session identity via process.ppid -- same-session subagents share parent PID, allowed through (D-03)
+- [ ] **LOCK-04**: Lock file at `.planning/phases/XX-name/.lock` with JSON `{ pid, acquired }`, gitignored (D-05, D-06, D-07)
+- [ ] **LOCK-05**: Stale lock detection via `process.kill(pid, 0)` + dual release (explicit + fallback) (D-09)
+- [ ] **LOCK-06**: gsd-tools dispatcher integration for lock acquire/release/check/force-unlock subcommands (D-11)
+- [ ] **LOCK-07**: `/gsd:unlock-phase N` command for manual force-unlock in edge cases (D-14)
+- [ ] **LOCK-08**: `/gsd:progress` shows lock status per phase, init.cjs reports has_lock, build-hooks copies hook (D-15)
+
 ## v2 Requirements
 
 ### Advanced Patterns
@@ -52,10 +63,10 @@
 
 | Feature | Reason |
 |---------|--------|
-| Replicar features ant-only (undercover, modelos internos) | Não aplicável a builds públicos |
-| Fork subagent model (context inheritance) | Depende de feature gate do Claude Code, não controlável pelo GSD |
+| Replicar features ant-only (undercover, modelos internos) | Nao aplicavel a builds publicos |
+| Fork subagent model (context inheritance) | Depende de feature gate do Claude Code, nao controlavel pelo GSD |
 | Coordinator mode completo | Arquitetura diferente do GSD, exigiria rewrite |
-| Cache boundary marker no system prompt | Controlado pelo Claude Code runtime, não pelo GSD |
+| Cache boundary marker no system prompt | Controlado pelo Claude Code runtime, nao pelo GSD |
 | Plugin toggle system | Overengineering para o escopo atual do GSD |
 
 ## Traceability
@@ -82,12 +93,20 @@
 | BRAIN-02 | Phase 4 | Complete |
 | BRAIN-03 | Phase 4 | Complete |
 | BRAIN-04 | Phase 4 | Complete |
+| LOCK-01 | Phase 5 | Planned |
+| LOCK-02 | Phase 5 | Planned |
+| LOCK-03 | Phase 5 | Planned |
+| LOCK-04 | Phase 5 | Planned |
+| LOCK-05 | Phase 5 | Planned |
+| LOCK-06 | Phase 5 | Planned |
+| LOCK-07 | Phase 5 | Planned |
+| LOCK-08 | Phase 5 | Planned |
 
 **Coverage:**
-- v1 requirements: 20 total
-- Mapped to phases: 20
+- v1 requirements: 28 total
+- Mapped to phases: 28
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-01*
-*Last updated: 2026-04-01 after research synthesis*
+*Last updated: 2026-04-01 after phase 5 planning*
