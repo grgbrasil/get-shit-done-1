@@ -326,6 +326,28 @@ describe('resolveModelInternal', () => {
       assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-planner'), '');
     });
   });
+
+  describe('resolve_model_ids: true', () => {
+    test('maps opus alias to full claude-opus-4-6 ID', () => {
+      writeConfig({ resolve_model_ids: true, model_profile: 'quality' });
+      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-planner'), 'claude-opus-4-6');
+    });
+
+    test('maps sonnet alias to full claude-sonnet-4-6 ID', () => {
+      writeConfig({ resolve_model_ids: true, model_profile: 'balanced' });
+      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-executor'), 'claude-sonnet-4-6');
+    });
+
+    test('maps haiku alias to full claude-haiku-4-5-20251001 ID', () => {
+      writeConfig({ resolve_model_ids: true, model_profile: 'balanced' });
+      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-cataloger'), 'claude-haiku-4-5-20251001');
+    });
+
+    test('model_overrides bypass alias mapping', () => {
+      writeConfig({ resolve_model_ids: true, model_overrides: { 'gsd-planner': 'openai/gpt-5.4' } });
+      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-planner'), 'openai/gpt-5.4');
+    });
+  });
 });
 
 // ─── escapeRegex ───────────────────────────────────────────────────────────────
