@@ -23,12 +23,12 @@
 
 ### Hooks & CLAUDE.md (GUARD)
 
-- [ ] **GUARD-01**: Anti-false-claims no CLAUDE.md — "Never claim done when tests fail, never suppress failures"
+- [x] **GUARD-01**: Anti-false-claims no CLAUDE.md — "Never claim done when tests fail, never suppress failures"
 - [ ] **GUARD-02**: Tool result preservation — "Write down key findings, tool results may be cleared"
 - [ ] **GUARD-03**: Anti-scope-creep — "Don't add features beyond the plan, 3 lines > premature abstraction"
 - [ ] **GUARD-04**: Destructive command detection no gsd-workflow-guard hook
 - [ ] **GUARD-05**: Read-before-edit enforcement reforçado no CLAUDE.md + hook validation
-- [ ] **GUARD-06**: Context compaction instructions — preservar file paths, snippets, errors, pending tasks
+- [x] **GUARD-06**: Context compaction instructions — preservar file paths, snippets, errors, pending tasks
 
 ## v2 Requirements
 
@@ -65,12 +65,12 @@
 | MODEL-02 | Phase 2 | Complete |
 | MODEL-03 | Phase 2 | Complete |
 | MODEL-04 | Phase 2 | Complete |
-| GUARD-01 | Phase 3 | Pending |
+| GUARD-01 | Phase 3 | Complete |
 | GUARD-02 | Phase 3 | Pending |
 | GUARD-03 | Phase 3 | Pending |
 | GUARD-04 | Phase 3 | Pending |
 | GUARD-05 | Phase 3 | Pending |
-| GUARD-06 | Phase 3 | Pending |
+| GUARD-06 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 16 total
