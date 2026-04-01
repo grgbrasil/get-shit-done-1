@@ -401,9 +401,10 @@ test -f "${PHASE_DIR}/${PADDED_PHASE}-VALIDATION.md" && echo "VALIDATION_CREATED
 ```bash
 UI_PHASE_CFG=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get workflow.ui_phase 2>/dev/null || echo "true")
 UI_GATE_CFG=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get workflow.ui_safety_gate 2>/dev/null || echo "true")
+UI_AUTO_GEN=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get workflow.ui_auto_generate 2>/dev/null || echo "false")
 ```
 
-**If both are `false`:** Skip to step 6.
+**If both `UI_PHASE_CFG` and `UI_GATE_CFG` are `false`:** Skip to step 6.
 
 Check if phase has frontend indicators:
 
@@ -422,7 +423,27 @@ UI_SPEC_FILE=$(ls "${PHASE_DIR}"/*-UI-SPEC.md 2>/dev/null | head -1)
 
 **If UI-SPEC.md found:** Set `UI_SPEC_PATH=$UI_SPEC_FILE`. Display: `Using UI design contract: ${UI_SPEC_PATH}`
 
-**If UI-SPEC.md missing AND `UI_GATE_CFG` is `true`:**
+**If UI-SPEC.md missing AND `UI_AUTO_GEN` is `true`:**
+
+Skip the interactive prompt entirely. Display the required next step and exit:
+
+```
+⚠ Phase {N}: Frontend phase detected — UI-SPEC required before planning.
+
+Next step:
+
+  /clear
+  /gsd:ui-phase {N} ${GSD_WS}
+
+After UI-SPEC is generated, re-run:
+
+  /clear
+  /gsd:plan-phase {N} ${GSD_WS}
+```
+
+Exit workflow here. Do NOT ask for confirmation — the user has opted into auto-generate mode.
+
+**If UI-SPEC.md missing AND `UI_AUTO_GEN` is `false` AND `UI_GATE_CFG` is `true`:**
 
 If `TEXT_MODE` is true, present as a plain-text numbered list:
 ```

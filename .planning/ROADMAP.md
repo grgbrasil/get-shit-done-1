@@ -134,6 +134,16 @@ Plans:
 | 3     | 1/3 | In Progress|  |
 | 4     | ○      | 0/2   | 0%       |
 
+### Phase 5: Phase lock — detect active sessions to prevent duplicate work
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 5 to break down)
+
 ---
 *Roadmap created: 2026-04-01*
 *Last updated: 2026-04-01 after phase 4 planning*
