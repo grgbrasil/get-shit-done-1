@@ -1,80 +1,62 @@
-# GSD Impact Analysis (Milestone 1)
+# Claude Code Insights
 
 ## What This Is
 
-Sistema de análise de impacto mid-execution para o GSD (Get Shit Done). Previne quebra silenciosa quando executores modificam funções compartilhadas — auto-resolve mudanças estruturais, escala mudanças comportamentais ao usuário. Fork local do GSD, entregue como PR upstream. Milestone 2 (ADR & Global Memory) será iniciado após este PR.
+Estudo sistemático do source code do Claude Code (1902 arquivos, extraído via sourcemap) para minerar padrões internos da Anthropic e aplicar como patches no GSD e no CLAUDE.md global. Três eixos: phase scoping, model routing, e hooks/guardrails. Source em `/Volumes/SSD/Desenvolvimento/claude-code-sourcemap-main/restored-src/src/` como referência read-only.
 
 ## Core Value
 
-Nenhuma execução pode quebrar silenciosamente o que já funciona — mudanças estruturais são auto-resolvidas, mudanças de comportamento exigem decisão humana.
+Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela análise.
 
 ## Requirements
 
 ### Validated
 
-- [x] Function Map (JSON) — mapa estruturado de todas as funções, assinaturas, propósito e callers, consultável instantaneamente (Validated in Phase 01: function-map)
-- [x] Atualização automática do Function Map a cada execução — detecção incremental via git diff (Validated in Phase 01: function-map)
+- [x] Análise inicial do source: arquitetura mapeada, USER_TYPE=ant confirmado, system prompts extraídos (Validated in session 2026-04-01)
 
 ### Active
 
-- [ ] ADR compartilhado — registro de decisões arquiteturais lido por todos os agentes/executores antes de agir
-- [x] Impact Analysis mid-execution — executor consulta Function Map antes de modificar qualquer função (Validated in Phase 02: impact-analysis)
-- [x] Auto-resolve de mudanças estruturais (assinatura, argumentos, tipo de retorno) sem perguntar ao usuário (Validated in Phase 02: impact-analysis)
-- [x] Escalação para o usuário quando mudança altera lógica de negócio/comportamento semântico (Validated in Phase 02: impact-analysis)
-- [ ] Memória cross-plan — decisões e descobertas de um plan acessíveis por todos os plans subsequentes
-- [x] Integração com workflow GSD existente (plan-phase, execute-phase, discuss-phase) (Validated in Phase 03: model-routing-integration)
-- [ ] Sistema /ops — mapa do sistema por area com comandos de investigação, feature, modify, debug, specs e backlog
+- [ ] **SCOPE-01**: Extrair regras de decomposição de fases do source (max arquivos/fase, phased execution, context decay)
+- [ ] **SCOPE-02**: Aplicar regras de scoping como guardrails no GSD (discuss-phase e plan-phase)
+- [ ] **SCOPE-03**: Implementar context decay awareness — re-read automático após N turnos
+- [ ] **MODEL-01**: Auditar model-profiles.cjs e mapear quais agentes GSD estão sub-alocados
+- [ ] **MODEL-02**: Extrair lógica de effort levels do source (effort.ts) e aplicar no GSD
+- [ ] **MODEL-03**: Implementar effort routing inteligente por tipo de tarefa
+- [ ] **HOOK-01**: Extrair padrões de verificação do source (verification agent, edit integrity, forced re-read)
+- [ ] **HOOK-02**: Implementar hooks de verificação no CLAUDE.md global
+- [ ] **HOOK-03**: Extrair bash security patterns e aplicar como guardrails
+- [ ] **HOOK-04**: Implementar token budget awareness no CLAUDE.md
 
 ### Out of Scope
 
 - Reescrever o core do GSD — apenas estender com novos componentes
-- UI/dashboard para visualizar o Function Map — JSON consultável é suficiente
-- Análise estática profunda (AST parsing) — mapeamento baseado em grep/serena é suficiente para v1
-- Suporte a linguagens além das usadas nos projetos do usuário (JS/TS/Vue/PHP)
+- Modificar o source do Claude Code — é referência read-only
+- Replicar features ant-only (modelos internos, undercover mode) — não são aplicáveis
+- Segurança ofensiva — não explorar vulnerabilidades, só aprender padrões defensivos
 
 ## Context
 
-- Fork local do repositório gsd-build/get-shit-done
-- Usado primariamente com projetos SIJUR (Vue 3, Node.js, PHP/Laravel)
-- O GSD já tem subagent orchestration, mas cada executor roda em contexto isolado
-- O sistema de codebase mapping (`/gsd:map-codebase`) já existe mas é snapshot estático
-- Serena MCP está disponível para análise simbólica de código (find_symbol, find_referencing_symbols, get_symbols_overview)
-- Contribuições upstream devem ser genéricas o suficiente para qualquer stack
+- Source extraído de sourcemaps do pacote npm `@anthropic-ai/claude-code` v2.1.88
+- Arquitetura: tools/, agents/, coordinator/, memory (memdir/), skills/, context/, security
+- USER_TYPE=ant é build-time define — branches eliminadas do build público via constant folding
+- Diferenças reais ant-only: modelos internos, effort max persistente, undercover mode, verification agent experimental
+- O "CLAUDE.md secreto" do Reddit (u/iamfakeguru) é ~80% fabricação — as regras de qualidade são iguais pra todos
+- Projeto anterior (v1.0 Impact Analysis) completou 7 fases: function-map, impact-analysis, model-routing, ops
 
 ## Constraints
 
-- **Compatibilidade**: Não pode quebrar o workflow GSD existente — extensão, não substituição
-- **Performance**: Function Map deve ser consultável em <1s (JSON flat, não queries pesadas)
-- **Contexto**: Artifacts de memória devem caber no context window sem inflá-lo demais
-- **Upstream**: Componentes devem ser genéricos o suficiente para PR ao repo principal
-- **Stack**: Deve funcionar com qualquer linguagem que o GSD suporte, não só JS/Vue/PHP
+- **Read-only source**: `/Volumes/SSD/Desenvolvimento/claude-code-sourcemap-main` não é modificado
+- **Fork-first**: Patches vão pro get-shit-done-grg, upstream avaliado depois
+- **Compatibilidade**: Não pode quebrar workflow GSD existente
+- **Escopo por fase**: Cada fase toca no máximo o necessário — research + patch, não monografia
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Function Map como JSON flat | Performance de leitura instantânea, sem dependência externa | ✓ Validated Phase 01 |
-| Impact analysis mid-execution (não pré-commit hook) | Permite abortar antes de fazer a mudança, não depois | ✓ Validated Phase 02 |
-| Auto-resolve estrutural vs escalação comportamental | Equilibra autonomia com segurança — como dev senior faria | ✓ Validated Phase 02 |
-| ADR como markdown compartilhado | Legível por humanos e LLMs, versionado no git | — Pending |
-| Serena como engine de análise simbólica | Já disponível via MCP, faz find_referencing_symbols nativamente | ✓ Validated Phase 01 (with grep fallback) |
-
-## Evolution
-
-This document evolves at phase transitions and milestone boundaries.
-
-**After each phase transition** (via `/gsd:transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
-
-**After each milestone** (via `/gsd:complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
+| Ordem: scoping → routing → hooks | Phase scoping é o que mais dói (contexto estourando) | — Pending |
+| Fork local primeiro, upstream depois | Velocidade de iteração sem preocupação de compat | — Pending |
+| Deliverable = patches, não documento | Gabriel quer código, não relatório | — Pending |
 
 ---
-*Last updated: 2026-03-30 — Phase 6 complete: OPS workflows (investigate, feature, modify, debug) with blast-radius dispatch and context injection*
+*Last updated: 2026-04-01 after project initialization*
