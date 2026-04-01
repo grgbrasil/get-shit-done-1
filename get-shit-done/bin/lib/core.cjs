@@ -7,6 +7,19 @@ const path = require('path');
 const { execSync, execFileSync, spawnSync } = require('child_process');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
+// ─── Turn Limits ────────────────────────────────────────────────────────────
+
+/**
+ * Maximum agent turns per plan complexity tier.
+ * Prevents runaway execution loops. Based on Claude Code fork agent limits.
+ * Simple: config/styling/CRUD. Medium: business logic/API. Complex: auth/payments/migrations.
+ */
+const MAX_TURNS = {
+  simple: 30,
+  medium: 100,
+  complex: 200,
+};
+
 // ─── Path helpers ────────────────────────────────────────────────────────────
 
 /** Normalize a relative path to always use forward slashes (cross-platform). */
@@ -1220,6 +1233,7 @@ module.exports = {
   findProjectRoot,
   detectSubRepos,
   reapStaleTempFiles,
+  MAX_TURNS,
   MODEL_ALIAS_MAP,
   planningDir,
   planningRoot,

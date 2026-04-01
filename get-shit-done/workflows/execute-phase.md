@@ -194,7 +194,9 @@ Load plan inventory with wave grouping in one call:
 PLAN_INDEX=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" phase-plan-index "${PHASE_NUMBER}")
 ```
 
-Parse JSON for: `phase`, `plans[]` (each with `id`, `wave`, `autonomous`, `objective`, `files_modified`, `task_count`, `has_summary`), `waves` (map of wave number → plan IDs), `incomplete`, `has_checkpoints`.
+Parse JSON for: `phase`, `plans[]` (each with `id`, `wave`, `autonomous`, `complexity`, `objective`, `files_modified`, `task_count`, `has_summary`), `waves` (map of wave number → plan IDs), `incomplete`, `has_checkpoints`.
+
+**Complexity tier:** Each plan may include a `complexity` field in frontmatter (`simple`, `medium`, or `complex`). Default to `medium` if absent. This drives the turn limit passed to executor subagents (simple: 30, medium: 100, complex: 200).
 
 **Filtering:** Skip plans where `has_summary: true`. If `--gaps-only`: also skip non-gap_closure plans. If `WAVE_FILTER` is set: also skip plans whose `wave` does not equal `WAVE_FILTER`.
 
@@ -290,6 +292,8 @@ Execute each selected wave in sequence. Within a wave: parallel if `PARALLELIZAT
        MCP tools often save significant tokens by providing structured code indexes.
        Check tool availability first — if MCP tools are not accessible, fall back to Grep/Glob.
        </mcp_tools>
+
+       **Turn limit:** This plan has complexity tier `{complexity from plan frontmatter, default: medium}`. Maximum turns: {MAX_TURNS[complexity] — simple: 30, medium: 100, complex: 200}. If you approach this limit, prioritize completing the current task and committing over starting new tasks.
 
        <success_criteria>
        - [ ] All tasks executed
