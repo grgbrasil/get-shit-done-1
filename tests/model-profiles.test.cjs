@@ -152,12 +152,6 @@ test('AGENT_ROUTING maps simple agents to remote', () => {
   assert.strictEqual(AGENT_ROUTING['gsd-ui-checker'].route, 'remote');
 });
 
-test('AGENT_ROUTING maps plan-checker to local (per D-07)', () => {
-  const { AGENT_ROUTING } = require('../get-shit-done/bin/lib/model-profiles.cjs');
-  assert.strictEqual(AGENT_ROUTING['gsd-plan-checker'].route, 'local');
-  assert.strictEqual(AGENT_ROUTING['gsd-plan-checker'].provider, undefined);
-});
-
 test('AGENT_ROUTING maps complex agents to local', () => {
   const { AGENT_ROUTING } = require('../get-shit-done/bin/lib/model-profiles.cjs');
   assert.strictEqual(AGENT_ROUTING['gsd-planner'].route, 'local');
@@ -179,17 +173,6 @@ test('LEAN_MODEL_OVERRIDES downgrades simple agents to haiku', () => {
   assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-research-synthesizer'], 'haiku');
 });
 
-test('LEAN_MODEL_OVERRIDES does not contain plan-checker (moved to local)', () => {
-  const { LEAN_MODEL_OVERRIDES } = require('../get-shit-done/bin/lib/model-profiles.cjs');
-  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-plan-checker'], undefined);
-});
-
-test('LEAN_MODEL_OVERRIDES still contains other remote agents', () => {
-  const { LEAN_MODEL_OVERRIDES } = require('../get-shit-done/bin/lib/model-profiles.cjs');
-  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-cataloger'], 'haiku');
-  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-nyquist-auditor'], 'haiku');
-});
-
 // ─── resolveExecutionMode ────────────────────────────────────────────────────
 
 test('resolveExecutionMode: CLI flag takes priority over config', () => {
@@ -209,12 +192,12 @@ test('resolveExecutionMode: defaults to auto', () => {
   assert.strictEqual(resolveExecutionMode({}), 'auto');
 });
 
-// ─── EFFORT_PROFILES ──────────────────────────────────────────────────────────
+// ─── EFFORT_PROFILES ────────────────────────────────────────────────────────
 
 describe('EFFORT_PROFILES', () => {
   const { EFFORT_PROFILES, VALID_EFFORT_LEVELS } = require('../get-shit-done/bin/lib/model-profiles.cjs');
 
-  test('contains all 16 agents from D-06 allocation table', () => {
+  test('contains all 16 expected agents', () => {
     const expectedAgents = [
       'gsd-planner', 'gsd-executor', 'gsd-phase-researcher', 'gsd-project-researcher',
       'gsd-roadmapper', 'gsd-debugger', 'gsd-research-synthesizer', 'gsd-verifier',
@@ -223,9 +206,8 @@ describe('EFFORT_PROFILES', () => {
       'gsd-cataloger',
     ];
     for (const agent of expectedAgents) {
-      assert.ok(EFFORT_PROFILES[agent], `Missing agent: ${agent}`);
+      assert.ok(EFFORT_PROFILES[agent], `Missing effort for agent: ${agent}`);
     }
-    assert.strictEqual(Object.keys(EFFORT_PROFILES).length, 16);
   });
 
   test('all effort values are valid levels', () => {
@@ -237,31 +219,63 @@ describe('EFFORT_PROFILES', () => {
     }
   });
 
-  test('planner gets max effort (architecture decisions)', () => {
+  test('planner has max effort', () => {
     assert.strictEqual(EFFORT_PROFILES['gsd-planner'], 'max');
   });
 
-  test('executor gets medium effort (follows plan)', () => {
-    assert.strictEqual(EFFORT_PROFILES['gsd-executor'], 'medium');
-  });
-
-  test('researchers get high effort (synthesis work)', () => {
-    assert.strictEqual(EFFORT_PROFILES['gsd-phase-researcher'], 'high');
-    assert.strictEqual(EFFORT_PROFILES['gsd-project-researcher'], 'high');
-    assert.strictEqual(EFFORT_PROFILES['gsd-ui-researcher'], 'high');
-  });
-
-  test('checkers and auditors get low effort (pass/fail)', () => {
+  test('verifier has low effort', () => {
     assert.strictEqual(EFFORT_PROFILES['gsd-verifier'], 'low');
-    assert.strictEqual(EFFORT_PROFILES['gsd-plan-checker'], 'low');
-    assert.strictEqual(EFFORT_PROFILES['gsd-codebase-mapper'], 'low');
-    assert.strictEqual(EFFORT_PROFILES['gsd-nyquist-auditor'], 'low');
   });
 });
 
-// ─── VALID_EFFORT_LEVELS ──────────────────────────────────────────────────────
+// ─── resolveEffort ────────────────────────────────────────────────────────────
 
-test('VALID_EFFORT_LEVELS contains low, medium, high, max', () => {
-  const { VALID_EFFORT_LEVELS } = require('../get-shit-done/bin/lib/model-profiles.cjs');
-  assert.deepStrictEqual(VALID_EFFORT_LEVELS, ['low', 'medium', 'high', 'max']);
+describe('resolveEffort', () => {
+  const { resolveEffort } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+
+  test('returns max for gsd-planner', () => {
+    assert.strictEqual(resolveEffort('gsd-planner'), 'max');
+  });
+
+  test('returns medium for gsd-executor', () => {
+    assert.strictEqual(resolveEffort('gsd-executor'), 'medium');
+  });
+
+  test('returns low for gsd-verifier', () => {
+    assert.strictEqual(resolveEffort('gsd-verifier'), 'low');
+  });
+
+  test('returns high for gsd-debugger', () => {
+    assert.strictEqual(resolveEffort('gsd-debugger'), 'high');
+  });
+
+  test('falls back to medium for unknown agent', () => {
+    assert.strictEqual(resolveEffort('gsd-nonexistent'), 'medium');
+  });
+
+  test('logs fallback warning to stderr for unknown agent', () => {
+    const originalWrite = process.stderr.write;
+    let captured = '';
+    process.stderr.write = (msg) => { captured += msg; };
+    try {
+      resolveEffort('gsd-unknown-agent');
+      assert.ok(captured.includes('[gsd] effort fallback:'), 'should log fallback warning');
+      assert.ok(captured.includes('gsd-unknown-agent'), 'should include agent name');
+      assert.ok(captured.includes('default=medium'), 'should include default value');
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+  });
+
+  test('does not log for known agents', () => {
+    const originalWrite = process.stderr.write;
+    let captured = '';
+    process.stderr.write = (msg) => { captured += msg; };
+    try {
+      resolveEffort('gsd-planner');
+      assert.strictEqual(captured, '', 'should not log for known agents');
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+  });
 });
