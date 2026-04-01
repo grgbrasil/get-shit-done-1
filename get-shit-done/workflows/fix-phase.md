@@ -25,7 +25,7 @@ Load context:
 INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init fix-phase "${PHASE_ARG}" --raw)
 ```
 
-Parse JSON for: `phase_found`, `phase_completed`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `plans`, `summaries`, `plan_count`, `next_plan_num`, `artifacts`, `executor_model`, `verifier_model`, `planner_model`, `gap_analyzer_model`.
+Parse JSON for: `phase_found`, `phase_completed`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `plans`, `summaries`, `plan_count`, `next_plan_num`, `artifacts`, `executor_model`, `executor_effort`, `verifier_model`, `verifier_effort`, `planner_model`, `planner_effort`, `gap_analyzer_model`, `gap_analyzer_effort`.
 
 **Validation:**
 - If `phase_found` is false → Error: "Phase {N} not found"
