@@ -4587,6 +4587,29 @@ function install(isGlobal, runtime = 'claude') {
       });
       console.log(`  ${green}${check}${reset} Configured impact analysis guard hook`);
     }
+
+    // Configure PreToolUse hook for destructive command detection (GUARD-04)
+    const workflowGuardCommand = isGlobal
+      ? buildHookCommand(targetDir, 'gsd-workflow-guard.js')
+      : 'node ' + dirName + '/hooks/gsd-workflow-guard.js';
+
+    const hasWorkflowGuardHook = settings.hooks[preToolEvent].some(entry =>
+      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-workflow-guard'))
+    );
+
+    if (!hasWorkflowGuardHook) {
+      settings.hooks[preToolEvent].push({
+        matcher: 'Bash',
+        hooks: [
+          {
+            type: 'command',
+            command: workflowGuardCommand,
+            timeout: 5
+          }
+        ]
+      });
+      console.log(`  ${green}${check}${reset} Configured destructive command guard hook`);
+    }
   }
 
   return { settingsPath, settings, statuslineCommand, runtime };
