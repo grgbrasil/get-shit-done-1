@@ -46,7 +46,7 @@
 - [x] **LOCK-05**: Stale lock detection via `process.kill(pid, 0)` + dual release (explicit + fallback) (D-09)
 - [ ] **LOCK-06**: gsd-tools dispatcher integration for lock acquire/release/check/force-unlock subcommands (D-11)
 - [ ] **LOCK-07**: `/gsd:unlock-phase N` command for manual force-unlock in edge cases (D-14)
-- [ ] **LOCK-08**: `/gsd:progress` shows lock status per phase, init.cjs reports has_lock, build-hooks copies hook (D-15)
+- [x] **LOCK-08**: `/gsd:progress` shows lock status per phase, init.cjs reports has_lock, build-hooks copies hook (D-15)
 
 ## v2 Requirements
 
