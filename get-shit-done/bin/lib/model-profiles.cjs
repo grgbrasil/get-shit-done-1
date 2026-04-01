@@ -80,6 +80,23 @@ const EFFORT_PROFILES = {
 };
 
 /**
+ * Resolve the effort level for a given agent type.
+ * Returns the configured effort from EFFORT_PROFILES, falling back to 'medium'.
+ * Effort is independent of model resolution -- always resolves regardless of resolve_model_ids mode.
+ *
+ * @param {string} agentType - The agent identifier (e.g., 'gsd-planner')
+ * @returns {string} The effort level: 'low' | 'medium' | 'high' | 'max'
+ */
+function resolveEffort(agentType) {
+  const effort = EFFORT_PROFILES[agentType];
+  if (!effort) {
+    process.stderr.write(`[gsd] effort fallback: agent=${agentType} default=medium\n`);
+    return 'medium';
+  }
+  return effort;
+}
+
+/**
  * Formats the agent-to-model mapping as a human-readable table (in string format).
  *
  * @param {Object<string, string>} agentToModelMap - A mapping from agent to model
@@ -137,4 +154,5 @@ module.exports = {
   formatAgentToModelMapAsTable,
   getAgentToModelMapForProfile,
   resolveExecutionMode,
+  resolveEffort,
 };

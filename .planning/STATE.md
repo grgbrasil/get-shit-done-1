@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
+milestone: v2.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-04-01T16:09:15.014Z"
+status: verifying
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-04-01T16:17:27.850Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 3
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-01)
 
 Phase: 02 (model-routing-fix-model-01-through-model-04) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-01
 
 ## Research Completed
@@ -53,6 +53,7 @@ Recent decisions affecting current work:
 - [Phase 01]: Three complexity tiers (simple:30, medium:100, complex:200) based on Claude Code fork agent limits
 - [Phase 01]: 9-section handoff format based on Claude Code compaction prompt structure
 - [Phase 02]: EFFORT_PROFILES placed after LEAN_MODEL_OVERRIDES, before utility functions
+- [Phase 02]: resolveEffort() as pure lookup with no config/cwd dependency -- effort is static per agent
 
 ### Pending Todos
 
@@ -64,6 +65,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-01T16:09:15.009Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-04-01T16:17:27.847Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

@@ -6,6 +6,17 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, stripShippedMilestones, extractCurrentMilestone, normalizePhaseName, planningPaths, planningDir, planningRoot, toPosixPath, output, error, checkAgentsInstalled } = require('./core.cjs');
+const { resolveEffort } = require('./model-profiles.cjs');
+
+/**
+ * Log agent model+effort resolution to stderr for observability (D-13).
+ * @param {string} agentType
+ * @param {string} model
+ * @param {string} effort
+ */
+function logAgentResolution(agentType, model, effort) {
+  process.stderr.write(`[gsd] agent=${agentType} model=${model || 'runtime-default'} effort=${effort}\n`);
+}
 
 function getLatestCompletedMilestone(cwd) {
   const milestonesPath = path.join(planningRoot(cwd), 'MILESTONES.md');
@@ -78,7 +89,9 @@ function cmdInitExecutePhase(cwd, phase, raw) {
   const result = {
     // Models
     executor_model: resolveModelInternal(cwd, 'gsd-executor'),
+    executor_effort: resolveEffort('gsd-executor'),
     verifier_model: resolveModelInternal(cwd, 'gsd-verifier'),
+    verifier_effort: resolveEffort('gsd-verifier'),
 
     // Config flags
     commit_docs: config.commit_docs,
@@ -124,6 +137,7 @@ function cmdInitExecutePhase(cwd, phase, raw) {
     // Impact analysis
     impact_analysis_enabled: config.impact_analysis?.enabled || false,
     cataloger_model: resolveModelInternal(cwd, 'gsd-cataloger'),
+    cataloger_effort: resolveEffort('gsd-cataloger'),
 
     // File existence
     state_exists: fs.existsSync(path.join(planningDir(cwd), 'STATE.md')),
@@ -191,6 +205,8 @@ function cmdInitExecutePhase(cwd, phase, raw) {
     // Non-fatal: ops summary is optional context enrichment
   }
 
+  logAgentResolution('gsd-executor', result.executor_model, result.executor_effort);
+  logAgentResolution('gsd-verifier', result.verifier_model, result.verifier_effort);
   output(withProjectRoot(cwd, result), raw);
 }
 
@@ -231,8 +247,11 @@ function cmdInitPlanPhase(cwd, phase, raw) {
   const result = {
     // Models
     researcher_model: resolveModelInternal(cwd, 'gsd-phase-researcher'),
+    researcher_effort: resolveEffort('gsd-phase-researcher'),
     planner_model: resolveModelInternal(cwd, 'gsd-planner'),
+    planner_effort: resolveEffort('gsd-planner'),
     checker_model: resolveModelInternal(cwd, 'gsd-plan-checker'),
+    checker_effort: resolveEffort('gsd-plan-checker'),
 
     // Workflow flags
     research_enabled: config.research,
@@ -351,6 +370,9 @@ function cmdInitPlanPhase(cwd, phase, raw) {
     // Non-fatal: ops summary is optional context enrichment
   }
 
+  logAgentResolution('gsd-phase-researcher', result.researcher_model, result.researcher_effort);
+  logAgentResolution('gsd-planner', result.planner_model, result.planner_effort);
+  logAgentResolution('gsd-plan-checker', result.checker_model, result.checker_effort);
   output(withProjectRoot(cwd, result), raw);
 }
 
@@ -427,8 +449,11 @@ function cmdInitNewProject(cwd, raw) {
   const result = {
     // Models
     researcher_model: resolveModelInternal(cwd, 'gsd-project-researcher'),
+    researcher_effort: resolveEffort('gsd-project-researcher'),
     synthesizer_model: resolveModelInternal(cwd, 'gsd-research-synthesizer'),
+    synthesizer_effort: resolveEffort('gsd-research-synthesizer'),
     roadmapper_model: resolveModelInternal(cwd, 'gsd-roadmapper'),
+    roadmapper_effort: resolveEffort('gsd-roadmapper'),
 
     // Config
     commit_docs: config.commit_docs,
@@ -477,8 +502,11 @@ function cmdInitNewMilestone(cwd, raw) {
   const result = {
     // Models
     researcher_model: resolveModelInternal(cwd, 'gsd-project-researcher'),
+    researcher_effort: resolveEffort('gsd-project-researcher'),
     synthesizer_model: resolveModelInternal(cwd, 'gsd-research-synthesizer'),
+    synthesizer_effort: resolveEffort('gsd-research-synthesizer'),
     roadmapper_model: resolveModelInternal(cwd, 'gsd-roadmapper'),
+    roadmapper_effort: resolveEffort('gsd-roadmapper'),
 
     // Config
     commit_docs: config.commit_docs,
@@ -534,9 +562,13 @@ function cmdInitQuick(cwd, description, raw) {
   const result = {
     // Models
     planner_model: resolveModelInternal(cwd, 'gsd-planner'),
+    planner_effort: resolveEffort('gsd-planner'),
     executor_model: resolveModelInternal(cwd, 'gsd-executor'),
+    executor_effort: resolveEffort('gsd-executor'),
     checker_model: resolveModelInternal(cwd, 'gsd-plan-checker'),
+    checker_effort: resolveEffort('gsd-plan-checker'),
     verifier_model: resolveModelInternal(cwd, 'gsd-verifier'),
+    verifier_effort: resolveEffort('gsd-verifier'),
 
     // Config
     commit_docs: config.commit_docs,
@@ -561,6 +593,10 @@ function cmdInitQuick(cwd, description, raw) {
 
   };
 
+  logAgentResolution('gsd-planner', result.planner_model, result.planner_effort);
+  logAgentResolution('gsd-executor', result.executor_model, result.executor_effort);
+  logAgentResolution('gsd-plan-checker', result.checker_model, result.checker_effort);
+  logAgentResolution('gsd-verifier', result.verifier_model, result.verifier_effort);
   output(withProjectRoot(cwd, result), raw);
 }
 
@@ -628,7 +664,9 @@ function cmdInitVerifyWork(cwd, phase, raw) {
   const result = {
     // Models
     planner_model: resolveModelInternal(cwd, 'gsd-planner'),
+    planner_effort: resolveEffort('gsd-planner'),
     checker_model: resolveModelInternal(cwd, 'gsd-plan-checker'),
+    checker_effort: resolveEffort('gsd-plan-checker'),
 
     // Config
     commit_docs: config.commit_docs,
@@ -874,6 +912,7 @@ function cmdInitMilestoneOp(cwd, raw) {
     phases_dir_exists: fs.existsSync(path.join(planningDir(cwd), 'phases')),
   };
 
+  logAgentResolution('gsd-codebase-mapper', result.mapper_model, result.mapper_effort);
   output(withProjectRoot(cwd, result), raw);
 }
 
@@ -890,6 +929,7 @@ function cmdInitMapCodebase(cwd, raw) {
   const result = {
     // Models
     mapper_model: resolveModelInternal(cwd, 'gsd-codebase-mapper'),
+    mapper_effort: resolveEffort('gsd-codebase-mapper'),
 
     // Config
     commit_docs: config.commit_docs,
@@ -1270,7 +1310,9 @@ function cmdInitProgress(cwd, raw) {
   const result = {
     // Models
     executor_model: resolveModelInternal(cwd, 'gsd-executor'),
+    executor_effort: resolveEffort('gsd-executor'),
     planner_model: resolveModelInternal(cwd, 'gsd-planner'),
+    planner_effort: resolveEffort('gsd-planner'),
 
     // Config
     commit_docs: config.commit_docs,
@@ -1590,9 +1632,13 @@ function cmdInitFixPhase(cwd, phase, raw) {
   const result = {
     // Models
     executor_model: resolveModelInternal(cwd, 'gsd-executor'),
+    executor_effort: resolveEffort('gsd-executor'),
     verifier_model: resolveModelInternal(cwd, 'gsd-verifier'),
+    verifier_effort: resolveEffort('gsd-verifier'),
     planner_model: resolveModelInternal(cwd, 'gsd-planner'),
+    planner_effort: resolveEffort('gsd-planner'),
     gap_analyzer_model: resolveModelInternal(cwd, 'gsd-gap-analyzer'),
+    gap_analyzer_effort: resolveEffort('gsd-gap-analyzer'),
 
     // Config
     parallelization: config.parallelization,
