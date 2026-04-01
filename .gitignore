@@ -22,6 +22,8 @@ animation/
 reports/
 RAILROAD_ARCHITECTURE.md
 # .planning/ is tracked — never ignore planning artifacts
+# Phase lock files (session-local, never committed)
+.planning/phases/**/.lock
 analysis/
 docs/GSD-MASTER-ARCHITECTURE.md
 docs/GSD-RUST-IMPLEMENTATION-GUIDE.md

@@ -3523,7 +3523,7 @@ function uninstall(isGlobal, runtime = 'claude') {
   // 4. Remove GSD hooks
   const hooksDir = path.join(targetDir, 'hooks');
   if (fs.existsSync(hooksDir)) {
-    const gsdHooks = ['gsd-statusline.js', 'gsd-check-update.js', 'gsd-check-update.sh', 'gsd-context-monitor.js', 'gsd-prompt-guard.js', 'gsd-impact-guard.js'];
+    const gsdHooks = ['gsd-statusline.js', 'gsd-check-update.js', 'gsd-check-update.sh', 'gsd-context-monitor.js', 'gsd-prompt-guard.js', 'gsd-impact-guard.js', 'gsd-phase-lock.js'];
     let hookCount = 0;
     for (const hook of gsdHooks) {
       const hookPath = path.join(hooksDir, hook);
@@ -4586,6 +4586,29 @@ function install(isGlobal, runtime = 'claude') {
         ]
       });
       console.log(`  ${green}${check}${reset} Configured impact analysis guard hook`);
+    }
+
+    // Configure PreToolUse hook for phase lock guard (D-07 concurrent session protection)
+    const phaseLockCommand = isGlobal
+      ? buildHookCommand(targetDir, 'gsd-phase-lock.js')
+      : 'node ' + dirName + '/hooks/gsd-phase-lock.js';
+
+    const hasPhaseLockHook = settings.hooks[preToolEvent].some(entry =>
+      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-phase-lock'))
+    );
+
+    if (!hasPhaseLockHook) {
+      settings.hooks[preToolEvent].push({
+        matcher: 'Write|Edit',
+        hooks: [
+          {
+            type: 'command',
+            command: phaseLockCommand,
+            timeout: 5
+          }
+        ]
+      });
+      console.log(`  ${green}${check}${reset} Configured phase lock guard hook`);
     }
 
     // Configure PreToolUse hook for destructive command detection (GUARD-04)
