@@ -14,6 +14,24 @@
 const fs = require('fs');
 const path = require('path');
 
+// GUARD-04: Destructive command patterns (source: Claude Code destructiveCommandWarning.ts)
+const DESTRUCTIVE_PATTERNS = [
+  { pattern: /git\s+reset\s+--hard/,        warn: 'git reset --hard descarta mudancas nao commitadas', alt: 'git stash' },
+  { pattern: /git\s+push\s+--force(?!-with)/, warn: 'git push --force pode sobrescrever historico remoto', alt: 'git push --force-with-lease' },
+  { pattern: /git\s+push\s+-f\b/,           warn: 'git push -f pode sobrescrever historico remoto', alt: 'git push --force-with-lease' },
+  { pattern: /git\s+clean\s+-[a-z]*f/,       warn: 'git clean -f apaga arquivos untracked permanentemente', alt: null },
+  { pattern: /git\s+checkout\s+\./,           warn: 'git checkout . descarta todas as mudancas no working tree', alt: 'git stash' },
+  { pattern: /git\s+restore\s+\./,            warn: 'git restore . descarta todas as mudancas no working tree', alt: 'git stash' },
+  { pattern: /git\s+stash\s+(drop|clear)/,    warn: 'git stash drop/clear remove stashes permanentemente', alt: null },
+  { pattern: /git\s+branch\s+-D\b/,           warn: 'git branch -D forca exclusao de branch', alt: 'git branch -d (safe delete)' },
+  { pattern: /--no-verify/,                    warn: '--no-verify pula safety hooks', alt: 'Corrigir o hook que esta falhando' },
+  { pattern: /git\s+commit\s+.*--amend/,       warn: 'git commit --amend reescreve o ultimo commit', alt: 'Criar novo commit' },
+  { pattern: /rm\s+-[a-z]*r[a-z]*f|rm\s+-[a-z]*f[a-z]*r/,  warn: 'rm -rf apaga recursivamente sem confirmacao', alt: null },
+  { pattern: /DROP\s+(TABLE|DATABASE)/i,        warn: 'DROP TABLE/DATABASE e irreversivel', alt: null },
+  { pattern: /TRUNCATE\s+/i,                    warn: 'TRUNCATE remove todos os dados da tabela', alt: null },
+  { pattern: /DELETE\s+FROM\s+\w+\s*(?:;|$)/i,  warn: 'DELETE FROM sem WHERE apaga todos os registros', alt: 'Adicionar clausula WHERE' },
+];
+
 let input = '';
 const stdinTimeout = setTimeout(() => process.exit(0), 3000);
 process.stdin.setEncoding('utf8');
@@ -23,6 +41,26 @@ process.stdin.on('end', () => {
   try {
     const data = JSON.parse(input);
     const toolName = data.tool_name;
+
+    // GUARD-04: Destructive command detection for Bash
+    if (toolName === 'Bash') {
+      const command = data.tool_input?.command || '';
+      const matches = DESTRUCTIVE_PATTERNS.filter(p => p.pattern.test(command));
+      if (matches.length === 0) {
+        process.exit(0);
+      }
+      const warnings = matches.map(m =>
+        m.alt ? `${m.warn}. Alternativa: ${m.alt}` : m.warn
+      ).join('; ');
+      const output = {
+        hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          additionalContext: `DESTRUCTIVE COMMAND WARNING: ${warnings}. Se o plano autoriza explicitamente este comando, prossiga. Caso contrario, use a alternativa segura ou peca autorizacao ao usuario.`
+        }
+      };
+      process.stdout.write(JSON.stringify(output));
+      process.exit(0);
+    }
 
     // Only guard Write and Edit tool calls
     if (toolName !== 'Write' && toolName !== 'Edit') {
