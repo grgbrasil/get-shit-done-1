@@ -3,11 +3,11 @@
 ## Milestones
 
 - **v1.0 GSD Impact Analysis** — Phases 1-7 (shipped 2026-04-01) → [archive](milestones/v1.0-ROADMAP.md)
-- **v2.0 Claude Code Insights** — Phases 1-3 (in progress)
+- **v2.0 Claude Code Insights** — Phases 1-4 (in progress)
 
 ## Overview
 
-Estudo sistemático do source code do Claude Code para extrair insights acionáveis e aplicar como patches no GSD e CLAUDE.md global. Três fases em ordem de impacto: phase scoping → model routing → hooks/guardrails. Cada fase produz patches concretos, não documentos.
+Estudo sistemático do source code do Claude Code para extrair insights acionáveis e aplicar como patches no GSD e CLAUDE.md global. Fases 1-3 em ordem de impacto: phase scoping → model routing → hooks/guardrails. Phase 4: integrar brainstorming como pré-discuss com output nativo GSD. Cada fase produz patches concretos, não documentos.
 
 ## Phases
 
@@ -67,17 +67,25 @@ Plans:
 
 **Requirements:** GUARD-01, GUARD-02, GUARD-03, GUARD-04, GUARD-05, GUARD-06
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — CLAUDE.md global text guardrails (GUARD-01, 02, 05-text, 06-global)
+- [ ] 03-02-PLAN.md — Hook code: destructive cmd detection + read-before-edit advisory (GUARD-04, 05-runtime)
+- [ ] 03-03-PLAN.md — Agent prompts: anti-false-claims reinforcement + context_persistence (GUARD-01, 06)
+
 **Key files:**
 - `/Users/gg/.claude/CLAUDE.md` — global guardrails
-- `CLAUDE.md` (project) — project-level guardrails
 - `hooks/gsd-workflow-guard.js` — destructive command detection
 - `hooks/gsd-impact-guard.js` — read-before-edit enforcement
+- `agents/gsd-executor.md`, `agents/gsd-verifier.md` — anti-false-claims reinforcement
+- `agents/gsd-planner.md`, `agents/gsd-phase-researcher.md`, `agents/gsd-debugger.md` — context_persistence
 
 **Success criteria:**
-- CLAUDE.md global tem anti-false-claims, tool result preservation, anti-scope-creep
+- CLAUDE.md global tem anti-false-claims, tool result preservation, read-before-edit, compaction instructions
 - Hook detecta e warn em comandos git destrutivos durante execução
-- gsd-impact-guard valida read-before-edit
-- Instruções de compaction adicionadas ao CLAUDE.md
+- gsd-impact-guard emite advisory read-before-edit em edits de code files
+- context_persistence em todos os agents long-running (executor, planner, researcher, debugger)
 
 ## Phase Dependencies
 
@@ -87,9 +95,29 @@ Phase 1 (executor-discipline)
 Phase 2 (model-routing-fix)
     ↓ (nenhuma dependência técnica)
 Phase 3 (guardrails-upgrade)
+    ↓ (independente tecnicamente)
+Phase 4 (brainstorm-phase-integration)
 ```
 
-As fases são independentes tecnicamente mas ordenadas por impacto: scoping reduz desperdício de contexto, routing melhora qualidade de output, guardrails previnem falhas silenciosas.
+Fases 1-3 independentes mas ordenadas por impacto: scoping reduz desperdício de contexto, routing melhora qualidade de output, guardrails previnem falhas silenciosas. Phase 4 é feature nova independente.
+
+### Phase 4: brainstorm-phase-integration (BRAIN-01 through BRAIN-04)
+
+**Goal:** Criar comando `/gsd:brainstorm-phase <N>` que roda exploração criativa (estilo brainstorming skill) e gera artifacts GSD-nativos — `{NN}-BRAINSTORM.md` com pré-contexto e pré-plano que alimentam discuss-phase e plan-phase downstream.
+
+**Requirements:** BRAIN-01, BRAIN-02, BRAIN-03, BRAIN-04
+
+**Key files:**
+- `commands/gsd/brainstorm-phase.md` — novo comando
+- `get-shit-done/workflows/brainstorm-phase.md` — workflow principal
+- `get-shit-done/templates/brainstorm.md` — template do BRAINSTORM.md
+- `get-shit-done/workflows/discuss-phase.md` — patch pra ler BRAINSTORM.md como prior context
+
+**Success criteria:**
+- `/gsd:brainstorm-phase 3` roda exploração criativa com perguntas uma por vez
+- Gera `{NN}-BRAINSTORM.md` no diretório da fase com seções de design, decisões e trade-offs
+- discuss-phase lê BRAINSTORM.md como prior context (decisões não são re-perguntadas)
+- Ao finalizar, sugere `/clear` + `/gsd:discuss-phase <N>` como próximo passo
 
 ## Progress
 
@@ -97,8 +125,9 @@ As fases são independentes tecnicamente mas ordenadas por impacto: scoping redu
 |-------|--------|-------|----------|
 | 1     | 3/3 | Complete   | 2026-04-01 |
 | 2     | ○      | 0/2   | 0%       |
-| 3     | ○      | 0/0   | 0%       |
+| 3     | ○      | 0/3   | 0%       |
+| 4     | ○      | 0/0   | 0%       |
 
 ---
 *Roadmap created: 2026-04-01*
-*Last updated: 2026-04-01 after phase 2 planning*
+*Last updated: 2026-04-01 after phase 3 planning*
