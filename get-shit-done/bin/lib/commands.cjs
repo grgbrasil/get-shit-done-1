@@ -528,13 +528,25 @@ function cmdProgressRender(cwd, format, raw) {
       totalPlans += plans;
       totalSummaries += summaries;
 
+      // Phase lock detection (D-15)
+      const lockPath = path.join(phasesDir, dir, '.lock');
+      let lockInfo = null;
+      if (fs.existsSync(lockPath)) {
+        try {
+          const lockData = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+          let alive = false;
+          try { process.kill(lockData.pid, 0); alive = true; } catch (e) { alive = e.code !== 'ESRCH'; }
+          lockInfo = { pid: lockData.pid, acquired: lockData.acquired, stale: !alive };
+        } catch { /* ignore corrupt lock */ }
+      }
+
       let status;
       if (plans === 0) status = 'Pending';
       else if (summaries >= plans) status = 'Complete';
       else if (summaries > 0) status = 'In Progress';
       else status = 'Planned';
 
-      phases.push({ number: phaseNum, name: phaseName, plans, summaries, status });
+      phases.push({ number: phaseNum, name: phaseName, plans, summaries, status, lock: lockInfo });
     }
   } catch { /* intentionally empty */ }
 
@@ -547,10 +559,13 @@ function cmdProgressRender(cwd, format, raw) {
     const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barWidth - filled);
     let out = `# ${milestone.version} ${milestone.name}\n\n`;
     out += `**Progress:** [${bar}] ${totalSummaries}/${totalPlans} plans (${percent}%)\n\n`;
-    out += `| Phase | Name | Plans | Status |\n`;
-    out += `|-------|------|-------|--------|\n`;
+    out += `| Phase | Name | Plans | Status | Lock |\n`;
+    out += `|-------|------|-------|--------|------|\n`;
     for (const p of phases) {
-      out += `| ${p.number} | ${p.name} | ${p.summaries}/${p.plans} | ${p.status} |\n`;
+      const lockCol = p.lock
+        ? (p.lock.stale ? `stale (PID ${p.lock.pid})` : `locked (PID ${p.lock.pid})`)
+        : '';
+      out += `| ${p.number} | ${p.name} | ${p.summaries}/${p.plans} | ${p.status} | ${lockCol} |\n`;
     }
     output({ rendered: out }, raw, out);
   } else if (format === 'bar') {

@@ -79,6 +79,7 @@ function cmdInitExecutePhase(cwd, phase, raw) {
       has_verification: false,
       has_reviews: false,
       has_brainstorm: false,
+      has_lock: false,
     };
   }
   const reqMatch = roadmapPhase?.section?.match(/^\*\*Requirements\*\*:[^\S\n]*([^\n]*)$/m);
@@ -238,6 +239,7 @@ function cmdInitPlanPhase(cwd, phase, raw) {
       has_verification: false,
       has_reviews: false,
       has_brainstorm: false,
+      has_lock: false,
     };
   }
   const reqMatch = roadmapPhase?.section?.match(/^\*\*Requirements\*\*:[^\S\n]*([^\n]*)$/m);
@@ -276,6 +278,7 @@ function cmdInitPlanPhase(cwd, phase, raw) {
     has_context: phaseInfo?.has_context || false,
     has_reviews: phaseInfo?.has_reviews || false,
     has_brainstorm: phaseInfo?.has_brainstorm || false,
+    has_lock: phaseInfo?.has_lock || false,
     has_plans: (phaseInfo?.plans?.length || 0) > 0,
     plan_count: phaseInfo?.plans?.length || 0,
 
@@ -661,6 +664,7 @@ function cmdInitVerifyWork(cwd, phase, raw) {
         has_context: false,
         has_verification: false,
         has_brainstorm: false,
+        has_lock: false,
       };
     }
   }
@@ -684,6 +688,7 @@ function cmdInitVerifyWork(cwd, phase, raw) {
     // Existing artifacts
     has_verification: phaseInfo?.has_verification || false,
     has_brainstorm: phaseInfo?.has_brainstorm || false,
+    has_lock: phaseInfo?.has_lock || false,
   };
 
   output(withProjectRoot(cwd, result), raw);
@@ -713,6 +718,7 @@ function cmdInitPhaseOp(cwd, phase, raw) {
         has_context: false,
         has_verification: false,
         has_brainstorm: false,
+        has_lock: false,
       };
     }
   }
@@ -735,6 +741,7 @@ function cmdInitPhaseOp(cwd, phase, raw) {
         has_context: false,
         has_verification: false,
         has_brainstorm: false,
+        has_lock: false,
       };
     }
   }
@@ -761,6 +768,7 @@ function cmdInitPhaseOp(cwd, phase, raw) {
     has_verification: phaseInfo?.has_verification || false,
     has_reviews: phaseInfo?.has_reviews || false,
     has_brainstorm: phaseInfo?.has_brainstorm || false,
+    has_lock: phaseInfo?.has_lock || false,
     plan_count: phaseInfo?.plans?.length || 0,
 
     // File existence
@@ -1005,6 +1013,7 @@ function cmdInitManager(cwd, raw) {
     let hasContext = false;
     let hasResearch = false;
     let hasBrainstorm = false;
+    let hasLock = false;
     let lastActivity = null;
     let isActive = false;
 
@@ -1021,6 +1030,7 @@ function cmdInitManager(cwd, raw) {
         hasContext = phaseFiles.some(f => f.endsWith('-CONTEXT.md') || f === 'CONTEXT.md');
         hasResearch = phaseFiles.some(f => f.endsWith('-RESEARCH.md') || f === 'RESEARCH.md');
         hasBrainstorm = phaseFiles.some(f => f.endsWith('-BRAINSTORM.md') || f === 'BRAINSTORM.md');
+        hasLock = phaseFiles.includes('.lock');
 
         if (summaryCount >= planCount && planCount > 0) diskStatus = 'complete';
         else if (summaryCount > 0) diskStatus = 'partial';
@@ -1062,6 +1072,7 @@ function cmdInitManager(cwd, raw) {
       has_context: hasContext,
       has_research: hasResearch,
       has_brainstorm: hasBrainstorm,
+      has_lock: hasLock,
       plan_count: planCount,
       summary_count: summaryCount,
       roadmap_complete: roadmapComplete,
@@ -1261,6 +1272,7 @@ function cmdInitProgress(cwd, raw) {
       const summaries = phaseFiles.filter(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md');
       const hasResearch = phaseFiles.some(f => f.endsWith('-RESEARCH.md') || f === 'RESEARCH.md');
       const hasBrainstorm = phaseFiles.some(f => f.endsWith('-BRAINSTORM.md') || f === 'BRAINSTORM.md');
+      const hasLock = phaseFiles.includes('.lock');
 
       const status = summaries.length >= plans.length && plans.length > 0 ? 'complete' :
                      plans.length > 0 ? 'in_progress' :
@@ -1275,6 +1287,7 @@ function cmdInitProgress(cwd, raw) {
         summary_count: summaries.length,
         has_research: hasResearch,
         has_brainstorm: hasBrainstorm,
+        has_lock: hasLock,
       };
 
       phases.push(phaseInfo);
@@ -1302,6 +1315,7 @@ function cmdInitProgress(cwd, raw) {
         summary_count: 0,
         has_research: false,
         has_brainstorm: false,
+        has_lock: false,
       };
       phases.push(phaseInfo);
       if (!nextPhase && !currentPhase) {
@@ -1613,6 +1627,7 @@ function cmdInitFixPhase(cwd, phase, raw) {
     has_research: phaseInfo.has_research,
     has_verification: phaseInfo.has_verification,
     has_brainstorm: phaseInfo.has_brainstorm,
+    has_lock: phaseInfo.has_lock,
     has_ui_spec: false,
     has_discussion_log: false,
     fix_gaps_exists: false,
