@@ -16,9 +16,9 @@
 
 ### Model Routing (MODEL)
 
-- [ ] **MODEL-01**: Corrigir MODEL_ALIAS_MAP — atualizar de opus-4-0/sonnet-4-5/haiku-3-5 para 4.6/4.6/4.5
-- [ ] **MODEL-02**: Implementar effort parameter no sistema de profiles (low/medium/high/max por agente)
-- [ ] **MODEL-03**: Mover gsd-plan-checker de DeepSeek para local com effort: low
+- [x] **MODEL-01**: Corrigir MODEL_ALIAS_MAP — atualizar de opus-4-0/sonnet-4-5/haiku-3-5 para 4.6/4.6/4.5
+- [x] **MODEL-02**: Implementar effort parameter no sistema de profiles (low/medium/high/max por agente)
+- [x] **MODEL-03**: Mover gsd-plan-checker de DeepSeek para local com effort: low
 - [ ] **MODEL-04**: Propagar effort via resolveModelInternal() retornando { model, effort }
 
 ### Hooks & CLAUDE.md (GUARD)
@@ -61,9 +61,9 @@
 | SCOPE-04 | Phase 1 | Complete |
 | SCOPE-05 | Phase 1 | Complete |
 | SCOPE-06 | Phase 1 | Complete |
-| MODEL-01 | Phase 2 | Pending |
-| MODEL-02 | Phase 2 | Pending |
-| MODEL-03 | Phase 2 | Pending |
+| MODEL-01 | Phase 2 | Complete |
+| MODEL-02 | Phase 2 | Complete |
+| MODEL-03 | Phase 2 | Complete |
 | MODEL-04 | Phase 2 | Pending |
 | GUARD-01 | Phase 3 | Pending |
 | GUARD-02 | Phase 3 | Pending |
