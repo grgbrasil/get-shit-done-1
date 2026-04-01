@@ -284,6 +284,27 @@ For each CONTEXT.md where phase number < current phase:
 - Read `<specifics>` — particular references or "I want it like X" moments
 - Note any patterns (e.g., "user consistently prefers minimal UI", "user rejected single-key shortcuts")
 
+**Step 2.5: Read same-phase BRAINSTORM.md (if exists)**
+
+Check if a brainstorm artifact exists for THIS phase (same-phase only, NOT cross-phase):
+
+```bash
+ls ${phase_dir}/*-BRAINSTORM.md 2>/dev/null || true
+```
+
+If BRAINSTORM.md exists for the current phase:
+- Read the `<design_decisions>` section -- extract BD-* items
+- Read the `<pre_context>` section -- extract assumptions and open questions
+- Treat ALL brainstorm decisions as **Likely** confidence -- they are pre-populated assumptions the user can correct, NOT locked decisions
+- Store as `<brainstorm_prior>` for use in subsequent steps
+
+**Usage in subsequent steps:**
+- `analyze_phase` / `present_gray_areas`: Pre-populate assumptions with brainstorm BD-* decisions. Present as "From brainstorm: [decision]. Keep or change?"
+- Gray areas that match brainstorm decisions start pre-answered (user confirms or overrides)
+- Open questions from `<pre_context>` become explicit gray areas to discuss
+
+**Key distinction:** Prior CONTEXT.md from earlier phases = locked decisions. Same-phase BRAINSTORM.md = soft assumptions (Likely confidence).
+
 **Step 3: Build internal `<prior_decisions>` context**
 
 Structure the extracted information:

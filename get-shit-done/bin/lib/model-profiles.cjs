@@ -81,27 +81,6 @@ const EFFORT_PROFILES = {
   'gsd-cataloger':            'low',
 };
 
-const VALID_EFFORT_LEVELS = ['low', 'medium', 'high', 'max'];
-
-const EFFORT_PROFILES = {
-  'gsd-planner':              'max',
-  'gsd-executor':             'medium',
-  'gsd-phase-researcher':     'high',
-  'gsd-project-researcher':   'high',
-  'gsd-roadmapper':           'high',
-  'gsd-debugger':             'high',
-  'gsd-research-synthesizer': 'medium',
-  'gsd-verifier':             'low',
-  'gsd-plan-checker':         'low',
-  'gsd-codebase-mapper':      'low',
-  'gsd-integration-checker':  'low',
-  'gsd-nyquist-auditor':      'low',
-  'gsd-ui-researcher':        'high',
-  'gsd-ui-checker':           'low',
-  'gsd-ui-auditor':           'low',
-  'gsd-cataloger':            'low',
-};
-
 /**
  * Resolve the effort level for a given agent type.
  * Returns the configured effort from EFFORT_PROFILES, falling back to 'medium'.
