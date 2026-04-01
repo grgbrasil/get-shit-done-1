@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-04-01T23:09:35.203Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-04-01T23:07:31.677Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 5
@@ -62,7 +62,7 @@ Recent decisions affecting current work:
 - [Phase 04]: Brainstorm decisions = Likely confidence (soft assumptions), prior CONTEXT.md = locked decisions
 - [Phase 03]: Global CLAUDE.md guardrails: bidirectional anti-false-claims (6 rules), tool result preservation, read-before-edit, compaction instructions
 - [Phase 05]: lock.cjs: isProcessAlive returns true on EPERM, forceUnlock delegates to release(), corrupt lock recovery uses race-safe wx retry
-- [Phase 05]: Lock detection in progress uses inline process.kill instead of importing lock.cjs to avoid coupling
+- [Phase 05]: Hook uses process.ppid for session identity; EPERM treated as alive; global try/catch exits 0 on errors
 
 ### Pending Todos
 
@@ -79,6 +79,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-01T23:09:35.200Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-04-01T23:07:31.675Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
