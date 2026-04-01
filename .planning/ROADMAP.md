@@ -20,7 +20,7 @@ Estudo sistemático do source code do Claude Code para extrair insights acionáv
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Executor discipline: scope echo, commit-before-report, micro-compact awareness
+- [x] 01-01-PLAN.md — Executor discipline: scope echo, commit-before-report, micro-compact awareness
 - [x] 01-02-PLAN.md — Planner synthesis step: "never delegate understanding"
 - [ ] 01-03-PLAN.md — maxTurns config, structured handoff summaries, context budget awareness
 

@@ -7,12 +7,12 @@
 
 ### Phase Scoping (SCOPE)
 
-- [ ] **SCOPE-01**: Adicionar scope echo nos prompts de executor — executor deve declarar escopo antes de executar
-- [ ] **SCOPE-02**: Enforce commit-before-report — executor não pode reportar "done" sem commit hash
+- [x] **SCOPE-01**: Adicionar scope echo nos prompts de executor — executor deve declarar escopo antes de executar
+- [x] **SCOPE-02**: Enforce commit-before-report — executor não pode reportar "done" sem commit hash
 - [ ] **SCOPE-03**: Implementar maxTurns por complexidade de plan (simple: 30, medium: 100, complex: 200)
 - [x] **SCOPE-04**: Adicionar synthesis step entre research e plan — "never delegate understanding"
 - [ ] **SCOPE-05**: Structured phase handoff summaries usando template de 9 seções do compact
-- [ ] **SCOPE-06**: Micro-compact awareness — instruir executores a persistir findings antes de context decay
+- [x] **SCOPE-06**: Micro-compact awareness — instruir executores a persistir findings antes de context decay
 
 ### Model Routing (MODEL)
 
@@ -55,12 +55,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCOPE-01 | Phase 1 | Pending |
-| SCOPE-02 | Phase 1 | Pending |
+| SCOPE-01 | Phase 1 | Complete |
+| SCOPE-02 | Phase 1 | Complete |
 | SCOPE-03 | Phase 1 | Pending |
 | SCOPE-04 | Phase 1 | Complete |
 | SCOPE-05 | Phase 1 | Pending |
-| SCOPE-06 | Phase 1 | Pending |
+| SCOPE-06 | Phase 1 | Complete |
 | MODEL-01 | Phase 2 | Pending |
 | MODEL-02 | Phase 2 | Pending |
 | MODEL-03 | Phase 2 | Pending |
