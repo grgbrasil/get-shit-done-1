@@ -1025,6 +1025,24 @@ cat "$phase_dir"/*-DISCOVERY.md 2>/dev/null  # From mandatory discovery
 **If RESEARCH.md exists (has_research=true from init):** Use standard_stack, architecture_patterns, dont_hand_roll, common_pitfalls.
 </step>
 
+<step name="synthesize_understanding">
+**"Never delegate understanding."** Before creating any tasks, synthesize what you learned from research and context into a coherent mental model. Do NOT pass raw research findings to executors — YOU must understand the problem space.
+
+After reading CONTEXT.md, RESEARCH.md, and DISCOVERY.md, produce a synthesis block in your reasoning:
+
+1. **Problem statement** — What is this phase solving? (1-2 sentences, in your own words, not copied from research)
+2. **Key constraints** — What limits the solution space? (from CONTEXT.md decisions, CLAUDE.md rules, codebase patterns)
+3. **Technical approach** — How should this be built? (synthesized from research findings, not raw quotes)
+4. **Risk areas** — Where is this most likely to break? (your assessment, informed by research)
+5. **What executors need to know** — Critical context that must be in task actions (not in @-references executors might not read)
+
+**Anti-pattern:** Creating a plan that says "See RESEARCH.md for details" or "Follow the pattern described in the research". The executor starts with zero context — everything they need must be IN the plan actions.
+
+**Anti-pattern:** Copying research findings verbatim into plan actions. Synthesize: extract the actionable parts, combine with codebase knowledge, produce specific instructions.
+
+This synthesis is internal (not written to a file) but directly shapes every task action you write. If you cannot articulate the technical approach in your own words, you do not understand it well enough to plan it.
+</step>
+
 <step name="break_into_tasks">
 Decompose phase into tasks. **Think dependencies first, not sequence.**
 
