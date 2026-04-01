@@ -107,6 +107,12 @@ Fases 1-3 independentes mas ordenadas por impacto: scoping reduz desperdício de
 
 **Requirements:** BRAIN-01, BRAIN-02, BRAIN-03, BRAIN-04
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Command, workflow, and template for brainstorm-phase
+- [ ] 04-02-PLAN.md — Infrastructure patches: artifact detection, discuss-phase integration, routing
+
 **Key files:**
 - `commands/gsd/brainstorm-phase.md` — novo comando
 - `get-shit-done/workflows/brainstorm-phase.md` — workflow principal
@@ -126,8 +132,8 @@ Fases 1-3 independentes mas ordenadas por impacto: scoping reduz desperdício de
 | 1     | 3/3 | Complete   | 2026-04-01 |
 | 2     | ○      | 0/2   | 0%       |
 | 3     | 1/3 | In Progress|  |
-| 4     | ○      | 0/0   | 0%       |
+| 4     | ○      | 0/2   | 0%       |
 
 ---
 *Roadmap created: 2026-04-01*
-*Last updated: 2026-04-01 after phase 3 planning*
+*Last updated: 2026-04-01 after phase 4 planning*
