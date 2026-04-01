@@ -289,7 +289,7 @@ async function main() {
   const command = args[0];
 
   if (!command) {
-    error('Usage: gsd-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>]\nCommands: state, resolve-model, find-phase, commit, verify-summary, verify, frontmatter, template, generate-slug, current-timestamp, list-todos, verify-path-exists, config-ensure-section, config-new-project, init, workstream, docs-init');
+    error('Usage: gsd-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>]\nCommands: state, resolve-model, find-phase, commit, verify-summary, verify, frontmatter, template, generate-slug, current-timestamp, list-todos, verify-path-exists, config-ensure-section, config-new-project, init, workstream, docs-init, lock');
   }
 
   // Multi-repo guard: resolve project root for commands that read/write .planning/.
@@ -1021,6 +1021,23 @@ async function runCommand(command, args, cwd, raw) {
         ops.cmdOpsTreeUpdate(cwd, args[2], args[3], args[4], args[5], raw);
       } else {
         error(`Unknown ops subcommand: ${subcommand}`);
+      }
+      break;
+    }
+
+    case 'lock': {
+      const lock = require('./lib/lock.cjs');
+      const subcommand = args[1];
+      if (subcommand === 'acquire') {
+        lock.cmdLockAcquire(cwd, args[2], args[3], raw);
+      } else if (subcommand === 'release') {
+        lock.cmdLockRelease(cwd, args[2], raw);
+      } else if (subcommand === 'check') {
+        lock.cmdLockCheck(cwd, args[2], args[3], raw);
+      } else if (subcommand === 'force-unlock') {
+        lock.cmdLockForceUnlock(cwd, args[2], raw);
+      } else {
+        error('Unknown lock subcommand: ' + subcommand + '. Available: acquire, release, check, force-unlock');
       }
       break;
     }
