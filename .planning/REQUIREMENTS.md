@@ -30,6 +30,13 @@
 - [x] **GUARD-05**: Read-before-edit enforcement reforçado no CLAUDE.md + hook validation
 - [x] **GUARD-06**: Context compaction instructions — preservar file paths, snippets, errors, pending tasks
 
+### Brainstorm Phase (BRAIN)
+
+- [ ] **BRAIN-01**: `/gsd:brainstorm-phase N` command exists and runs interactive creative exploration with one-question-at-a-time pattern
+- [ ] **BRAIN-02**: Generates `{NN}-BRAINSTORM.md` with domain_boundary, design_decisions, tradeoffs_explored, pre_context sections; artifact detected by getPhaseFileStats()
+- [ ] **BRAIN-03**: discuss-phase detects and integrates same-phase BRAINSTORM.md as Likely-confidence assumptions (not locked decisions)
+- [ ] **BRAIN-04**: Workflow ends with `/clear` + `/gsd:discuss-phase <N>` suggestion, never transitions to plan-phase
+
 ## v2 Requirements
 
 ### Advanced Patterns
@@ -71,10 +78,14 @@
 | GUARD-04 | Phase 3 | Complete |
 | GUARD-05 | Phase 3 | Complete |
 | GUARD-06 | Phase 3 | Complete |
+| BRAIN-01 | Phase 4 | Pending |
+| BRAIN-02 | Phase 4 | Pending |
+| BRAIN-03 | Phase 4 | Pending |
+| BRAIN-04 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 16 total
-- Mapped to phases: 16
+- v1 requirements: 20 total
+- Mapped to phases: 20
 - Unmapped: 0
 
 ---
