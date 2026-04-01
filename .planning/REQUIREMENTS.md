@@ -40,12 +40,12 @@
 ### Phase Lock (LOCK)
 
 - [x] **LOCK-01**: lock.cjs module with acquire/release/check/forceUnlock API using atomic `{ flag: 'wx' }` file creation (D-11)
-- [ ] **LOCK-02**: gsd-phase-lock.js PreToolUse hook that blocks concurrent Write/Edit to same phase (D-12, D-04)
+- [x] **LOCK-02**: gsd-phase-lock.js PreToolUse hook that blocks concurrent Write/Edit to same phase (D-12, D-04)
 - [x] **LOCK-03**: Session identity via process.ppid -- same-session subagents share parent PID, allowed through (D-03)
 - [x] **LOCK-04**: Lock file at `.planning/phases/XX-name/.lock` with JSON `{ pid, acquired }`, gitignored (D-05, D-06, D-07)
 - [x] **LOCK-05**: Stale lock detection via `process.kill(pid, 0)` + dual release (explicit + fallback) (D-09)
-- [ ] **LOCK-06**: gsd-tools dispatcher integration for lock acquire/release/check/force-unlock subcommands (D-11)
-- [ ] **LOCK-07**: `/gsd:unlock-phase N` command for manual force-unlock in edge cases (D-14)
+- [x] **LOCK-06**: gsd-tools dispatcher integration for lock acquire/release/check/force-unlock subcommands (D-11)
+- [x] **LOCK-07**: `/gsd:unlock-phase N` command for manual force-unlock in edge cases (D-14)
 - [ ] **LOCK-08**: `/gsd:progress` shows lock status per phase, init.cjs reports has_lock, build-hooks copies hook (D-15)
 
 ## v2 Requirements
