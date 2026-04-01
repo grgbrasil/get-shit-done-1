@@ -1370,3 +1370,17 @@ Check for mode flags in prompt context:
 - [ ] Fix verified against original symptoms
 - [ ] Appropriate return format based on mode
 </success_criteria>
+
+<context_persistence>
+**Write down critical findings before they decay.**
+
+Tool results (Read, Bash, Grep outputs) may be cleared from context during long debug sessions. As you investigate:
+
+1. **Record reproduction steps** -- exact commands that trigger the bug, environment state, input data. Write to debug session notes.
+2. **Persist root cause hypotheses** -- when you identify a likely cause, write it down with evidence (file, line, output). Don't keep it only in working memory.
+3. **Log fix attempts** -- each attempted fix and its result (passed/failed/partial). This prevents re-trying the same approach.
+
+**Rule:** If you found the root cause (a specific line, a race condition, a config mismatch), write it into the debug session notes IMMEDIATELY. Do not assume you can re-read the stack trace later -- context pressure may prevent it.
+
+**Trigger:** After any Bash/Read that reveals error output, stack traces, or behavioral evidence, persist it now.
+</context_persistence>

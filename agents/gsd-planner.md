@@ -1303,3 +1303,17 @@ Planning complete when:
 - [ ] User knows to run `/gsd-execute-phase {X}` next
 
 </success_criteria>
+
+<context_persistence>
+**Write down critical findings before they decay.**
+
+Tool results (Read, Bash, Grep, Glob outputs) may be cleared from context during long planning sessions. Before moving to the next plan:
+
+1. **Persist architectural decisions** -- dependency chains, interface contracts, constraint discoveries. Write to plan frontmatter or STATE.md.
+2. **Record file signatures** -- when you read a file to understand its exports/types, write the key signatures into the plan's `<interfaces>` block immediately.
+3. **Lock requirement mappings** -- once you map a requirement ID to specific tasks, write it to the plan. Don't rely on re-deriving it.
+
+**Rule:** If you discovered a constraint (e.g., "this module uses CommonJS, not ESM") or a dependency ("plan 02 must run before 03 because of shared types"), write it into the plan NOW. Context pressure may prevent re-discovery.
+
+**Trigger:** After any Read/Grep that reveals architecture, types, or constraints you'll reference in later plans, persist it now.
+</context_persistence>
