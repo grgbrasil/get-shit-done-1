@@ -14,6 +14,16 @@ Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela 
 
 - [x] Análise inicial do source: arquitetura mapeada, USER_TYPE=ant confirmado, system prompts extraídos (Validated in session 2026-04-01)
 
+### Validated (v1.0 — GSD Impact Analysis, shipped 2026-03-30)
+
+- [x] **FMAP-01..07**: Function Map CRUD (fmap.cjs) with O(1) key lookup, merge/replace-file, stats, full-scan, gsd-cataloger agent (Serena MCP + grep fallback)
+- [x] **IMPACT-01..06**: Impact Analysis — fmap impact CLI, normalizeSignature, PreToolUse advisory hook (gsd-impact-guard.js), executor protocol with threshold-split resolution
+- [x] **MODEL-01..04, INT-01..05**: Model Routing Integration — config defaults (model_overrides, impact_analysis), Context Engine stats injection, post-wave cataloger, third-party provider docs
+- [x] **PF-01..07**: Preflight Dependency Resolver — preflight.cjs with config-gate suppression, wired into plan-phase/execute-phase/ui-phase workflows
+- [x] **OPS-01..04**: OPS Registry Foundation — ops.cjs with hybrid area auto-detection (routes + directories), adjacency-list graph builder (tree.json), multi-language import scanning
+- [x] **OPS-05..09**: OPS Workflows — investigate, debug (context-pack.md), feature (blast-radius dispatch), modify (tree edge impact analysis), ops-summary.json context injection
+- [x] **OPS-10..12**: OPS Governance — health scoring (status), specs template management (spec), priority queue backlog (backlog)
+
 ### Active
 
 - [ ] **SCOPE-01**: Extrair regras de decomposição de fases do source (max arquivos/fase, phased execution, context decay)
@@ -41,7 +51,7 @@ Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela 
 - USER_TYPE=ant é build-time define — branches eliminadas do build público via constant folding
 - Diferenças reais ant-only: modelos internos, effort max persistente, undercover mode, verification agent experimental
 - O "CLAUDE.md secreto" do Reddit (u/iamfakeguru) é ~80% fabricação — as regras de qualidade são iguais pra todos
-- Projeto anterior (v1.0 Impact Analysis) completou 7 fases: function-map, impact-analysis, model-routing, ops
+- Projeto anterior (v1.0 Impact Analysis) completou 7 fases em ~1h de execução ativa: function-map CRUD + cataloger, impact analysis CLI + advisory hook, model routing config + context engine injection, preflight resolver, OPS registry + workflows + governance (73+ tests, zero regressions, 16 plans via TDD)
 
 ## Constraints
 
@@ -54,9 +64,12 @@ Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Ordem: scoping → routing → hooks | Phase scoping é o que mais dói (contexto estourando) | — Pending |
-| Fork local primeiro, upstream depois | Velocidade de iteração sem preocupação de compat | — Pending |
-| Deliverable = patches, não documento | Gabriel quer código, não relatório | — Pending |
+| Ordem: scoping → routing → hooks | Phase scoping é o que mais dói (contexto estourando) | Pending (v2.0) |
+| Fork local primeiro, upstream depois | Velocidade de iteração sem preocupação de compat | Validated in v1.0: all 7 phases shipped on fork, zero upstream conflicts |
+| Deliverable = patches, não documento | Gabriel quer código, não relatório | Validated in v1.0: 16 plans = 16 working code deliverables, zero docs-only plans |
+| TDD RED/GREEN per plan | Catch regressions early, keep test count growing | Validated in v1.0: zero regressions across 16 plans, 73+ tests |
+| Advisory hooks over blocking | Guide without obstructing, upgrade to blocking with data | Validated in v1.0: gsd-impact-guard.js advisory-only worked well |
+| Small plans (1-2 tasks, <5min) | Keep context fresh, minimize deviation risk | Validated in v1.0: avg 3.5min/plan, deviations only on plans >4min |
 
 ---
 *Last updated: 2026-04-01 after project initialization*
