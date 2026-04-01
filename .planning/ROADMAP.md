@@ -71,7 +71,7 @@ Plans:
 
 Plans:
 - [ ] 03-01-PLAN.md — CLAUDE.md global text guardrails (GUARD-01, 02, 05-text, 06-global)
-- [ ] 03-02-PLAN.md — Hook code: destructive cmd detection + read-before-edit advisory (GUARD-04, 05-runtime)
+- [x] 03-02-PLAN.md — Hook code: destructive cmd detection + read-before-edit advisory (GUARD-04, 05-runtime)
 - [x] 03-03-PLAN.md — Agent prompts: anti-false-claims reinforcement + context_persistence (GUARD-01, 06)
 
 **Key files:**
