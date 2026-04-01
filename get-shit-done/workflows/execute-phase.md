@@ -401,6 +401,13 @@ Execute each selected wave in sequence. Within a wave: parallel if `PARALLELIZAT
    {Notable deviations, if any}
 
    {If more waves: what this enables for next wave}
+
+   {If this is the LAST wave in the phase, also include:}
+
+   **Handoff to verification:**
+   - **What was built:** [1-2 sentence summary from SUMMARYs]
+   - **Known issues:** [From deviation sections, or "None"]
+   - **Files to verify:** [Top 5 files from key-files across all plans]
    ---
    ```
 

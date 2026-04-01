@@ -124,6 +124,20 @@ None - no external service configuration required.
 [What's ready for next phase]
 [Any blockers or concerns]
 
+## Phase Handoff Summary
+
+Structured context for the next phase (or for context recovery after compaction):
+
+1. **Primary Request:** [What was this phase asked to accomplish — the goal from ROADMAP.md]
+2. **Key Technical Concepts:** [Technologies, frameworks, patterns used or established]
+3. **Files and Code Sections:** [Critical file paths and their roles — not all files, just the ones the next phase needs]
+4. **Errors and Fixes:** [Problems encountered and how they were resolved — saves the next phase from repeating mistakes]
+5. **Problem Solving:** [Design decisions, tradeoffs considered, alternatives rejected and why]
+6. **User Decisions:** [Any user decisions made during execution that constrain future work]
+7. **Pending Tasks:** [Anything deferred, known stubs, incomplete items carried forward]
+8. **Current State:** [What the system looks like NOW — working features, known limitations]
+9. **Next Step:** [Concrete next action for the following phase — not vague "continue development"]
+
 ---
 *Phase: XX-name*
 *Completed: [date]*
@@ -145,6 +159,8 @@ None - no external service configuration required.
 **Patterns:** Established conventions future phases should maintain.
 
 **Population:** Frontmatter is populated during summary creation in execute-plan.md. See `<step name="create_summary">` for field-by-field guidance.
+
+**Phase Handoff Summary:** The 9-section handoff at the bottom preserves critical context for phase transitions. Each section should be 1-3 sentences. Empty sections should say "None" rather than being omitted. This format is based on Claude Code's compaction prompt structure.
 </frontmatter_guidance>
 
 <one_liner_rules>
