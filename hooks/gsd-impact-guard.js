@@ -61,24 +61,16 @@ process.stdin.on('end', () => {
       }
     }
 
-    // Check if Function Map exists — no map means no impact analysis possible
-    const fmapPath = path.join(cwd, '.planning', 'function-map.json');
-    if (!fs.existsSync(fmapPath)) {
-      process.exit(0);
-    }
-
-    // If we get here: code file edit, function map exists, impact analysis not disabled.
-    // Inject advisory reminder.
+    // If we get here: code file edit, impact analysis not disabled.
+    // Inject combined read-before-edit + impact analysis advisory.
     const output = {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         additionalContext:
-          `IMPACT ANALYSIS REMINDER: You are about to edit ${path.basename(filePath)}. ` +
-          'Before modifying any function, consult the Function Map: ' +
-          '`node gsd-tools.cjs fmap impact "<file>::<Class>::<method>"` ' +
-          'to identify callers and capture a pre-edit snapshot. ' +
-          'If you already ran fmap impact for this function, proceed. ' +
-          'If this file has no functions in the map, proceed normally.'
+          `READ-BEFORE-EDIT: Voce leu ${path.basename(filePath)} nesta sessao antes de editar? ` +
+          'Se nao, use Read primeiro. Nunca edite baseado em memoria ou suposicoes sobre o conteudo atual. ' +
+          `IMPACT ANALYSIS: Se ${path.basename(filePath)} contem funcoes no Function Map, rode ` +
+          '`node gsd-tools.cjs fmap impact "<file>::<Class>::<method>"` antes de modificar.'
       }
     };
 
