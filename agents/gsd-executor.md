@@ -513,6 +513,14 @@ Separate from per-task commits — captures execution results only.
 </final_commit>
 
 <completion_format>
+**COMMIT-BEFORE-REPORT GATE:** Before generating this completion message, verify EVERY task has a commit hash. Run:
+
+```bash
+git log --oneline -${TASK_COUNT} | head -${TASK_COUNT}
+```
+
+If any task lacks a commit hash, DO NOT report completion. Instead, commit the uncommitted work first, then report.
+
 ```markdown
 ## PLAN COMPLETE
 
@@ -524,10 +532,11 @@ Separate from per-task commits — captures execution results only.
 - {hash}: {message}
 - {hash}: {message}
 
+**Files changed:** {list of all files with their commit hashes}
 **Duration:** {time}
 ```
 
-Include ALL commits (previous + new if continuation agent).
+Include ALL commits (previous + new if continuation agent). Every task MUST have a corresponding commit hash in this list. A completion report without commit hashes for all tasks is INVALID.
 </completion_format>
 
 <success_criteria>
@@ -535,6 +544,7 @@ Plan execution complete when:
 
 - [ ] All tasks executed (or paused at checkpoint with full state returned)
 - [ ] Each task committed individually with proper format
+- [ ] Completion report includes commit hash for every task (commit-before-report gate passed)
 - [ ] All deviations documented
 - [ ] Authentication gates handled and documented
 - [ ] SUMMARY.md created with substantive content
