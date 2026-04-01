@@ -46,7 +46,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Fix MODEL_ALIAS_MAP, add EFFORT_PROFILES, fix plan-checker routing
+- [x] 02-01-PLAN.md — Fix MODEL_ALIAS_MAP, add EFFORT_PROFILES, fix plan-checker routing
 - [ ] 02-02-PLAN.md — Implement resolveEffort() and propagate effort to init commands and workflows
 
 **Key files:**
