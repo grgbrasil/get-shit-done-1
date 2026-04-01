@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: claude-code-insights
 status: Ready for Phase 1
-stopped_at: Project initialized
-last_updated: "2026-04-01T12:00:00.000Z"
-last_activity: 2026-04-01 -- Project initialized with 3 phases from source code research
+stopped_at: Milestone v1.0 archived, v2.0 ready for planning
+last_updated: "2026-04-01T12:50:00.000Z"
+last_activity: 2026-04-01 -- v1.0 archived to milestones/, v2.0 Phase 1 ready for planning
 progress:
   total_phases: 3
   completed_phases: 0
@@ -40,5 +40,5 @@ Status: Ready for planning
 
 ## Milestone History
 
-- v1.0: GSD Impact Analysis — 7/7 phases complete (function-map, impact-analysis, model-routing, ops)
+- v1.0: GSD Impact Analysis — 7/7 phases complete (archived to milestones/v1.0-*)
 - v2.0: Claude Code Insights — 0/3 phases (current)
