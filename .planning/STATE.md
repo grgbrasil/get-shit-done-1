@@ -62,7 +62,9 @@ Recent decisions affecting current work:
 - [Phase 04]: Brainstorm decisions = Likely confidence (soft assumptions), prior CONTEXT.md = locked decisions
 - [Phase 03]: Global CLAUDE.md guardrails: bidirectional anti-false-claims (6 rules), tool result preservation, read-before-edit, compaction instructions
 - [Phase 05]: lock.cjs: isProcessAlive returns true on EPERM, forceUnlock delegates to release(), corrupt lock recovery uses race-safe wx retry
+<<<<<<< HEAD
 - [Phase 05]: Lock detection in progress uses inline process.kill instead of importing lock.cjs to avoid coupling
+- [Phase 05]: Hook uses process.ppid for session identity; EPERM treated as alive; global try/catch exits 0 on errors
 
 ### Pending Todos
 
