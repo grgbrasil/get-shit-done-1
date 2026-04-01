@@ -43,11 +43,17 @@ Plans:
 
 **Requirements:** MODEL-01, MODEL-02, MODEL-03, MODEL-04
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Fix MODEL_ALIAS_MAP, add EFFORT_PROFILES, fix plan-checker routing
+- [ ] 02-02-PLAN.md — Implement resolveEffort() and propagate effort to init commands and workflows
+
 **Key files:**
 - `get-shit-done/bin/lib/core.cjs` — MODEL_ALIAS_MAP fix
 - `get-shit-done/bin/lib/model-profiles.cjs` — effort levels per agent
-- `get-shit-done/bin/lib/llm-router.cjs` — plan-checker routing fix
-- `agents/*.md` — effort frontmatter per agent
+- `get-shit-done/bin/lib/init.cjs` — effort propagation to init commands
+- `get-shit-done/workflows/*.md` — effort field parsing
 
 **Success criteria:**
 - MODEL_ALIAS_MAP resolve para opus-4-6, sonnet-4-6, haiku-4-5
@@ -90,9 +96,9 @@ As fases são independentes tecnicamente mas ordenadas por impacto: scoping redu
 | Phase | Status | Plans | Progress |
 |-------|--------|-------|----------|
 | 1     | 3/3 | Complete   | 2026-04-01 |
-| 2     | ○      | 0/0   | 0%       |
+| 2     | ○      | 0/2   | 0%       |
 | 3     | ○      | 0/0   | 0%       |
 
 ---
 *Roadmap created: 2026-04-01*
-*Last updated: 2026-04-01 after phase 1 planning*
+*Last updated: 2026-04-01 after phase 2 planning*
