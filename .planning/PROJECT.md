@@ -26,9 +26,9 @@ Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela 
 
 ### Active
 
-- [ ] **SCOPE-01**: Extrair regras de decomposição de fases do source (max arquivos/fase, phased execution, context decay)
-- [ ] **SCOPE-02**: Aplicar regras de scoping como guardrails no GSD (discuss-phase e plan-phase)
-- [ ] **SCOPE-03**: Implementar context decay awareness — re-read automático após N turnos
+- [x] **SCOPE-01**: Extrair regras de decomposição de fases do source (max arquivos/fase, phased execution, context decay) — Validated in Phase 01
+- [x] **SCOPE-02**: Aplicar regras de scoping como guardrails no GSD (discuss-phase e plan-phase) — Validated in Phase 01
+- [x] **SCOPE-03**: Implementar context decay awareness — re-read automático após N turnos — Validated in Phase 01
 - [ ] **MODEL-01**: Auditar model-profiles.cjs e mapear quais agentes GSD estão sub-alocados
 - [ ] **MODEL-02**: Extrair lógica de effort levels do source (effort.ts) e aplicar no GSD
 - [ ] **MODEL-03**: Implementar effort routing inteligente por tipo de tarefa
@@ -72,4 +72,4 @@ Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela 
 | Small plans (1-2 tasks, <5min) | Keep context fresh, minimize deviation risk | Validated in v1.0: avg 3.5min/plan, deviations only on plans >4min |
 
 ---
-*Last updated: 2026-04-01 after project initialization*
+*Last updated: 2026-04-01 after Phase 01 (executor-discipline) completion*
