@@ -191,3 +191,91 @@ test('resolveExecutionMode: defaults to auto', () => {
   assert.strictEqual(resolveExecutionMode({ cliFlag: null, configMode: null }), 'auto');
   assert.strictEqual(resolveExecutionMode({}), 'auto');
 });
+
+// ─── EFFORT_PROFILES ────────────────────────────────────────────────────────
+
+describe('EFFORT_PROFILES', () => {
+  const { EFFORT_PROFILES, VALID_EFFORT_LEVELS } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+
+  test('contains all 16 expected agents', () => {
+    const expectedAgents = [
+      'gsd-planner', 'gsd-executor', 'gsd-phase-researcher', 'gsd-project-researcher',
+      'gsd-roadmapper', 'gsd-debugger', 'gsd-research-synthesizer', 'gsd-verifier',
+      'gsd-plan-checker', 'gsd-codebase-mapper', 'gsd-integration-checker',
+      'gsd-nyquist-auditor', 'gsd-ui-researcher', 'gsd-ui-checker', 'gsd-ui-auditor',
+      'gsd-cataloger',
+    ];
+    for (const agent of expectedAgents) {
+      assert.ok(EFFORT_PROFILES[agent], `Missing effort for agent: ${agent}`);
+    }
+  });
+
+  test('all effort values are valid levels', () => {
+    for (const [agent, effort] of Object.entries(EFFORT_PROFILES)) {
+      assert.ok(
+        VALID_EFFORT_LEVELS.includes(effort),
+        `${agent} has invalid effort "${effort}" — expected one of ${VALID_EFFORT_LEVELS.join(', ')}`
+      );
+    }
+  });
+
+  test('planner has max effort', () => {
+    assert.strictEqual(EFFORT_PROFILES['gsd-planner'], 'max');
+  });
+
+  test('verifier has low effort', () => {
+    assert.strictEqual(EFFORT_PROFILES['gsd-verifier'], 'low');
+  });
+});
+
+// ─── resolveEffort ────────────────────────────────────────────────────────────
+
+describe('resolveEffort', () => {
+  const { resolveEffort } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+
+  test('returns max for gsd-planner', () => {
+    assert.strictEqual(resolveEffort('gsd-planner'), 'max');
+  });
+
+  test('returns medium for gsd-executor', () => {
+    assert.strictEqual(resolveEffort('gsd-executor'), 'medium');
+  });
+
+  test('returns low for gsd-verifier', () => {
+    assert.strictEqual(resolveEffort('gsd-verifier'), 'low');
+  });
+
+  test('returns high for gsd-debugger', () => {
+    assert.strictEqual(resolveEffort('gsd-debugger'), 'high');
+  });
+
+  test('falls back to medium for unknown agent', () => {
+    assert.strictEqual(resolveEffort('gsd-nonexistent'), 'medium');
+  });
+
+  test('logs fallback warning to stderr for unknown agent', () => {
+    const originalWrite = process.stderr.write;
+    let captured = '';
+    process.stderr.write = (msg) => { captured += msg; };
+    try {
+      resolveEffort('gsd-unknown-agent');
+      assert.ok(captured.includes('[gsd] effort fallback:'), 'should log fallback warning');
+      assert.ok(captured.includes('gsd-unknown-agent'), 'should include agent name');
+      assert.ok(captured.includes('default=medium'), 'should include default value');
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+  });
+
+  test('does not log for known agents', () => {
+    const originalWrite = process.stderr.write;
+    let captured = '';
+    process.stderr.write = (msg) => { captured += msg; };
+    try {
+      resolveEffort('gsd-planner');
+      assert.strictEqual(captured, '', 'should not log for known agents');
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+  });
+});

@@ -59,6 +59,44 @@ const LEAN_MODEL_OVERRIDES = {
   'gsd-plan-checker':         'haiku',
 };
 
+const VALID_EFFORT_LEVELS = ['low', 'medium', 'high', 'max'];
+
+const EFFORT_PROFILES = {
+  'gsd-planner':              'max',
+  'gsd-executor':             'medium',
+  'gsd-phase-researcher':     'high',
+  'gsd-project-researcher':   'high',
+  'gsd-roadmapper':           'high',
+  'gsd-debugger':             'high',
+  'gsd-research-synthesizer': 'medium',
+  'gsd-verifier':             'low',
+  'gsd-plan-checker':         'low',
+  'gsd-codebase-mapper':      'low',
+  'gsd-integration-checker':  'low',
+  'gsd-nyquist-auditor':      'low',
+  'gsd-ui-researcher':        'high',
+  'gsd-ui-checker':           'low',
+  'gsd-ui-auditor':           'low',
+  'gsd-cataloger':            'low',
+};
+
+/**
+ * Resolve the effort level for a given agent type.
+ * Returns the configured effort from EFFORT_PROFILES, falling back to 'medium'.
+ * Effort is independent of model resolution -- always resolves regardless of resolve_model_ids mode.
+ *
+ * @param {string} agentType - The agent identifier (e.g., 'gsd-planner')
+ * @returns {string} The effort level: 'low' | 'medium' | 'high' | 'max'
+ */
+function resolveEffort(agentType) {
+  const effort = EFFORT_PROFILES[agentType];
+  if (!effort) {
+    process.stderr.write(`[gsd] effort fallback: agent=${agentType} default=medium\n`);
+    return 'medium';
+  }
+  return effort;
+}
+
 /**
  * Formats the agent-to-model mapping as a human-readable table (in string format).
  *
@@ -112,7 +150,10 @@ module.exports = {
   VALID_PROFILES,
   AGENT_ROUTING,
   LEAN_MODEL_OVERRIDES,
+  EFFORT_PROFILES,
+  VALID_EFFORT_LEVELS,
   formatAgentToModelMapAsTable,
   getAgentToModelMapForProfile,
   resolveExecutionMode,
+  resolveEffort,
 };
