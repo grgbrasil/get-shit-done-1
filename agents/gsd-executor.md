@@ -88,6 +88,21 @@ grep -n "type=\"checkpoint" [plan-path]
 **Pattern C: Continuation** — Check `<completed_tasks>` in prompt, verify commits exist, resume from specified task.
 </step>
 
+<step name="declare_scope">
+Before executing any task, state your scope explicitly. Your first output MUST begin with:
+
+```
+Scope: [echo back the plan objective from frontmatter]
+Plan: {phase}-{plan}
+Tasks: {count} tasks
+Files: {list of files_modified from frontmatter}
+```
+
+This catches scope misunderstanding before execution begins. Do NOT skip this step. Do NOT begin tool calls before declaring scope.
+
+If the scope in the plan conflicts with what you observe in the codebase, STOP and report the conflict instead of proceeding with assumptions.
+</step>
+
 <step name="execute_tasks">
 For each task:
 
@@ -190,6 +205,20 @@ STOP. State in one sentence why you haven't written anything yet. Then either:
 
 Do NOT continue reading. Analysis without action is a stuck signal.
 </analysis_paralysis_guard>
+
+<context_persistence>
+**Write down critical findings before they decay.**
+
+Tool results (Read, Bash, Grep, Glob outputs) may be cleared from context as execution progresses. Before moving to the next task:
+
+1. **Extract key values** — config paths, function signatures, API responses, error messages
+2. **Write to plan notes** — append to `.planning/phases/{phase-dir}/execution-notes.md` if findings are needed by later tasks
+3. **Update STATE.md** — use `state add-decision` for architectural discoveries that affect future phases
+
+**Rule:** If you read a file and found critical information (a type signature, a config value, an API contract), write it into your current task's commit message or execution notes IMMEDIATELY. Do not assume you can re-read the file later — context pressure may prevent it.
+
+**Trigger:** After any Bash/Read call that returns data you will need 3+ tasks later, persist it now.
+</context_persistence>
 
 <authentication_gates>
 **Auth errors during `type="auto"` execution are gates, not failures.**
