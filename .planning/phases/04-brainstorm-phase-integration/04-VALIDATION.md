@@ -1,9 +1,9 @@
 ---
 phase: 04
 slug: brainstorm-phase-integration
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: active
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-01
 ---
 
@@ -38,15 +38,18 @@ created: 2026-04-01
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | TBD | BRAIN-01..04 | integration | `npm test` | TBD | pending |
+| 01-T1 | 04-01 | 1 | BRAIN-01, BRAIN-02, BRAIN-04 | file-check | `grep -q "BRAIN-01" .planning/REQUIREMENTS.md && grep -q "gsd:brainstorm-phase" commands/gsd/brainstorm-phase.md && grep -q "design_decisions" get-shit-done/templates/brainstorm.md && echo PASS \|\| echo FAIL` | Yes | pending |
+| 01-T2 | 04-01 | 1 | BRAIN-01, BRAIN-04 | file-check | `grep -c 'step name=' get-shit-done/workflows/brainstorm-phase.md \| grep -q "10" && grep -q "explore_domain" get-shit-done/workflows/brainstorm-phase.md && echo PASS \|\| echo FAIL` | Yes | pending |
+| 02-T1 | 04-02 | 1 | BRAIN-02 | unit + syntax | `grep -q "hasBrainstorm" get-shit-done/bin/lib/core.cjs && node -e "require('./get-shit-done/bin/lib/core.cjs'); console.log('OK')" && echo PASS \|\| echo FAIL` | Yes | pending |
+| 02-T2 | 04-02 | 1 | BRAIN-03 | file-check | `grep -q "BRAINSTORM.md" get-shit-done/workflows/discuss-phase.md && grep -q "BRAINSTORM.md" get-shit-done/workflows/discuss-phase-assumptions.md && grep -q "brainstorm-phase" get-shit-done/workflows/do.md && echo PASS \|\| echo FAIL` | Yes | pending |
 
-*Status: pending*
+*Status: all tasks mapped with automated verify commands*
 
 ---
 
 ## Wave 0 Requirements
 
-*Existing infrastructure covers all phase requirements — this phase is markdown + minimal JS edits.*
+*Existing infrastructure covers all phase requirements — this phase is markdown + minimal JS edits. No new test scaffolds needed.*
 
 ---
 
@@ -61,11 +64,11 @@ created: 2026-04-01
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 10s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 10s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** ready
