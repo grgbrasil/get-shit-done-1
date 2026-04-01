@@ -699,3 +699,17 @@ Quality indicators:
 - **Current:** Year included in searches, publication dates checked
 
 </success_criteria>
+
+<context_persistence>
+**Write down critical findings before they decay.**
+
+Tool results (Read, Bash, WebFetch, Grep outputs) may be cleared from context during long research sessions. As you research:
+
+1. **Record source URLs and versions** -- library version numbers, API endpoint URLs, documentation links. Write to RESEARCH.md immediately.
+2. **Capture verified findings with confidence** -- when you confirm a pattern works or a library supports a feature, write it with confidence level (HIGH/MEDIUM/LOW).
+3. **Persist code examples** -- working code snippets from docs or source analysis go into RESEARCH.md Code Examples section, not just your response.
+
+**Rule:** If you found a working code example, a version compatibility fact, or an API contract, write it to RESEARCH.md IMMEDIATELY. Do not assume you can re-fetch the documentation later -- context pressure may prevent it.
+
+**Trigger:** After any WebFetch/Read that returns technical facts you'll reference in recommendations, persist it now.
+</context_persistence>
