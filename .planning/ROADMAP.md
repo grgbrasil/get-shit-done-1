@@ -43,11 +43,11 @@ Plans:
 
 **Requirements:** MODEL-01, MODEL-02, MODEL-03, MODEL-04
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 02-01-PLAN.md — Fix MODEL_ALIAS_MAP, add EFFORT_PROFILES, fix plan-checker routing
-- [ ] 02-02-PLAN.md — Implement resolveEffort() and propagate effort to init commands and workflows
+- [x] 02-02-PLAN.md — Implement resolveEffort() and propagate effort to init commands and workflows
 
 **Key files:**
 - `get-shit-done/bin/lib/core.cjs` — MODEL_ALIAS_MAP fix
