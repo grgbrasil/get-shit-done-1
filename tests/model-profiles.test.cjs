@@ -152,6 +152,12 @@ test('AGENT_ROUTING maps simple agents to remote', () => {
   assert.strictEqual(AGENT_ROUTING['gsd-ui-checker'].route, 'remote');
 });
 
+test('AGENT_ROUTING maps plan-checker to local (per D-07)', () => {
+  const { AGENT_ROUTING } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(AGENT_ROUTING['gsd-plan-checker'].route, 'local');
+  assert.strictEqual(AGENT_ROUTING['gsd-plan-checker'].provider, undefined);
+});
+
 test('AGENT_ROUTING maps complex agents to local', () => {
   const { AGENT_ROUTING } = require('../get-shit-done/bin/lib/model-profiles.cjs');
   assert.strictEqual(AGENT_ROUTING['gsd-planner'].route, 'local');
@@ -173,6 +179,17 @@ test('LEAN_MODEL_OVERRIDES downgrades simple agents to haiku', () => {
   assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-research-synthesizer'], 'haiku');
 });
 
+test('LEAN_MODEL_OVERRIDES does not contain plan-checker (moved to local)', () => {
+  const { LEAN_MODEL_OVERRIDES } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-plan-checker'], undefined);
+});
+
+test('LEAN_MODEL_OVERRIDES still contains other remote agents', () => {
+  const { LEAN_MODEL_OVERRIDES } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-cataloger'], 'haiku');
+  assert.strictEqual(LEAN_MODEL_OVERRIDES['gsd-nyquist-auditor'], 'haiku');
+});
+
 // ─── resolveExecutionMode ────────────────────────────────────────────────────
 
 test('resolveExecutionMode: CLI flag takes priority over config', () => {
@@ -190,4 +207,61 @@ test('resolveExecutionMode: defaults to auto', () => {
   const { resolveExecutionMode } = require('../get-shit-done/bin/lib/model-profiles.cjs');
   assert.strictEqual(resolveExecutionMode({ cliFlag: null, configMode: null }), 'auto');
   assert.strictEqual(resolveExecutionMode({}), 'auto');
+});
+
+// ─── EFFORT_PROFILES ──────────────────────────────────────────────────────────
+
+describe('EFFORT_PROFILES', () => {
+  const { EFFORT_PROFILES, VALID_EFFORT_LEVELS } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+
+  test('contains all 16 agents from D-06 allocation table', () => {
+    const expectedAgents = [
+      'gsd-planner', 'gsd-executor', 'gsd-phase-researcher', 'gsd-project-researcher',
+      'gsd-roadmapper', 'gsd-debugger', 'gsd-research-synthesizer', 'gsd-verifier',
+      'gsd-plan-checker', 'gsd-codebase-mapper', 'gsd-integration-checker',
+      'gsd-nyquist-auditor', 'gsd-ui-researcher', 'gsd-ui-checker', 'gsd-ui-auditor',
+      'gsd-cataloger',
+    ];
+    for (const agent of expectedAgents) {
+      assert.ok(EFFORT_PROFILES[agent], `Missing agent: ${agent}`);
+    }
+    assert.strictEqual(Object.keys(EFFORT_PROFILES).length, 16);
+  });
+
+  test('all effort values are valid levels', () => {
+    for (const [agent, effort] of Object.entries(EFFORT_PROFILES)) {
+      assert.ok(
+        VALID_EFFORT_LEVELS.includes(effort),
+        `${agent} has invalid effort "${effort}" — expected one of ${VALID_EFFORT_LEVELS.join(', ')}`
+      );
+    }
+  });
+
+  test('planner gets max effort (architecture decisions)', () => {
+    assert.strictEqual(EFFORT_PROFILES['gsd-planner'], 'max');
+  });
+
+  test('executor gets medium effort (follows plan)', () => {
+    assert.strictEqual(EFFORT_PROFILES['gsd-executor'], 'medium');
+  });
+
+  test('researchers get high effort (synthesis work)', () => {
+    assert.strictEqual(EFFORT_PROFILES['gsd-phase-researcher'], 'high');
+    assert.strictEqual(EFFORT_PROFILES['gsd-project-researcher'], 'high');
+    assert.strictEqual(EFFORT_PROFILES['gsd-ui-researcher'], 'high');
+  });
+
+  test('checkers and auditors get low effort (pass/fail)', () => {
+    assert.strictEqual(EFFORT_PROFILES['gsd-verifier'], 'low');
+    assert.strictEqual(EFFORT_PROFILES['gsd-plan-checker'], 'low');
+    assert.strictEqual(EFFORT_PROFILES['gsd-codebase-mapper'], 'low');
+    assert.strictEqual(EFFORT_PROFILES['gsd-nyquist-auditor'], 'low');
+  });
+});
+
+// ─── VALID_EFFORT_LEVELS ──────────────────────────────────────────────────────
+
+test('VALID_EFFORT_LEVELS contains low, medium, high, max', () => {
+  const { VALID_EFFORT_LEVELS } = require('../get-shit-done/bin/lib/model-profiles.cjs');
+  assert.deepStrictEqual(VALID_EFFORT_LEVELS, ['low', 'medium', 'high', 'max']);
 });

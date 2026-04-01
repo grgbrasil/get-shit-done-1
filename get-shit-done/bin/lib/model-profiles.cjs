@@ -39,7 +39,7 @@ const AGENT_ROUTING = {
   'gsd-executor':             { route: 'local' },
   'gsd-debugger':             { route: 'local' },
   'gsd-verifier':             { route: 'local' },
-  'gsd-plan-checker':         { route: 'remote', provider: 'deepseek-v3' },
+  'gsd-plan-checker':         { route: 'local' },
   'gsd-phase-researcher':     { route: 'local' },
   'gsd-roadmapper':           { route: 'local' },
   'gsd-project-researcher':   { route: 'local' },
@@ -56,7 +56,27 @@ const LEAN_MODEL_OVERRIDES = {
   'gsd-advisor-researcher':   'haiku',
   'gsd-ui-checker':           'haiku',
   'gsd-research-synthesizer': 'haiku',
-  'gsd-plan-checker':         'haiku',
+};
+
+const VALID_EFFORT_LEVELS = ['low', 'medium', 'high', 'max'];
+
+const EFFORT_PROFILES = {
+  'gsd-planner':              'max',
+  'gsd-executor':             'medium',
+  'gsd-phase-researcher':     'high',
+  'gsd-project-researcher':   'high',
+  'gsd-roadmapper':           'high',
+  'gsd-debugger':             'high',
+  'gsd-research-synthesizer': 'medium',
+  'gsd-verifier':             'low',
+  'gsd-plan-checker':         'low',
+  'gsd-codebase-mapper':      'low',
+  'gsd-integration-checker':  'low',
+  'gsd-nyquist-auditor':      'low',
+  'gsd-ui-researcher':        'high',
+  'gsd-ui-checker':           'low',
+  'gsd-ui-auditor':           'low',
+  'gsd-cataloger':            'low',
 };
 
 /**
@@ -112,6 +132,8 @@ module.exports = {
   VALID_PROFILES,
   AGENT_ROUTING,
   LEAN_MODEL_OVERRIDES,
+  EFFORT_PROFILES,
+  VALID_EFFORT_LEVELS,
   formatAgentToModelMapAsTable,
   getAgentToModelMapForProfile,
   resolveExecutionMode,
