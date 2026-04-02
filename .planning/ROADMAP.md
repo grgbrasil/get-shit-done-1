@@ -167,6 +167,8 @@ Plans:
 
 **Gap Closure:** Closes GUARD-03 from v1.0 milestone audit.
 
+**Plans:** 1 plan
+
 Plans:
 - [ ] 06-01-PLAN.md — Anti-scope-creep implementation (CLAUDE.md + agent prompts)
 
