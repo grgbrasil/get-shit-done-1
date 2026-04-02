@@ -159,16 +159,80 @@ Plans:
 - /gsd:unlock-phase funciona como escape hatch manual
 - /gsd:progress mostra lock status por fase
 
+### Phase 6: guard-03-anti-scope-creep (GUARD-03)
+
+**Goal:** Implementar GUARD-03 (anti-scope-creep) — a única requirement unsatisfied que bloqueia o milestone. Adicionar regras anti-scope-creep no CLAUDE.md global e/ou agent prompts para prevenir executores de adicionar features além do plano.
+
+**Requirements:** GUARD-03
+
+**Gap Closure:** Closes GUARD-03 from v1.0 milestone audit.
+
+Plans:
+- [ ] 06-01-PLAN.md — Anti-scope-creep implementation (CLAUDE.md + agent prompts)
+
+**Key files:**
+- `/Users/gg/.claude/CLAUDE.md` — global anti-scope-creep rule
+- `agents/gsd-executor.md` — executor-level scope enforcement
+- `agents/gsd-planner.md` — planner-level "don't over-plan" guardrail
+
+**Success criteria:**
+- CLAUDE.md contains anti-scope-creep rule ("Don't add features beyond the plan, 3 lines > premature abstraction")
+- Executor agent reinforces scope boundary in execution
+- Planner agent warns against over-scoping
+
+### Phase 7: tracking-hygiene (GAP-CLOSURE)
+
+**Goal:** Corrigir todos os tracking/documentation gaps identificados no milestone audit — traceability table stale, SUMMARY frontmatter incompleto, hasLock missing em getPhaseFileStats, ROADMAP progress stale.
+
+**Requirements:** MODEL-04 (partial fix), LOCK-01..08 (traceability update)
+
+**Gap Closure:** Closes tracking debt from v1.0 milestone audit.
+
+Plans:
+- [ ] 07-01-PLAN.md — Fix REQUIREMENTS.md traceability, SUMMARY frontmatter, getPhaseFileStats hasLock, ROADMAP progress
+
+**Key files:**
+- `.planning/REQUIREMENTS.md` — fix LOCK-01..08 traceability to "Complete"
+- `.planning/phases/02-*/02-02-SUMMARY.md` — add MODEL-04 to requirements_completed
+- `get-shit-done/bin/lib/core.cjs` — add hasLock to getPhaseFileStats
+- `.planning/ROADMAP.md` — update progress table
+
+**Success criteria:**
+- LOCK-01..08 traceability shows "Complete" instead of "Planned"
+- 02-02-SUMMARY.md frontmatter includes MODEL-04
+- getPhaseFileStats returns hasLock
+- ROADMAP progress reflects actual completion state
+
+## Phase Dependencies
+
+```
+Phase 1 (executor-discipline)
+    ↓ (nenhuma dependência, mas informa effort mapping)
+Phase 2 (model-routing-fix)
+    ↓ (nenhuma dependência técnica)
+Phase 3 (guardrails-upgrade)
+    ↓ (independente tecnicamente)
+Phase 4 (brainstorm-phase-integration)
+    ↓ (independente tecnicamente)
+Phase 5 (phase-lock)
+    ↓
+Phase 6 (guard-03-anti-scope-creep) — gap closure
+    ↓
+Phase 7 (tracking-hygiene) — gap closure, runs last
+```
+
 ## Progress
 
 | Phase | Status | Plans | Progress |
 |-------|--------|-------|----------|
-| 1     | 3/3 | Complete   | 2026-04-01 |
-| 2     | ○      | 0/2   | 0%       |
-| 3     | 1/3 | In Progress|  |
-| 4     | ○      | 0/2   | 0%       |
-| 5     | ○      | 0/3   | 0%       |
+| 1     | ✓      | 3/3   | Complete (2026-04-01) |
+| 2     | ✓      | 2/2   | Complete (2026-04-01) |
+| 3     | ✓      | 3/3   | Complete (2026-04-01) |
+| 4     | ✓      | 2/2   | Complete (2026-04-01) |
+| 5     | ✓      | 3/3   | Complete (2026-04-01) |
+| 6     | ○      | 0/1   | 0%       |
+| 7     | ○      | 0/1   | 0%       |
 
 ---
 *Roadmap created: 2026-04-01*
-*Last updated: 2026-04-01 after phase 5 planning*
+*Last updated: 2026-04-02 after gap closure planning*
