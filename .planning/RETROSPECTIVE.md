@@ -57,6 +57,50 @@
 
 ---
 
+## Milestone: v2.0 — Claude Code Insights
+
+**Shipped:** 2026-04-02
+**Phases:** 5 | **Plans:** 13 | **Sessions:** ~85 commits (2026-04-01 to 2026-04-02)
+
+### What Was Built
+- **Executor Discipline** (Phase 01): scope echo, commit-before-report gate, context persistence, synthesis step, maxTurns config (3 tiers), 9-section structured handoff
+- **Model Routing Fix** (Phase 02): MODEL_ALIAS_MAP updated to 4.6/4.6/4.5, EFFORT_PROFILES for 16 agents, plan-checker moved local, resolveEffort() with 25 init.cjs fields and 8 workflow updates
+- **Guardrails Upgrade** (Phase 03): CLAUDE.md global (anti-false-claims, preservation, read-before-edit, compaction), destructive cmd hook (14 patterns), impact advisory hook, agent-level anti_false_claims + context_persistence blocks
+- **Brainstorm Integration** (Phase 04): /gsd:brainstorm-phase command, 10-step interactive workflow, BRAINSTORM.md template with 4 XML sections, discuss-phase Step 2.5 integration, artifact detection in core/init
+- **Phase Lock** (Phase 05): lock.cjs with atomic wx file creation, PID liveness via signal 0, PreToolUse blocking hook, auto-acquire on first write, gsd-tools dispatcher, unlock-phase command, progress Lock column
+
+### What Worked
+- **Three-layer guardrail pattern**: CLAUDE.md global + agent XML blocks + runtime hooks proved effective — each layer catches what others miss
+- **Source code mining**: Reading Claude Code source directly produced concrete, actionable patterns vs. speculative improvements
+- **Parallel phase execution**: Phases 1-3 independent ordering by impact allowed fast sequential delivery
+- **Infrastructure detection in autonomous mode**: Skipping discuss for infrastructure phases saved significant time
+- **Cross-phase integration stayed clean**: core.cjs, init.cjs, install.js modified by 3-5 phases each with zero conflicts
+
+### What Was Inefficient
+- **Tracking staleness**: REQUIREMENTS.md traceability table and ROADMAP progress fell behind execution. Fixed late.
+- **GUARD-03 planning overhead**: Created Phase 6, planned it, started execution, then user deferred — wasted context on unnecessary planning
+- **Nyquist validation gap**: 4 of 5 phases have partial/missing VALIDATION.md — nyquist workflow not integrated smoothly yet
+- **SUMMARY frontmatter parsing**: summary-extract tool failed to parse MODEL-04 from 02-02-SUMMARY.md despite it being present — brittle YAML parsing
+
+### Patterns Established
+- **Anti-false-claims bidirectional**: "Never claim done" + "When confirmed, say clearly" — prevents both false positives and false negatives
+- **Context persistence per role**: Each long-running agent gets role-specific persistence instructions (executor: decisions/findings, planner: architecture, researcher: sources, debugger: root cause)
+- **Advisory hook escalation path**: Start advisory (gsd-impact-guard), upgrade to blocking when proven (gsd-phase-lock)
+- **Phase lock via PreToolUse**: Hook-based locking with process.ppid session identity — zero changes to existing workflows
+
+### Key Lessons
+1. **Defer uncertain features early.** GUARD-03 was flagged as uncertain in discuss-phase but carried through planning/execution anyway. Should have deferred during planning, not during execution.
+2. **Tracking updates should be automated.** REQUIREMENTS.md traceability and ROADMAP progress require manual gsd-tools commands that are easy to forget. Consider auto-updating on plan completion.
+3. **Three-layer guardrails work.** The pattern of global rules + agent reinforcement + runtime hooks provides defense-in-depth that catches failures at multiple levels.
+4. **Infrastructure phases don't need discuss.** Detecting and skipping discuss for pure-infrastructure phases (no user-facing behavior) saves significant time without quality loss.
+
+### Cost Observations
+- Model mix: Opus for orchestration/execution, sonnet for planning/research, haiku for verification/checking
+- Sessions: 2 days (2026-04-01 to 2026-04-02), ~85 commits
+- Notable: 5 phases planned and executed in under 2 hours total active time. Milestone audit + completion added ~30 min.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -64,14 +108,18 @@
 | Milestone | Commits | Phases | Key Change |
 |-----------|---------|--------|------------|
 | v1.0 | ~149 | 7 | Established TDD + atomic commits + SUMMARY.md per plan |
+| v2.0 | ~85 | 5 | Three-layer guardrail pattern + infrastructure phase detection |
 
 ### Cumulative Quality
 
 | Milestone | Tests | Coverage | Zero-Dep Additions |
 |-----------|-------|----------|-------------------|
 | v1.0 | 73+ OPS + fmap + preflight + config | Not measured | fmap.cjs, ops.cjs, preflight.cjs (all zero external deps) |
+| v2.0 | 225+ (41 guard + 17 lock + 167 model) | Not measured | lock.cjs, gsd-workflow-guard.js, gsd-phase-lock.js |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Small plans (1-2 tasks) execute faster and cleaner than large ones -- verified by 16/16 plans in v1.0
+1. Small plans (1-2 tasks) execute faster and cleaner than large ones -- verified across 29 plans in v1.0 + v2.0
 2. Structured frontmatter in SUMMARY.md enables cross-phase dependency tracking without extra tooling
+3. Three-layer guardrail pattern (global + agent + hook) provides defense-in-depth — verified in v2.0 Phase 3
+4. Advisory-first hooks are the right default — can escalate to blocking with confidence (advisory in v1.0 → blocking lock in v2.0)

@@ -24,18 +24,21 @@ Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela 
 - [x] **OPS-05..09**: OPS Workflows — investigate, debug (context-pack.md), feature (blast-radius dispatch), modify (tree edge impact analysis), ops-summary.json context injection
 - [x] **OPS-10..12**: OPS Governance — health scoring (status), specs template management (spec), priority queue backlog (backlog)
 
+### Validated (v2.0 — Claude Code Insights, shipped 2026-04-02)
+
+- [x] **SCOPE-01..06**: Executor discipline — scope echo, commit-before-report, maxTurns, synthesis step, structured handoff, context persistence
+- [x] **MODEL-01..04**: Model routing — alias fix (4.6/4.6/4.5), effort profiles (16 agents), plan-checker local, effort propagation
+- [x] **GUARD-01,02,04..06**: Guardrails — anti-false-claims, tool result preservation, destructive cmd detection, read-before-edit, context compaction
+- [x] **BRAIN-01..04**: Brainstorm phase — interactive workflow, BRAINSTORM.md artifact, discuss-phase integration
+- [x] **LOCK-01..08**: Phase lock — atomic file lock, PID liveness, PreToolUse blocking, auto-acquire, unlock command
+
+### Known Gaps (deferred to v3.0)
+
+- [ ] **GUARD-03**: Anti-scope-creep — deferred by user decision (2026-04-02)
+
 ### Active
 
-- [x] **SCOPE-01**: Extrair regras de decomposição de fases do source (max arquivos/fase, phased execution, context decay) — Validated in Phase 01
-- [x] **SCOPE-02**: Aplicar regras de scoping como guardrails no GSD (discuss-phase e plan-phase) — Validated in Phase 01
-- [x] **SCOPE-03**: Implementar context decay awareness — re-read automático após N turnos — Validated in Phase 01
-- [ ] **MODEL-01**: Auditar model-profiles.cjs e mapear quais agentes GSD estão sub-alocados
-- [ ] **MODEL-02**: Extrair lógica de effort levels do source (effort.ts) e aplicar no GSD
-- [ ] **MODEL-03**: Implementar effort routing inteligente por tipo de tarefa
-- [ ] **HOOK-01**: Extrair padrões de verificação do source (verification agent, edit integrity, forced re-read)
-- [ ] **HOOK-02**: Implementar hooks de verificação no CLAUDE.md global
-- [ ] **HOOK-03**: Extrair bash security patterns e aplicar como guardrails
-- [ ] **HOOK-04**: Implementar token budget awareness no CLAUDE.md
+*(Empty — define new requirements with `/gsd:new-milestone`)*
 
 ### Out of Scope
 
@@ -64,12 +67,14 @@ Cada insight extraído se traduz em melhoria concreta — nenhuma análise pela 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Ordem: scoping → routing → hooks | Phase scoping é o que mais dói (contexto estourando) | Pending (v2.0) |
-| Fork local primeiro, upstream depois | Velocidade de iteração sem preocupação de compat | Validated in v1.0: all 7 phases shipped on fork, zero upstream conflicts |
-| Deliverable = patches, não documento | Gabriel quer código, não relatório | Validated in v1.0: 16 plans = 16 working code deliverables, zero docs-only plans |
-| TDD RED/GREEN per plan | Catch regressions early, keep test count growing | Validated in v1.0: zero regressions across 16 plans, 73+ tests |
-| Advisory hooks over blocking | Guide without obstructing, upgrade to blocking with data | Validated in v1.0: gsd-impact-guard.js advisory-only worked well |
-| Small plans (1-2 tasks, <5min) | Keep context fresh, minimize deviation risk | Validated in v1.0: avg 3.5min/plan, deviations only on plans >4min |
+| Ordem: scoping → routing → hooks | Phase scoping é o que mais dói (contexto estourando) | ✓ Validated: all 3 axes shipped in v2.0 |
+| Fork local primeiro, upstream depois | Velocidade de iteração sem preocupação de compat | ✓ Validated: zero upstream conflicts across 2 milestones |
+| Deliverable = patches, não documento | Gabriel quer código, não relatório | ✓ Validated: 13 plans = 13 working code deliverables |
+| TDD RED/GREEN per plan | Catch regressions early, keep test count growing | ✓ Validated: zero regressions, 225+ tests |
+| Advisory hooks over blocking | Guide without obstructing, upgrade to blocking with data | ✓ Validated: advisory hooks + phase-lock blocking hook shipped |
+| Small plans (1-2 tasks, <5min) | Keep context fresh, minimize deviation risk | ✓ Validated: continued in v2.0 |
+| Three-layer guardrail pattern | CLAUDE.md global + agent XML + hooks | ✓ New in v2.0: proven effective across GUARD-01..06 |
+| Defer GUARD-03 anti-scope-creep | User uncertain about approach, not blocking delivery | — Deferred to v3.0 |
 
 ---
-*Last updated: 2026-04-01 after Phase 05 (phase-lock) completion — all 5 phases shipped: executor discipline, model routing, guardrails, brainstorm integration, phase lock (LOCK-01 through LOCK-08)*
+*Last updated: 2026-04-02 after v2.0 milestone completion — 5 phases shipped: executor discipline, model routing, guardrails, brainstorm integration, phase lock*
