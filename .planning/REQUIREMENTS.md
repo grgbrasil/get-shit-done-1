@@ -85,7 +85,7 @@
 | MODEL-04 | Phase 2 | Complete |
 | GUARD-01 | Phase 3 | Complete |
 | GUARD-02 | Phase 3 | Complete |
-| GUARD-03 | Phase 3 | Pending |
+| GUARD-03 | Phase 6 | Pending |
 | GUARD-04 | Phase 3 | Complete |
 | GUARD-05 | Phase 3 | Complete |
 | GUARD-06 | Phase 3 | Complete |
@@ -93,14 +93,14 @@
 | BRAIN-02 | Phase 4 | Complete |
 | BRAIN-03 | Phase 4 | Complete |
 | BRAIN-04 | Phase 4 | Complete |
-| LOCK-01 | Phase 5 | Planned |
-| LOCK-02 | Phase 5 | Planned |
-| LOCK-03 | Phase 5 | Planned |
-| LOCK-04 | Phase 5 | Planned |
-| LOCK-05 | Phase 5 | Planned |
-| LOCK-06 | Phase 5 | Planned |
-| LOCK-07 | Phase 5 | Planned |
-| LOCK-08 | Phase 5 | Planned |
+| LOCK-01 | Phase 5 | Complete |
+| LOCK-02 | Phase 5 | Complete |
+| LOCK-03 | Phase 5 | Complete |
+| LOCK-04 | Phase 5 | Complete |
+| LOCK-05 | Phase 5 | Complete |
+| LOCK-06 | Phase 5 | Complete |
+| LOCK-07 | Phase 5 | Complete |
+| LOCK-08 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 28 total
