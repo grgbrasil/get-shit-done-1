@@ -1,210 +1,414 @@
 /**
- * Preflight — Pre-flight dependency resolver for phase commands
- *
- * Centralizes all prerequisite checks (CONTEXT.md, UI-SPEC.md, dependent phases,
- * plans existence) into a single reusable function that phase commands can call
- * before executing.
+ * Preflight — Pre-workflow validation for phase readiness
  */
 
 const fs = require('fs');
 const path = require('path');
-const { output, error, findPhaseInternal, getRoadmapPhaseInternal, planningRoot } = require('./core.cjs');
-
-// ─── Config Loading ─────────────────────────────────────────────────────────
+const { planningDir, planningPaths, getRoadmapPhaseInternal, findPhaseInternal, getPhaseFileStats, extractCurrentMilestone, escapeRegex, output, error } = require('./core.cjs');
+const { extractFrontmatter } = require('./frontmatter.cjs');
 
 /**
- * Load raw config.json preserving nested structure (workflow.*, etc.).
- * loadConfig() from core.cjs flattens the config, losing the workflow section
- * which preflight needs for skip_discuss, ui_safety_gate, ui_phase, discuss_mode.
+ * Normalize workflow argument from various input formats.
+ * Maps 'plan-phase' → 'plan', 'execute-phase' → 'execute', etc.
  */
-function loadRawConfig(cwd) {
-  const configPath = path.join(cwd, '.planning', 'config.json');
+function normalizeWorkflow(wf) {
+  if (!wf) return null;
+  const map = {
+    'discuss-phase': 'discuss', 'discuss': 'discuss',
+    'plan-phase': 'plan', 'plan': 'plan',
+    'execute-phase': 'execute', 'execute': 'execute',
+    'verify-phase': 'verify', 'verify': 'verify',
+    'ui-phase': 'plan', 'ui': 'plan',
+  };
+  return map[wf] || null;
+}
+
+/**
+ * Auto-detect the next workflow step based on artifact state.
+ * No CONTEXT → discuss, CONTEXT no PLANs → plan, PLANs no SUMMARYs → execute, else verify.
+ */
+function detectWorkflow(phaseDir) {
+  if (!phaseDir || !fs.existsSync(phaseDir)) return 'discuss';
   try {
-    return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    const stats = getPhaseFileStats(phaseDir);
+    if (!stats.hasContext) return 'discuss';
+    if (stats.plans.length === 0) return 'plan';
+    if (stats.summaries.length === 0) return 'execute';
+    return 'verify';
   } catch {
-    return {};
+    return 'discuss';
   }
 }
-
-// ─── UI Detection ───────────────────────────────────────────────────────────
 
 /**
- * Check if a roadmap section indicates UI-related work.
- * Uses precise word-boundary patterns to avoid false positives
- * (e.g. "interface refactoring" should NOT match).
+ * Build the next command string for a given workflow and phase.
  */
-function hasUiIndicators(section) {
-  if (!section) return false;
-
-  const goalMatch = section.match(/\*\*Goal\*\*:?\s*([^\n]+)/i);
-  const nameMatch = section.match(/Phase\s+\d+[^:]*:\s*([^\n]+)/i);
-  const combined = [
-    goalMatch ? goalMatch[1] : '',
-    nameMatch ? nameMatch[1] : '',
-  ].join(' ').toLowerCase();
-
-  const uiPatterns = [
-    /\bfrontend\b/,
-    /\bdashboard\b/,
-    /\bui\s/,
-    /\buser\s+interface\b/,
-    /\blayout\b/,
-    /\bpage\b/,
-    /\bscreen\b/,
-    /\bwidget\b/,
-    /\bcomponent\s+library\b/,
-    /\bform\s+(builder|validation|handling)\b/,
-    /\bview\s+(layer|component|template)\b/,
-  ];
-
-  return uiPatterns.some(p => p.test(combined));
+function nextCommand(workflow, phase) {
+  const map = {
+    'discuss': `/gsd:discuss-phase ${phase}`,
+    'plan': `/gsd:plan-phase ${phase}`,
+    'execute': `/gsd:execute-phase ${phase}`,
+    'verify': `/gsd:verify-work ${phase}`,
+  };
+  return map[workflow] || `/gsd:discuss-phase ${phase}`;
 }
 
-// ─── Individual Checks ──────────────────────────────────────────────────────
+/**
+ * Check 4: Verify required artifacts exist for the target workflow step.
+ */
+function checkArtifacts(phaseDirPath, workflow, phaseNum, phaseSection, blockers, warnings) {
+  // discuss requires nothing
+  if (workflow === 'discuss') return;
 
-function checkContextExists(cwd, phase, phaseInfo, config, blockers) {
-  if (config.workflow?.skip_discuss === true) return;
-  if (config.workflow?.discuss_mode === 'skip') return;
-  if (phaseInfo?.has_context === true) return;
-
-  blockers.push({
-    type: 'missing_context',
-    message: `No CONTEXT.md found for Phase ${phase}. Design preferences will not be included in plans.`,
-    action: 'run_command',
-    command: `/gsd:discuss-phase ${phase}`,
-    severity: 'warning',
-    skippable: true,
-  });
-}
-
-function checkUiSpec(cwd, phase, phaseInfo, roadmapPhase, config, blockers) {
-  if (config.workflow?.ui_phase === false) return;
-  if (config.workflow?.ui_safety_gate === false) return;
-  if (!roadmapPhase?.section) return;
-  if (!hasUiIndicators(roadmapPhase.section)) return;
-
-  // Check for UI-SPEC.md in phase directory
-  const phaseDir = phaseInfo?.directory
-    ? path.join(cwd, phaseInfo.directory)
-    : null;
-
-  if (phaseDir) {
-    // Check exact name
-    const exactPath = path.join(phaseDir, phase + '-UI-SPEC.md');
-    if (fs.existsSync(exactPath)) return;
-
-    // Check for any *UI-SPEC* file in the phase directory
-    try {
-      const files = fs.readdirSync(phaseDir);
-      if (files.some(f => f.includes('UI-SPEC'))) return;
-    } catch { /* directory may not exist */ }
+  // No phase dir at all — blocker for plan/execute/verify
+  if (!phaseDirPath || !fs.existsSync(phaseDirPath)) {
+    const artifactMap = { plan: 'CONTEXT.md', execute: 'PLAN.md', verify: 'SUMMARY.md' };
+    blockers.push({
+      type: 'artifact_missing',
+      message: `Phase directory not found — ${artifactMap[workflow] || 'artifacts'} required for ${workflow}`,
+      command: `/gsd:discuss-phase ${phaseNum}`,
+      skippable: false,
+    });
+    return;
   }
 
-  blockers.push({
-    type: 'missing_ui_spec',
-    message: `Phase ${phase} appears to have UI work but no UI-SPEC.md found.`,
-    action: 'run_command',
-    command: `/gsd:ui-phase ${phase}`,
-    severity: 'warning',
-    skippable: true,
-  });
+  let stats;
+  try {
+    stats = getPhaseFileStats(phaseDirPath);
+  } catch {
+    blockers.push({
+      type: 'artifact_missing',
+      message: `Cannot read phase directory`,
+      command: null,
+      skippable: false,
+    });
+    return;
+  }
+
+  if (workflow === 'plan' && !stats.hasContext) {
+    blockers.push({
+      type: 'artifact_missing',
+      message: `CONTEXT.md missing — required before planning`,
+      command: `/gsd:discuss-phase ${phaseNum}`,
+      skippable: false,
+    });
+  }
+
+  if (workflow === 'execute' && stats.plans.length === 0) {
+    blockers.push({
+      type: 'artifact_missing',
+      message: `No PLAN.md files found — required before execution`,
+      command: `/gsd:plan-phase ${phaseNum}`,
+      skippable: false,
+    });
+  }
+
+  if (workflow === 'verify' && stats.summaries.length === 0) {
+    blockers.push({
+      type: 'artifact_missing',
+      message: `No SUMMARY.md files found — required before verification`,
+      command: `/gsd:execute-phase ${phaseNum}`,
+      skippable: false,
+    });
+  }
+
+  // UI-SPEC check: warning if frontend indicators present but no UI-SPEC
+  if (workflow === 'plan' || workflow === 'execute') {
+    const hasFrontendIndicators = /UI|interface|frontend|component|layout|page|screen|view|form|dashboard|widget/i.test(phaseSection || '');
+    if (hasFrontendIndicators) {
+      const files = fs.readdirSync(phaseDirPath);
+      const hasUiSpec = files.some(f => f.endsWith('-UI-SPEC.md') || f === 'UI-SPEC.md');
+      if (!hasUiSpec) {
+        warnings.push({
+          type: 'ui_spec_missing',
+          message: `Frontend phase without UI-SPEC.md`,
+          command: `/gsd:ui-phase ${phaseNum}`,
+        });
+      }
+    }
+  }
 }
 
-function checkDependentPhasesComplete(cwd, phase, roadmapPhase, blockers) {
-  if (!roadmapPhase?.section) return;
+/**
+ * Check 5: Validate canonical refs in CONTEXT.md point to real files.
+ * Returns { checked: number, valid: number }.
+ */
+function checkCanonicalRefs(cwd, phaseDirPath, warnings) {
+  const result = { checked: 0, valid: 0 };
+  if (!phaseDirPath || !fs.existsSync(phaseDirPath)) return result;
 
-  const depLine = roadmapPhase.section.match(/\*\*Depends\s+on:?\*\*:?\s*([^\n]+)/i);
-  if (!depLine) return;
+  // Find CONTEXT.md
+  let contextFile;
+  try {
+    const files = fs.readdirSync(phaseDirPath);
+    contextFile = files.find(f => f.endsWith('-CONTEXT.md') || f === 'CONTEXT.md');
+  } catch {
+    return result;
+  }
+  if (!contextFile) return result;
 
-  const depText = depLine[1].trim().toLowerCase();
-  if (/^(nothing|none|n\/a)$/i.test(depText)) return;
+  let content;
+  try {
+    content = fs.readFileSync(path.join(phaseDirPath, contextFile), 'utf-8');
+  } catch {
+    return result;
+  }
 
-  // Extract phase numbers
-  const depNums = depLine[1].match(/\d+(?:\.\d+)*/g);
-  if (!depNums || depNums.length === 0) return;
+  // Extract <canonical_refs> section
+  const sectionMatch = content.match(/<canonical_refs>([\s\S]*?)<\/canonical_refs>/);
+  if (!sectionMatch) return result;
 
-  const visited = new Set();
-  for (const dep of depNums) {
-    if (visited.has(dep)) continue;
-    visited.add(dep);
+  const section = sectionMatch[1];
 
-    const depInfo = findPhaseInternal(cwd, dep);
-    if (!depInfo) {
-      // Phase directory doesn't exist at all — treat as incomplete
-      blockers.push({
-        type: 'incomplete_dependency',
-        message: `Phase ${dep} must complete before Phase ${phase}`,
-        action: 'run_command',
-        command: `/gsd:execute-phase ${dep}`,
-        severity: 'blocking',
-        skippable: false,
+  // Skip if explicitly empty
+  if (/no external specs/i.test(section)) return result;
+
+  // Extract backtick-quoted paths
+  const pathMatches = section.matchAll(/`([^`]+)`/g);
+  for (const m of pathMatches) {
+    let refPath = m[1].trim();
+
+    // Skip non-path entries (commands, code snippets)
+    if (refPath.startsWith('/gsd:') || refPath.startsWith('node ') || refPath.includes('(') || !refPath.includes('/')) continue;
+
+    // Strip §N section references
+    refPath = refPath.replace(/\s*§\d+.*$/, '');
+
+    result.checked++;
+    const fullPath = path.resolve(cwd, refPath);
+    if (fs.existsSync(fullPath)) {
+      result.valid++;
+    } else {
+      warnings.push({
+        type: 'canonical_ref_missing',
+        message: `Referenced file not found: ${refPath}`,
+        path: refPath,
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Check 6: Validate files_modified in PLAN frontmatter point to real files/dirs.
+ * Returns { checked: number, valid: number }.
+ */
+function checkPlanPaths(cwd, phaseDirPath, warnings) {
+  const result = { checked: 0, valid: 0 };
+  if (!phaseDirPath || !fs.existsSync(phaseDirPath)) return result;
+
+  let planFiles;
+  try {
+    const files = fs.readdirSync(phaseDirPath);
+    planFiles = files.filter(f => f.endsWith('-PLAN.md') || f === 'PLAN.md');
+  } catch {
+    return result;
+  }
+  if (planFiles.length === 0) return result;
+
+  for (const planFile of planFiles) {
+    let content;
+    try {
+      content = fs.readFileSync(path.join(phaseDirPath, planFile), 'utf-8');
+    } catch {
+      continue;
+    }
+
+    let fm;
+    try {
+      fm = extractFrontmatter(content);
+    } catch {
+      warnings.push({
+        type: 'malformed_frontmatter',
+        message: `Malformed YAML frontmatter in ${planFile}`,
       });
       continue;
     }
 
-    const plansCount = depInfo.plans?.length || 0;
-    const summariesCount = depInfo.summaries?.length || 0;
-    const isComplete = plansCount > 0 && plansCount === summariesCount;
+    const filesModified = fm.files_modified || fm['files-modified'];
+    if (!filesModified) continue;
+
+    // Normalize to array
+    const pathList = Array.isArray(filesModified) ? filesModified : String(filesModified).split(',').map(s => s.trim());
+
+    for (const p of pathList) {
+      if (!p) continue;
+      // Skip globs
+      if (p.includes('*')) continue;
+
+      result.checked++;
+      const fullPath = path.resolve(cwd, p);
+      if (fs.existsSync(fullPath)) {
+        result.valid++;
+      } else {
+        // Check if parent directory exists (new file is ok if parent dir exists)
+        const parentDir = path.dirname(fullPath);
+        if (fs.existsSync(parentDir)) {
+          result.valid++; // New file in existing dir — ok
+        } else {
+          warnings.push({
+            type: 'files_modified_missing',
+            message: `Plan path not found (parent dir also missing): ${p}`,
+            path: p,
+            plan: planFile,
+          });
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Check 3: Verify all phase dependencies are marked complete.
+ * Parses "Depends on" from phase section, cross-references roadmap checkboxes.
+ */
+function checkDependencies(cwd, phaseSection, phaseNum, blockers) {
+  const dependsMatch = phaseSection.match(/\*\*Depends on(?::\*\*|\*\*:)\s*([^\n]+)/i);
+  if (!dependsMatch) return;
+
+  const dependsRaw = dependsMatch[1].trim();
+  // Skip if no real dependencies
+  if (/^(nothing|none|—|-|n\/a)$/i.test(dependsRaw)) return;
+
+  // Extract phase numbers from dependency string
+  // Handles: "Phase 1", "Phase 1, Phase 2", "Phase 1 and Phase 2", "1, 2"
+  const depNums = [];
+  const phaseRefs = dependsRaw.matchAll(/(?:Phase\s+)?(\d+(?:\.\d+)*)/gi);
+  for (const m of phaseRefs) {
+    depNums.push(m[1]);
+  }
+
+  if (depNums.length === 0) return;
+
+  // Read roadmap to check completion status
+  const paths = planningPaths(cwd);
+  let roadmapContent;
+  try {
+    roadmapContent = extractCurrentMilestone(fs.readFileSync(paths.roadmap, 'utf-8'), cwd);
+  } catch {
+    return; // Can't read roadmap — skip dependency check silently
+  }
+
+  for (const depNum of depNums) {
+    const escaped = escapeRegex(depNum);
+    const checkboxPattern = new RegExp(`-\\s*\\[(x| )\\]\\s*.*Phase\\s+${escaped}[:\\s]`, 'i');
+    const match = roadmapContent.match(checkboxPattern);
+    const isComplete = match ? match[1] === 'x' : false;
 
     if (!isComplete) {
+      // Get dep phase name for better message
+      const depInfo = getRoadmapPhaseInternal(cwd, depNum);
+      const depName = depInfo ? depInfo.phase_name : `Phase ${depNum}`;
       blockers.push({
-        type: 'incomplete_dependency',
-        message: `Phase ${dep} must complete before Phase ${phase}`,
-        action: 'run_command',
-        command: `/gsd:execute-phase ${dep}`,
-        severity: 'blocking',
+        type: 'dependency_incomplete',
+        message: `Phase ${depNum} (${depName}) not complete — required by Phase ${phaseNum}`,
+        command: `/gsd:execute-phase ${depNum}`,
         skippable: false,
       });
     }
   }
 }
 
-function checkPlansExist(cwd, phase, phaseInfo, blockers) {
-  if ((phaseInfo?.plans?.length || 0) > 0) return;
-
-  blockers.push({
-    type: 'no_plans',
-    message: `No plans found for Phase ${phase}. Run plan-phase first.`,
-    action: 'run_command',
-    command: `/gsd:plan-phase ${phase}`,
-    severity: 'blocking',
-    skippable: false,
-  });
-}
-
-// ─── Main Command ───────────────────────────────────────────────────────────
-
-function cmdPreflight(cwd, command, phase, raw) {
-  const validCommands = ['plan-phase', 'execute-phase', 'ui-phase'];
-  if (!validCommands.includes(command)) {
-    error(`Invalid preflight command: ${command}. Valid: ${validCommands.join(', ')}`);
-  }
-
-  const config = loadRawConfig(cwd);
-  const phaseInfo = findPhaseInternal(cwd, phase);
-  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase);
+function cmdPreflight(cwd, phaseNum, workflowArg, raw) {
   const blockers = [];
+  const warnings = [];
 
-  if (command === 'plan-phase') {
-    checkContextExists(cwd, phase, phaseInfo, config, blockers);
-    checkUiSpec(cwd, phase, phaseInfo, roadmapPhase, config, blockers);
-    checkDependentPhasesComplete(cwd, phase, roadmapPhase, blockers);
-  } else if (command === 'execute-phase') {
-    checkPlansExist(cwd, phase, phaseInfo, blockers);
-    checkDependentPhasesComplete(cwd, phase, roadmapPhase, blockers);
-  } else if (command === 'ui-phase') {
-    checkContextExists(cwd, phase, phaseInfo, config, blockers);
+  // ── Check 1: Planning exists ──
+  const pDir = planningDir(cwd);
+  if (!fs.existsSync(pDir)) {
+    output({
+      ready: false,
+      phase: phaseNum || null,
+      phase_name: null,
+      detected_workflow: null,
+      next_command: '/gsd:new-project',
+      blockers: [{ type: 'no_planning', message: '.planning/ directory not found. Run /gsd:new-project first', command: '/gsd:new-project', skippable: false }],
+      warnings: [],
+    }, raw);
+    return;
   }
 
-  const firstBlocker = blockers[0] || null;
+  const paths = planningPaths(cwd);
+  if (!fs.existsSync(paths.roadmap)) {
+    output({
+      ready: false,
+      phase: phaseNum || null,
+      phase_name: null,
+      detected_workflow: null,
+      next_command: '/gsd:new-project',
+      blockers: [{ type: 'no_roadmap', message: 'ROADMAP.md not found. Run /gsd:new-project first', command: '/gsd:new-project', skippable: false }],
+      warnings: [],
+    }, raw);
+    return;
+  }
+
+  if (!phaseNum) {
+    output({
+      ready: false,
+      phase: null,
+      phase_name: null,
+      detected_workflow: null,
+      next_command: null,
+      blockers: [{ type: 'no_phase', message: 'Phase number required. Usage: preflight <phase>', command: null, skippable: false }],
+      warnings: [],
+    }, raw);
+    return;
+  }
+
+  // ── Check 2: Phase exists ──
+  const phaseInfo = getRoadmapPhaseInternal(cwd, phaseNum);
+  if (!phaseInfo || !phaseInfo.found) {
+    output({
+      ready: false,
+      phase: phaseNum,
+      phase_name: null,
+      detected_workflow: null,
+      next_command: null,
+      blockers: [{ type: 'phase_not_found', message: `Phase ${phaseNum} not found in ROADMAP.md`, command: null, skippable: false }],
+      warnings: [],
+    }, raw);
+    return;
+  }
+
+  const phaseName = phaseInfo.phase_name;
+  const phaseSection = phaseInfo.section;
+
+  // Resolve phase directory (may not exist yet — that's ok for discuss)
+  const phaseDir = findPhaseInternal(cwd, phaseNum);
+  const phaseDirPath = phaseDir ? path.join(cwd, phaseDir.directory) : null;
+
+  // Detect or normalize workflow
+  const workflow = normalizeWorkflow(workflowArg) || detectWorkflow(phaseDirPath);
+
+  // ── Check 3: Dependencies complete ──
+  checkDependencies(cwd, phaseSection, phaseNum, blockers);
+
+  // ── Check 4: Artifact gate ──
+  checkArtifacts(phaseDirPath, workflow, phaseNum, phaseSection, blockers, warnings);
+
+  // ── Check 5: Canonical refs ──
+  const canonicalStats = checkCanonicalRefs(cwd, phaseDirPath, warnings);
+
+  // ── Check 6: Plan files_modified ──
+  const planPathStats = checkPlanPaths(cwd, phaseDirPath, warnings);
+
+  const ready = blockers.every(b => b.skippable);
 
   output({
-    ready: blockers.length === 0,
+    ready,
+    phase: phaseNum,
+    phase_name: phaseName,
+    detected_workflow: workflow,
+    next_command: nextCommand(workflow, phaseNum),
     blockers,
-    next_action: firstBlocker?.action || null,
-    next_command: firstBlocker?.command || null,
-    phase_number: phase,
-    command_checked: command,
+    warnings,
+    canonical_refs_checked: canonicalStats.checked,
+    canonical_refs_valid: canonicalStats.valid,
+    plan_paths_checked: planPathStats.checked,
+    plan_paths_valid: planPathStats.valid,
   }, raw);
 }
 
