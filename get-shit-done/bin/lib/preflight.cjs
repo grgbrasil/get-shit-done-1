@@ -377,7 +377,7 @@ function cmdPreflight(cwd, phaseNum, workflowArg, raw) {
 
   // Resolve phase directory (may not exist yet — that's ok for discuss)
   const phaseDir = findPhaseInternal(cwd, phaseNum);
-  const phaseDirPath = phaseDir ? path.join(cwd, phaseDir.dir) : null;
+  const phaseDirPath = phaseDir ? path.join(cwd, phaseDir.directory) : null;
 
   // Detect or normalize workflow
   const workflow = normalizeWorkflow(workflowArg) || detectWorkflow(phaseDirPath);
