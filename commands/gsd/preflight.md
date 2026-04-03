@@ -8,6 +8,11 @@ allowed-tools:
 <objective>
 Run preflight checks for a phase and display a GO/NO-GO report.
 Validates: phase exists, dependencies complete, required artifacts present, canonical refs valid, plan paths valid.
+
+**Auto-enforcement:** The `gsd-preflight-gate.js` hook automatically runs preflight before
+`plan-phase`, `execute-phase`, `discuss-phase`, and `verify-work` skills. If preflight fails,
+the workflow is blocked with remediation commands. This command is useful for manual checks
+or when you want to see the full report before starting a workflow.
 </objective>
 
 <execution_context>

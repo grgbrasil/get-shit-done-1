@@ -4399,7 +4399,7 @@ function uninstall(isGlobal, runtime = 'claude') {
   // 4. Remove GSD hooks
   const hooksDir = path.join(targetDir, 'hooks');
   if (fs.existsSync(hooksDir)) {
-    const gsdHooks = ['gsd-statusline.js', 'gsd-check-update.js', 'gsd-check-update.sh', 'gsd-context-monitor.js', 'gsd-prompt-guard.js', 'gsd-read-guard.js', 'gsd-session-state.sh', 'gsd-validate-commit.sh', 'gsd-phase-boundary.sh'];
+    const gsdHooks = ['gsd-statusline.js', 'gsd-check-update.js', 'gsd-check-update.sh', 'gsd-context-monitor.js', 'gsd-prompt-guard.js', 'gsd-read-guard.js', 'gsd-preflight-gate.js', 'gsd-session-state.sh', 'gsd-validate-commit.sh', 'gsd-phase-boundary.sh'];
     let hookCount = 0;
     for (const hook of gsdHooks) {
       const hookPath = path.join(hooksDir, hook);
@@ -5677,6 +5677,28 @@ function install(isGlobal, runtime = 'claude') {
         ]
       });
       console.log(`  ${green}✓${reset} Configured read-before-edit guard hook`);
+    }
+
+    // Configure PreToolUse hook for preflight gate (blocks workflow skills when phase not ready)
+    const preflightGateCommand = isGlobal
+      ? buildHookCommand(targetDir, 'gsd-preflight-gate.js')
+      : 'node ' + dirName + '/hooks/gsd-preflight-gate.js';
+    const hasPreflightGateHook = settings.hooks[preToolEvent].some(entry =>
+      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-preflight-gate'))
+    );
+
+    if (!hasPreflightGateHook) {
+      settings.hooks[preToolEvent].push({
+        matcher: 'Skill',
+        hooks: [
+          {
+            type: 'command',
+            command: preflightGateCommand,
+            timeout: 10
+          }
+        ]
+      });
+      console.log(`  ${green}✓${reset} Configured preflight gate hook`);
     }
 
     // Community hooks — registered on install but opt-in at runtime.
