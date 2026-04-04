@@ -282,11 +282,7 @@ phase_update_main() {
     # Level 1 (dev repo): main segue upstream — fast-forward ou merge
     # O trabalho vive em branches, main nunca diverge do upstream
     if [[ "$AHEAD" -eq 0 ]]; then
-      info "Fast-forward main pro upstream (sem commits locais no main)"
-      if ! confirm "Atualizar main? (fast-forward, $BEHIND commits)"; then
-        warn "Atualização pulada"
-        return
-      fi
+      info "Fast-forward main pro upstream ($BEHIND commits novos)..."
       if dry "git merge --ff-only ${UPSTREAM_REMOTE}/main"; then
         if ! git merge --ff-only "${UPSTREAM_REMOTE}/main" 2>/tmp/gsd-sync-merge-err; then
           fail "Fast-forward falhou — main divergiu do upstream?\n$(cat /tmp/gsd-sync-merge-err 2>/dev/null)"
