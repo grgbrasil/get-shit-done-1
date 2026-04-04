@@ -37,12 +37,17 @@ RESET='\033[0m'
 
 # ── Config ───────────────────────────────────────────────────────────────────
 DRY_RUN=false
+RESUME=false
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+STATE_FILE="${REPO_DIR}/.git/gsd-sync-state"
 
-if [[ "${1:-}" == "--dry-run" ]]; then
-  DRY_RUN=true
-fi
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    --resume)  RESUME=true ;;
+  esac
+done
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,6 +57,44 @@ warn()  { echo -e "${YELLOW}⚠${RESET}  $*"; }
 fail()  { echo -e "${RED}✗${RESET}  $*"; exit 1; }
 step()  { echo -e "\n${BOLD}${CYAN}── $* ──${RESET}"; }
 dry()   { if $DRY_RUN; then echo -e "  ${DIM}[dry-run] $*${RESET}"; return 1; else return 0; fi; }
+
+# ── State persistence ────────────────────────────────────────────────────────
+# States: (empty) → running → review_pending → done
+# The script saves state at review pause points and resumes from there.
+
+save_state() {
+  local state="$1"
+  shift
+  # Save state + any extra key=value pairs
+  {
+    echo "state=$state"
+    echo "timestamp=$(date +%Y%m%d-%H%M%S)"
+    echo "level=$LEVEL"
+    echo "backup_branch=${BACKUP_BRANCH:-}"
+    echo "snapshot_dir=${SNAPSHOT_DIR:-}"
+    echo "custom_file_count=${CUSTOM_FILE_COUNT:-0}"
+    echo "behind=${BEHIND:-0}"
+    echo "ahead=${AHEAD:-0}"
+    for kv in "$@"; do
+      echo "$kv"
+    done
+  } > "$STATE_FILE"
+}
+
+read_state() {
+  if [[ -f "$STATE_FILE" ]]; then
+    # Source the state file to load variables
+    # shellcheck disable=SC1090
+    source "$STATE_FILE"
+    echo "$state"
+  else
+    echo ""
+  fi
+}
+
+clear_state() {
+  rm -f "$STATE_FILE"
+}
 
 confirm() {
   local msg="$1"
@@ -486,20 +529,30 @@ phase_integration_review() {
   if $needs_review; then
     echo ""
     echo -e "${BOLD}${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-    echo -e "${BOLD}  PAUSA PARA REVISAO INTERATIVA${RESET}"
+    echo -e "${BOLD}  SYNC PAUSADO — REVISAO NECESSARIA${RESET}"
     echo -e "${BOLD}${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
     echo ""
-    echo -e "  Abra uma sessao Claude Code e revise as mudancas:"
-    echo -e "  ${DIM}Verifique se o upstream nao quebrou ou melhorou algo que voce fez.${RESET}"
+    echo -e "  O rebase foi aplicado, mas ha arquivos que precisam de revisao."
+    echo -e "  Abra uma sessao Claude Code e revise as mudancas."
     echo ""
-    echo -e "  Quando terminar, pressione ENTER para continuar o sync."
+    if [[ -n "${SNAPSHOT_DIR:-}" && -d "$SNAPSHOT_DIR" ]]; then
+      echo -e "  Snapshot pre-rebase: ${BOLD}$SNAPSHOT_DIR${RESET}"
+      echo -e "  Compare com: ${DIM}diff $SNAPSHOT_DIR/<arquivo> <arquivo>${RESET}"
+    fi
+    if [[ -n "${BACKUP_BRANCH:-}" ]]; then
+      echo -e "  Rollback se necessario: ${DIM}git reset --hard $BACKUP_BRANCH${RESET}"
+    fi
     echo ""
+    echo -e "  Quando terminar, rode:"
+    echo -e "    ${BOLD}bash scripts/gsd-sync-upstream.sh --resume${RESET}"
+    echo ""
+
     if $DRY_RUN; then
-      echo -e "  ${DIM}[dry-run] would pause here for review${RESET}"
-    elif [[ -t 0 ]]; then
-      read -r -p "  [ENTER para continuar, Ctrl+C para abortar] "
+      echo -e "  ${DIM}[dry-run] would save state and exit here${RESET}"
     else
-      warn "stdin nao e terminal — pulando pausa"
+      save_state "review_pending"
+      info "Estado salvo. O script vai retomar do push quando voce rodar --resume."
+      exit 0
     fi
   else
     ok "Nenhuma sobreposicao detectada — integracao limpa"
@@ -621,6 +674,9 @@ main() {
   BACKUP_BRANCH=""
   SNAPSHOT_DIR=""
   CUSTOM_FILE_COUNT=0
+  NEEDS_REBASE=false
+  BEHIND=0
+  AHEAD=0
 
   echo -e "${BOLD}${CYAN}"
   echo "  ╔═══════════════════════════════════════════════════╗"
@@ -629,6 +685,50 @@ main() {
   echo -e "${RESET}"
 
   detect_level
+
+  # ── Check for saved state (resume from review pause) ──
+  local saved_state
+  saved_state=$(read_state)
+
+  if [[ "$saved_state" == "review_pending" ]]; then
+    if $RESUME; then
+      echo ""
+      ok "Retomando sync apos revisao interativa"
+      info "Backup branch: ${BOLD}${backup_branch:-}${RESET}"
+      info "Snapshot: ${BOLD}${snapshot_dir:-}${RESET}"
+      echo ""
+
+      # Restore variables from state file
+      BACKUP_BRANCH="${backup_branch:-}"
+      SNAPSHOT_DIR="${snapshot_dir:-}"
+      CUSTOM_FILE_COUNT="${custom_file_count:-0}"
+      BEHIND="${behind:-0}"
+      AHEAD="${ahead:-0}"
+      NEEDS_REBASE=true
+
+      clear_state
+      # Skip straight to push — review is done
+      phase_push
+      phase_cleanup
+      phase_summary
+      return
+    else
+      echo ""
+      warn "Sync anterior pausado para revisao interativa."
+      info "Backup branch: ${BOLD}${backup_branch:-}${RESET}"
+      info "Snapshot: ${BOLD}${snapshot_dir:-}${RESET}"
+      echo ""
+      echo -e "  Opcoes:"
+      echo -e "    ${BOLD}bash scripts/gsd-sync-upstream.sh --resume${RESET}  — revisao feita, continuar push"
+      echo -e "    ${BOLD}git reset --hard ${backup_branch:-}${RESET}            — cancelar sync, voltar ao estado anterior"
+      echo ""
+      info "Para comecar um sync novo (descarta o anterior):"
+      echo -e "    Apague o estado: ${DIM}rm ${STATE_FILE}${RESET}"
+      exit 0
+    fi
+  fi
+
+  # ── Fresh sync ──
   info "Nivel detectado: ${BOLD}$LEVEL${RESET} — $LEVEL_NAME"
   info "Upstream remote: ${BOLD}$UPSTREAM_REMOTE${RESET}"
   info "Fork remote: ${BOLD}$FORK_REMOTE${RESET}"
@@ -648,6 +748,9 @@ main() {
   phase_push
   phase_cleanup
   phase_summary
+
+  # Clean state on success
+  clear_state
 }
 
 main "$@"
