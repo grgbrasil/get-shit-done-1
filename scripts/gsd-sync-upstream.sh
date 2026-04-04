@@ -124,14 +124,10 @@ phase_safety() {
   unpushed=$(git rev-list --count "${FORK_REMOTE}/${main_branch}..${main_branch}" 2>/dev/null || echo "0")
 
   if [[ "$unpushed" -gt 0 ]]; then
-    warn "main tem $unpushed commits nao pushados pro ${FORK_REMOTE}"
-    if confirm "Push main pro ${FORK_REMOTE} agora?"; then
-      if dry "git push ${FORK_REMOTE} main"; then
-        git push "${FORK_REMOTE}" main
-        ok "main pushado"
-      fi
-    else
-      fail "Abortando — commits nao pushados podem se perder no rebase"
+    info "main tem $unpushed commits nao pushados — pushing backup..."
+    if dry "git push ${FORK_REMOTE} main"; then
+      git push "${FORK_REMOTE}" main
+      ok "main pushado pro ${FORK_REMOTE}"
     fi
   else
     ok "main sincronizado com ${FORK_REMOTE}"
@@ -187,21 +183,15 @@ phase_detect_local_work() {
     echo -e "    ${BOLD}${LOCAL_BRANCHES_WITH_WORK[$i]}${RESET}: +${LOCAL_BRANCH_COMMITS[$i]}"
   done
 
-  if confirm "Push todas pro ${FORK_REMOTE}?"; then
-    for branch in "${LOCAL_BRANCHES_WITH_WORK[@]}"; do
-      if dry "git push ${FORK_REMOTE} $branch"; then
-        git push "${FORK_REMOTE}" "$branch" --force-with-lease 2>/dev/null || \
-        git push "${FORK_REMOTE}" "$branch" 2>/dev/null || \
-        warn "Falhou push de $branch — continuando"
-        ok "Pushed $branch"
-      fi
-    done
-  else
-    warn "Branches nao pushadas — se o rebase reescrever a base, elas podem conflitar depois"
-    if ! confirm "Continuar mesmo assim?"; then
-      fail "Abortado pelo usuario"
+  info "Pushing branches pro ${FORK_REMOTE} (backup antes do sync)..."
+  for branch in "${LOCAL_BRANCHES_WITH_WORK[@]}"; do
+    if dry "git push ${FORK_REMOTE} $branch"; then
+      git push "${FORK_REMOTE}" "$branch" --force-with-lease 2>/dev/null || \
+      git push "${FORK_REMOTE}" "$branch" 2>/dev/null || \
+      warn "Falhou push de $branch — continuando"
+      ok "Pushed $branch"
     fi
-  fi
+  done
 }
 
 # ── FASE 2: Fetch + Diagnóstico ─────────────────────────────────────────────
