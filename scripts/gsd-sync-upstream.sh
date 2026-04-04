@@ -455,7 +455,9 @@ phase_rebase_branches() {
   done
 
   # Voltar pro main
-  git checkout main 2>/dev/null || true
+  if ! $DRY_RUN; then
+    git checkout main 2>/dev/null || true
+  fi
 }
 
 # ── FASE 5: Integracao interativa ────────────────────────────────────────────
