@@ -10,12 +10,6 @@ const { runGsdTools, createTempProject, createTempDir, cleanup } = require('./he
 
 // ─── Helper: write a ROADMAP with configurable phases ────────────────────────
 
-/**
- * Creates a multi-phase ROADMAP.md with configurable phases.
- * @param {string} tmpDir - temp project dir (must have .planning/)
- * @param {object} opts
- * @param {Array<{num: string|number, name: string, complete: boolean, dependsOn?: string}>} opts.phases
- */
 function writeRoadmap(tmpDir, opts = {}) {
   const { phases = [] } = opts;
 
@@ -36,33 +30,35 @@ function writeRoadmap(tmpDir, opts = {}) {
 
 // ─── Helper: create phase directory with optional artifacts ──────────────────
 
-/**
- * Creates a phase directory with optional PLANs, SUMMARYs, and VERIFICATION.
- * @param {string} tmpDir
- * @param {string|number} num
- * @param {string} name
- * @param {object} opts
- * @param {boolean} opts.hasPlan - create PLAN.md
- * @param {boolean} opts.hasSummary - create SUMMARY.md
- * @param {string} opts.verificationStatus - create VERIFICATION.md with this status
- * @param {string[]} opts.filesModified - files_modified frontmatter for PLAN.md
- */
 function createPhaseDir(tmpDir, num, name, opts = {}) {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const dirName = `${num}-${slug}`;
   const phaseDir = path.join(tmpDir, '.planning', 'phases', dirName);
   fs.mkdirSync(phaseDir, { recursive: true });
 
-  if (opts.hasPlan) {
+  if (opts.plans) {
+    for (const plan of opts.plans) {
+      const filesModified = plan.files || [];
+      const fmLines = filesModified.map(f => `  - "${f}"`).join('\n');
+      const fm = filesModified.length > 0
+        ? `---\nphase: "${num}"\nplan: "${plan.id}"\ntype: implementation\nwave: ${plan.wave || 1}\ndepends_on: ""\nfiles_modified:\n${fmLines}\nautonomous: true\nmust_haves: []\n---\n\n`
+        : `---\nphase: "${num}"\nplan: "${plan.id}"\ntype: implementation\nwave: 1\ndepends_on: ""\nfiles_modified: []\nautonomous: true\nmust_haves: []\n---\n\n`;
+      fs.writeFileSync(path.join(phaseDir, `${plan.id}-PLAN.md`), `${fm}# Plan ${plan.id}\n`);
+    }
+  } else if (opts.hasPlan) {
     const filesModified = opts.filesModified || [];
-    const fmLines = filesModified.map(f => `  - ${f}`).join('\n');
+    const fmLines = filesModified.map(f => `  - "${f}"`).join('\n');
     const fm = filesModified.length > 0
       ? `---\nfiles_modified:\n${fmLines}\n---\n\n`
       : '---\nfiles_modified: []\n---\n\n';
     fs.writeFileSync(path.join(phaseDir, 'PLAN.md'), `${fm}# Plan for Phase ${num}\n`);
   }
 
-  if (opts.hasSummary) {
+  if (opts.summaries) {
+    for (const s of opts.summaries) {
+      fs.writeFileSync(path.join(phaseDir, `${s}-SUMMARY.md`), `---\nphase: "${num}"\nplan: "${s}"\nsubsystem: test\ntags: []\nduration: 5m\ncompleted: "2026-04-05"\n---\n`);
+    }
+  } else if (opts.hasSummary) {
     fs.writeFileSync(path.join(phaseDir, 'SUMMARY.md'), `# Summary for Phase ${num}\nDone.\n`);
   }
 
@@ -76,7 +72,7 @@ function createPhaseDir(tmpDir, num, name, opts = {}) {
   return phaseDir;
 }
 
-// ─── Tests ───────────────────────────────────────────────────────────────────
+// ─── Classification tests ───────────────────────────────────────────────────
 
 describe('unlocked: phase classification', () => {
   let tmpDir;
@@ -90,10 +86,6 @@ describe('unlocked: phase classification', () => {
   });
 
   test('classifies phases into in_progress, ready, blocked', () => {
-    // Phase 1: complete
-    // Phase 2: has plan → in_progress (depends on Phase 1 which is complete)
-    // Phase 3: no artifacts, depends on Phase 1 (complete) → ready
-    // Phase 4: depends on Phase 2 + Phase 3 → blocked (Phase 2 not complete)
     writeRoadmap(tmpDir, {
       phases: [
         { num: 1, name: 'Foundation', complete: true, dependsOn: 'Nothing' },
@@ -103,26 +95,29 @@ describe('unlocked: phase classification', () => {
       ],
     });
 
-    createPhaseDir(tmpDir, 1, 'Foundation');
     createPhaseDir(tmpDir, 2, 'Auth', { hasPlan: true });
-    // Phase 3: no artifacts at all → ready (deps satisfied, no plan = plan_first)
-    // Phase 4: no dir needed
 
     const result = runGsdTools('unlocked json', tmpDir);
-    assert.ok(result.success, `expected success, got: ${result.error || result.output}`);
+    assert.ok(result.success, `expected success, got: ${result.output}`);
     const out = JSON.parse(result.output);
 
-    assert.ok(Array.isArray(out.in_progress), 'in_progress should be array');
-    assert.ok(Array.isArray(out.ready), 'ready should be array');
-    assert.ok(Array.isArray(out.blocked), 'blocked should be array');
+    // Verify summary
+    assert.strictEqual(out.summary.in_progress, 1);
+    assert.strictEqual(out.summary.ready, 1);
+    assert.strictEqual(out.summary.blocked, 1);
 
-    const ipNums = out.in_progress.map(p => String(p.phase_number));
-    const readyNums = out.ready.map(p => String(p.phase_number));
-    const blockedNums = out.blocked.map(p => String(p.phase_number));
+    // Phase 2: has plan, no verification → in_progress
+    assert.strictEqual(out.in_progress[0].phase, '2');
+    assert.strictEqual(out.in_progress[0].name, 'Auth');
 
-    assert.ok(ipNums.includes('2'), 'Phase 2 should be in_progress');
-    assert.ok(readyNums.includes('3'), 'Phase 3 should be ready');
-    assert.ok(blockedNums.includes('4'), 'Phase 4 should be blocked');
+    // Phase 3: deps satisfied, no artifacts → ready
+    assert.strictEqual(out.ready[0].phase, '3');
+    assert.strictEqual(out.ready[0].name, 'API');
+
+    // Phase 4: deps not satisfied → blocked
+    assert.strictEqual(out.blocked[0].phase, '4');
+    assert.deepStrictEqual(out.blocked[0].blocked_by, ['2', '3']);
+    assert.deepStrictEqual(out.blocked[0].blocked_by_names, ['Auth', 'API']);
   });
 
   test('completed phases with passed verification are excluded', () => {
@@ -137,12 +132,13 @@ describe('unlocked: phase classification', () => {
     createPhaseDir(tmpDir, 2, 'Auth', { hasPlan: true, hasSummary: true, verificationStatus: 'passed' });
 
     const result = runGsdTools('unlocked json', tmpDir);
-    assert.ok(result.success, `expected success, got: ${result.error || result.output}`);
+    assert.ok(result.success);
     const out = JSON.parse(result.output);
 
-    assert.strictEqual(out.in_progress.length, 0, 'no in_progress phases');
-    assert.strictEqual(out.ready.length, 0, 'no ready phases');
-    assert.strictEqual(out.blocked.length, 0, 'no blocked phases');
+    assert.strictEqual(out.summary.total_incomplete, 0);
+    assert.deepStrictEqual(out.in_progress, []);
+    assert.deepStrictEqual(out.ready, []);
+    assert.deepStrictEqual(out.blocked, []);
   });
 
   test('phase with plan but no summary is in_progress', () => {
@@ -152,26 +148,30 @@ describe('unlocked: phase classification', () => {
       ],
     });
 
-    createPhaseDir(tmpDir, 1, 'Foundation', { hasPlan: true });
+    createPhaseDir(tmpDir, 1, 'Foundation', { hasPlan: true, filesModified: ['src/index.js'] });
 
     const result = runGsdTools('unlocked json', tmpDir);
-    assert.ok(result.success, `expected success, got: ${result.error || result.output}`);
+    assert.ok(result.success);
     const out = JSON.parse(result.output);
 
     assert.strictEqual(out.in_progress.length, 1);
-    assert.strictEqual(String(out.in_progress[0].phase_number), '1');
+    assert.strictEqual(out.in_progress[0].phase, '1');
+    assert.ok(out.in_progress[0].has_plan);
+    assert.deepStrictEqual(out.in_progress[0].files_modified, ['src/index.js']);
   });
 
-  test('returns empty arrays when no planning dir exists', () => {
+  test('returns empty result when no planning dir exists', () => {
     const bareDir = createTempDir();
 
     const result = runGsdTools('unlocked json', bareDir);
-    assert.ok(result.success, `expected success, got: ${result.error || result.output}`);
+    assert.ok(result.success);
     const out = JSON.parse(result.output);
 
-    assert.strictEqual(out.in_progress.length, 0);
-    assert.strictEqual(out.ready.length, 0);
-    assert.strictEqual(out.blocked.length, 0);
+    assert.strictEqual(out.summary.total_incomplete, 0);
+    assert.deepStrictEqual(out.in_progress, []);
+    assert.deepStrictEqual(out.ready, []);
+    assert.deepStrictEqual(out.blocked, []);
+    assert.ok(out.timestamp);
 
     cleanup(bareDir);
   });

@@ -8,12 +8,9 @@ const {
   escapeRegex,
   comparePhaseNum,
   planningDir,
-  planningPaths,
   extractCurrentMilestone,
   getMilestonePhaseFilter,
-  getRoadmapPhaseInternal,
   output,
-  error,
 } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
@@ -61,14 +58,13 @@ function parsePhaseSection(content, phaseNum) {
   const nextHeader = rest.match(/\n#{2,4}\s+Phase\s+[\w]/i);
   const section = nextHeader ? rest.slice(0, nextHeader.index) : rest;
 
-  // **Depends on**: Phase 1, Phase 3  OR  **Depends on:** Phase 1
-  const depMatch = section.match(/\*\*Depends\s+on\*?\*?:\s*([^\n]+)/i);
+  // **Depends on**: ...  OR  **Depends on:** ...  OR  **Depends on**:
+  const depMatch = section.match(/\*\*Depends on(?::\*\*|\*\*:)\s*([^\n]+)/i);
   const depStr = depMatch ? depMatch[1].trim() : '';
 
   const dependsOn = [];
-  if (depStr && !/^nothing$/i.test(depStr) && !/^none$/i.test(depStr) && depStr !== '-') {
-    // Extract phase numbers from "Phase 1, Phase 3" or "Phase 1 and Phase 3"
-    const phaseRefs = depStr.matchAll(/Phase\s+([\w.]+)/gi);
+  if (depStr && !/^(nothing|none|—|-|n\/a)$/i.test(depStr)) {
+    const phaseRefs = depStr.matchAll(/(?:Phase\s+)?(\d+(?:\.\d+)*)/gi);
     for (const ref of phaseRefs) {
       dependsOn.push(ref[1]);
     }
@@ -80,9 +76,9 @@ function parsePhaseSection(content, phaseNum) {
 // ─── Phase directory scanning ────────────────────────────────────────────────
 
 /**
- * Build a lookup of phase directories: { phaseNum: { dir, plans[], hasVerificationPassed } }
+ * Build a lookup of phase directories: { phaseNum: { dir, plans[], filesModified, hasVerificationPassed } }
  */
-function buildPhaseDirLookup(phasesDir) {
+function buildPhaseDirLookup(phasesDir, isDirInMilestone) {
   const lookup = {};
   if (!fs.existsSync(phasesDir)) return lookup;
 
@@ -95,7 +91,8 @@ function buildPhaseDirLookup(phasesDir) {
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    const match = entry.name.match(/^([\w.]+)-/);
+    if (!isDirInMilestone(entry.name)) continue;
+    const match = entry.name.match(/^(\d+[A-Z]?(?:\.\d+)*)/i);
     if (!match) continue;
 
     const num = match[1];
@@ -109,15 +106,13 @@ function buildPhaseDirLookup(phasesDir) {
     }
 
     const plans = files.filter(f => f.endsWith('-PLAN.md') || f === 'PLAN.md');
-    const summaries = files.filter(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md');
     const verificationFile = files.find(f => f === 'VERIFICATION.md' || f.endsWith('-VERIFICATION.md'));
 
     let hasVerificationPassed = false;
     if (verificationFile) {
       try {
         const vContent = fs.readFileSync(path.join(dirPath, verificationFile), 'utf-8');
-        const fm = extractFrontmatter(vContent);
-        hasVerificationPassed = fm.status === 'passed';
+        if (/status:\s*passed/i.test(vContent)) hasVerificationPassed = true;
       } catch { /* ignore */ }
     }
 
@@ -127,8 +122,10 @@ function buildPhaseDirLookup(phasesDir) {
       try {
         const planContent = fs.readFileSync(path.join(dirPath, planFile), 'utf-8');
         const fm = extractFrontmatter(planContent);
-        if (Array.isArray(fm.files_modified)) {
-          fm.files_modified.forEach(f => filesModified.add(f));
+        const fmFiles = fm['files_modified'] || fm['files-modified'];
+        if (fmFiles) {
+          const list = Array.isArray(fmFiles) ? fmFiles : [fmFiles];
+          for (const f of list) filesModified.add(f);
         }
       } catch { /* ignore */ }
     }
@@ -136,7 +133,6 @@ function buildPhaseDirLookup(phasesDir) {
     lookup[num] = {
       dir: dirPath,
       plans,
-      summaries,
       filesModified: [...filesModified],
       hasVerificationPassed,
     };
@@ -166,9 +162,10 @@ function classifyPhases(phases, dirLookup) {
     // If it has a plan and no passed verification → in_progress
     if (hasPlans && !hasPassed) {
       inProgress.push({
-        phase_number: phase.num,
-        phase_name: phase.name,
-        filesModified: dirInfo ? dirInfo.filesModified : [],
+        phase: phase.num,
+        name: phase.name,
+        has_plan: true,
+        files_modified: dirInfo.filesModified,
       });
       continue;
     }
@@ -179,17 +176,22 @@ function classifyPhases(phases, dirLookup) {
 
     if (!depsSatisfied) {
       const unsatisfied = phase.dependsOn.filter(dep => !completedNums.has(dep));
+      const unsatisfiedNames = unsatisfied.map(dep => {
+        const p = phases.find(ph => ph.num === dep);
+        return p ? p.name : `Phase ${dep}`;
+      });
       blocked.push({
-        phase_number: phase.num,
-        phase_name: phase.name,
-        blocked_by: unsatisfied.map(n => `Phase ${n}`),
+        phase: phase.num,
+        name: phase.name,
+        blocked_by: unsatisfied,
+        blocked_by_names: unsatisfiedNames,
       });
     } else {
       ready.push({
-        phase_number: phase.num,
-        phase_name: phase.name,
-        has_plan: hasPlans,
-        filesModified: dirInfo ? dirInfo.filesModified : [],
+        phase: phase.num,
+        name: phase.name,
+        has_plan: !!hasPlans,
+        files_modified: hasPlans && dirInfo ? dirInfo.filesModified : null,
       });
     }
   }
@@ -200,31 +202,60 @@ function classifyPhases(phases, dirLookup) {
 // ─── Overlap & recommendations ───────────────────────────────────────────────
 
 /**
- * Calculate file overlap between ready phases and in_progress phases.
- * Assigns recommendation: safe_parallel, worktree, or plan_first.
+ * Calculate file overlap and assign recommendations to ready phases.
  */
 function assignRecommendations(readyPhases, inProgressPhases) {
-  // Collect all files touched by in_progress phases
-  const ipFiles = new Set();
+  // Build per-file lookup: file → list of in_progress phase numbers
+  const fileToPhases = new Map();
   for (const ip of inProgressPhases) {
-    for (const f of ip.filesModified) {
-      ipFiles.add(f);
+    if (!ip.files_modified) continue;
+    for (const f of ip.files_modified) {
+      if (!fileToPhases.has(f)) fileToPhases.set(f, []);
+      fileToPhases.get(f).push(ip.phase);
     }
   }
 
   return readyPhases.map(phase => {
     if (!phase.has_plan) {
-      return { ...phase, recommendation: 'plan_first', overlap_score: 0, overlapping_files: [] };
+      return {
+        ...phase,
+        overlap: null,
+        recommendation: 'plan_first',
+        suggested_command: `/gsd:plan-phase ${phase.phase}`,
+      };
     }
 
-    const overlapping = phase.filesModified.filter(f => ipFiles.has(f));
-    const overlapScore = overlapping.length;
-
-    if (overlapScore === 0) {
-      return { ...phase, recommendation: 'safe_parallel', overlap_score: 0, overlapping_files: [] };
+    const conflictingPhases = new Set();
+    const conflictingFiles = [];
+    for (const f of (phase.files_modified || [])) {
+      const ips = fileToPhases.get(f);
+      if (ips) {
+        conflictingFiles.push(f);
+        for (const p of ips) conflictingPhases.add(p);
+      }
     }
 
-    return { ...phase, recommendation: 'worktree', overlap_score: overlapScore, overlapping_files: overlapping };
+    const overlap = {
+      score: conflictingFiles.length,
+      conflicting_phases: [...conflictingPhases],
+      files: conflictingFiles,
+    };
+
+    if (overlap.score === 0) {
+      return {
+        ...phase,
+        overlap,
+        recommendation: 'safe_parallel',
+        suggested_command: `/gsd:execute-phase ${phase.phase}`,
+      };
+    }
+
+    return {
+      ...phase,
+      overlap,
+      recommendation: 'worktree',
+      suggested_command: `/gsd:execute-phase ${phase.phase} (recommend worktree)`,
+    };
   });
 }
 
@@ -237,48 +268,58 @@ function sortReady(readyPhases) {
     const oa = order[a.recommendation] ?? 9;
     const ob = order[b.recommendation] ?? 9;
     if (oa !== ob) return oa - ob;
-    if (a.recommendation === 'worktree') return a.overlap_score - b.overlap_score;
-    return comparePhaseNum(a.phase_number, b.phase_number);
+    if (a.recommendation === 'worktree') return (a.overlap?.score || 0) - (b.overlap?.score || 0);
+    return comparePhaseNum(a.phase, b.phase);
   });
 }
 
 // ─── Table format ────────────────────────────────────────────────────────────
 
 function formatTable(result) {
-  const lines = [];
-
-  if (result.in_progress.length > 0) {
-    lines.push('IN PROGRESS:');
-    for (const p of result.in_progress) {
-      lines.push(`  Phase ${p.phase_number}: ${p.phase_name}`);
-    }
-    lines.push('');
-  }
+  let out = '';
 
   if (result.ready.length > 0) {
-    lines.push('READY TO START:');
-    for (const p of result.ready) {
-      const rec = p.recommendation ? ` [${p.recommendation}]` : '';
-      const overlap = p.overlap_score > 0 ? ` (${p.overlap_score} file overlap)` : '';
-      lines.push(`  Phase ${p.phase_number}: ${p.phase_name}${rec}${overlap}`);
+    out += '## Unlocked — Ready to Start\n\n';
+    for (const r of result.ready) {
+      if (r.recommendation === 'safe_parallel') {
+        out += ` SAFE     Phase ${r.phase}: ${r.name} — 0 file conflicts\n`;
+        out += `          → ${r.suggested_command}\n\n`;
+      } else if (r.recommendation === 'worktree') {
+        const conflictDesc = r.overlap.score === 1 ? '1 file conflict' : `${r.overlap.score} file conflicts`;
+        const withPhases = r.overlap.conflicting_phases.map(p => `Phase ${p}`).join(', ');
+        out += ` WORKTREE Phase ${r.phase}: ${r.name} — ${conflictDesc} with ${withPhases}\n`;
+        for (const f of r.overlap.files) {
+          out += `          ${f}\n`;
+        }
+        out += `          → ${r.suggested_command}\n\n`;
+      } else {
+        out += ` PLAN     Phase ${r.phase}: ${r.name} — no plan yet, overlap unknown\n`;
+        out += `          → ${r.suggested_command}\n\n`;
+      }
     }
-    lines.push('');
+  }
+
+  if (result.in_progress.length > 0) {
+    out += `## In Progress (${result.in_progress.length})\n`;
+    for (const ip of result.in_progress) {
+      out += `  Phase ${ip.phase}: ${ip.name}\n`;
+    }
+    out += '\n';
   }
 
   if (result.blocked.length > 0) {
-    lines.push('BLOCKED:');
-    for (const p of result.blocked) {
-      const by = p.blocked_by.join(', ');
-      lines.push(`  Phase ${p.phase_number}: ${p.phase_name} — waiting on ${by}`);
+    out += `## Blocked (${result.blocked.length})\n`;
+    for (const b of result.blocked) {
+      out += `  Phase ${b.phase}: ${b.name} — waiting on ${b.blocked_by.map(n => `Phase ${n}`).join(', ')}\n`;
     }
-    lines.push('');
+    out += '\n';
   }
 
-  if (result.in_progress.length === 0 && result.ready.length === 0 && result.blocked.length === 0) {
-    lines.push('All phases are complete or no phases found.');
+  if (result.ready.length === 0 && result.in_progress.length === 0 && result.blocked.length === 0) {
+    out += 'All phases complete — nothing to unlock.\n';
   }
 
-  return lines.join('\n').trim();
+  return out.trim();
 }
 
 // ─── Main command ────────────────────────────────────────────────────────────
@@ -286,13 +327,19 @@ function formatTable(result) {
 function cmdUnlocked(cwd, format, raw) {
   const pDir = planningDir(cwd);
   const roadmapPath = path.join(pDir, 'ROADMAP.md');
+  const isDirInMilestone = getMilestonePhaseFilter(cwd);
 
-  // Empty result for missing planning
-  const emptyResult = { in_progress: [], ready: [], blocked: [] };
+  const emptyResult = {
+    timestamp: new Date().toISOString(),
+    summary: { total_incomplete: 0, in_progress: 0, ready: 0, blocked: 0 },
+    in_progress: [],
+    ready: [],
+    blocked: [],
+  };
 
   if (!fs.existsSync(roadmapPath)) {
     if (format === 'table') {
-      output(emptyResult, raw, formatTable(emptyResult));
+      output({ rendered: formatTable(emptyResult) }, raw, formatTable(emptyResult));
     } else {
       output(emptyResult, raw);
     }
@@ -309,7 +356,7 @@ function cmdUnlocked(cwd, format, raw) {
 
   const phases = parseRoadmapPhases(roadmapContent);
   const phasesDir = path.join(pDir, 'phases');
-  const dirLookup = buildPhaseDirLookup(phasesDir);
+  const dirLookup = buildPhaseDirLookup(phasesDir, isDirInMilestone);
 
   const { inProgress, ready, blocked } = classifyPhases(phases, dirLookup);
 
@@ -317,18 +364,22 @@ function cmdUnlocked(cwd, format, raw) {
   const readyWithRecs = assignRecommendations(ready, inProgress);
   const sortedReady = sortReady(readyWithRecs);
 
-  // Clean up internal fields before output
-  const cleanIP = inProgress.map(({ filesModified, ...rest }) => rest);
-  const cleanReady = sortedReady.map(({ filesModified, has_plan, ...rest }) => rest);
-
   const result = {
-    in_progress: cleanIP,
-    ready: cleanReady,
+    timestamp: new Date().toISOString(),
+    summary: {
+      total_incomplete: inProgress.length + sortedReady.length + blocked.length,
+      in_progress: inProgress.length,
+      ready: sortedReady.length,
+      blocked: blocked.length,
+    },
+    in_progress: inProgress,
+    ready: sortedReady,
     blocked,
   };
 
   if (format === 'table') {
-    output(result, raw, formatTable(result));
+    const rendered = formatTable(result);
+    output({ rendered }, raw, rendered);
   } else {
     output(result, raw);
   }
