@@ -263,7 +263,9 @@ function checkPlanPaths(cwd, phaseDirPath, warnings) {
 
 /**
  * Check 3: Verify all phase dependencies are marked complete.
- * Parses "Depends on" from phase section, cross-references roadmap checkboxes.
+ * Parses "Depends on" from phase section. Checks completion via disk artifacts
+ * (plans > 0 && summaries >= plans), falling back to ROADMAP checkboxes only
+ * when the phase directory doesn't exist.
  */
 function checkDependencies(cwd, phaseSection, phaseNum, blockers) {
   const dependsMatch = phaseSection.match(/\*\*Depends on(?::\*\*|\*\*:)\s*([^\n]+)/i);
@@ -293,10 +295,27 @@ function checkDependencies(cwd, phaseSection, phaseNum, blockers) {
   }
 
   for (const depNum of depNums) {
-    const escaped = escapeRegex(depNum);
-    const checkboxPattern = new RegExp(`-\\s*\\[(x| )\\]\\s*.*Phase\\s+${escaped}[:\\s]`, 'i');
-    const match = roadmapContent.match(checkboxPattern);
-    const isComplete = match ? match[1] === 'x' : false;
+    let isComplete = false;
+
+    // Primary: disk-based check (ground truth) — same as state.cjs
+    const depPhase = findPhaseInternal(cwd, depNum);
+    if (depPhase) {
+      const depDirPath = path.join(cwd, depPhase.directory);
+      try {
+        const stats = getPhaseFileStats(depDirPath);
+        isComplete = stats.plans.length > 0 && stats.summaries.length >= stats.plans.length;
+      } catch {
+        // Can't read phase dir — fall through to ROADMAP fallback
+      }
+    }
+
+    // Fallback: ROADMAP checkbox (only if phase dir doesn't exist or has no plans)
+    if (!isComplete && !depPhase) {
+      const escaped = escapeRegex(depNum);
+      const checkboxPattern = new RegExp(`-\\s*\\[(x| )\\]\\s*.*Phase\\s+${escaped}[:\\s]`, 'i');
+      const match = roadmapContent.match(checkboxPattern);
+      isComplete = match ? match[1] === 'x' : false;
+    }
 
     if (!isComplete) {
       // Get dep phase name for better message
