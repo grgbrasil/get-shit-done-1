@@ -176,3 +176,151 @@ describe('unlocked: phase classification', () => {
     cleanup(bareDir);
   });
 });
+
+// ─── Overlap & recommendation tests ─────────────────────────────────────────
+
+describe('unlocked: overlap and recommendations', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('plan_first when ready phase has no plan', () => {
+    writeRoadmap(tmpDir, {
+      phases: [
+        { num: 1, name: 'Foundation', complete: true, dependsOn: 'Nothing' },
+        { num: 2, name: 'Auth', complete: false, dependsOn: 'Phase 1' },
+      ],
+    });
+
+    // Phase 1 complete (no dir needed), Phase 2 has no phase dir
+
+    const result = runGsdTools('unlocked json', tmpDir);
+    assert.ok(result.success, `expected success, got: ${result.output}`);
+    const out = JSON.parse(result.output);
+
+    assert.strictEqual(out.ready.length, 1);
+    const phase2 = out.ready[0];
+    assert.strictEqual(phase2.phase, '2');
+    assert.strictEqual(phase2.recommendation, 'plan_first');
+    assert.strictEqual(phase2.overlap, null);
+    assert.strictEqual(phase2.suggested_command, '/gsd:plan-phase 2');
+  });
+
+  test('safe_parallel when ready phase plan has no overlap with in_progress', () => {
+    writeRoadmap(tmpDir, {
+      phases: [
+        { num: 1, name: 'Auth', complete: false, dependsOn: 'Nothing' },
+        { num: 2, name: 'Foundation', complete: true, dependsOn: 'Nothing' },
+        { num: 3, name: 'Reports', complete: false, dependsOn: 'Phase 2' },
+      ],
+    });
+
+    // Phase 1: in_progress — has plan, no verification, touches src/auth.js
+    createPhaseDir(tmpDir, 1, 'Auth', {
+      hasPlan: true,
+      filesModified: ['src/auth.js'],
+    });
+
+    // Phase 3: ready — has plan + summaries + passed verification, touches src/reports.js (no overlap)
+    createPhaseDir(tmpDir, 3, 'Reports', {
+      plans: [{ id: 'core', files: ['src/reports.js'], wave: 1 }],
+      summaries: ['core'],
+      verificationStatus: 'passed',
+    });
+
+    const result = runGsdTools('unlocked json', tmpDir);
+    assert.ok(result.success, `expected success, got: ${result.output}`);
+    const out = JSON.parse(result.output);
+
+    assert.strictEqual(out.in_progress.length, 1);
+    assert.strictEqual(out.in_progress[0].phase, '1');
+
+    const phase3 = out.ready.find(r => r.phase === '3');
+    assert.ok(phase3, 'Phase 3 should be in ready');
+    assert.strictEqual(phase3.recommendation, 'safe_parallel');
+    assert.strictEqual(phase3.overlap.score, 0);
+  });
+
+  test('worktree when ready phase overlaps files with in_progress phase', () => {
+    writeRoadmap(tmpDir, {
+      phases: [
+        { num: 1, name: 'Auth', complete: false, dependsOn: 'Nothing' },
+        { num: 2, name: 'Foundation', complete: true, dependsOn: 'Nothing' },
+        { num: 3, name: 'Settings', complete: false, dependsOn: 'Phase 2' },
+      ],
+    });
+
+    // Phase 1: in_progress — has plan, no verification, touches src/auth.js and src/middleware.js
+    createPhaseDir(tmpDir, 1, 'Auth', {
+      hasPlan: true,
+      filesModified: ['src/auth.js', 'src/middleware.js'],
+    });
+
+    // Phase 3: ready — has plan + summaries + passed verification, touches src/settings.js and src/middleware.js (overlap!)
+    createPhaseDir(tmpDir, 3, 'Settings', {
+      plans: [{ id: 'core', files: ['src/settings.js', 'src/middleware.js'], wave: 1 }],
+      summaries: ['core'],
+      verificationStatus: 'passed',
+    });
+
+    const result = runGsdTools('unlocked json', tmpDir);
+    assert.ok(result.success, `expected success, got: ${result.output}`);
+    const out = JSON.parse(result.output);
+
+    const phase3 = out.ready.find(r => r.phase === '3');
+    assert.ok(phase3, 'Phase 3 should be in ready');
+    assert.strictEqual(phase3.recommendation, 'worktree');
+    assert.strictEqual(phase3.overlap.score, 1);
+    assert.deepStrictEqual(phase3.overlap.conflicting_phases, ['1']);
+    assert.deepStrictEqual(phase3.overlap.files, ['src/middleware.js']);
+  });
+
+  test('ready phases sorted: safe_parallel first, worktree second, plan_first last', () => {
+    writeRoadmap(tmpDir, {
+      phases: [
+        { num: 1, name: 'Auth', complete: false, dependsOn: 'Nothing' },
+        { num: 2, name: 'NoPlan', complete: false, dependsOn: 'Nothing' },
+        { num: 3, name: 'Foundation', complete: true, dependsOn: 'Nothing' },
+        { num: 4, name: 'Reports', complete: false, dependsOn: 'Phase 3' },
+        { num: 5, name: 'Settings', complete: false, dependsOn: 'Phase 3' },
+      ],
+    });
+
+    // Phase 1: in_progress — touches src/auth.js
+    createPhaseDir(tmpDir, 1, 'Auth', {
+      hasPlan: true,
+      filesModified: ['src/auth.js'],
+    });
+
+    // Phase 2: ready — no plan → plan_first (no phase dir needed)
+
+    // Phase 4: ready — plan + summaries + passed verification, no overlap → safe_parallel
+    createPhaseDir(tmpDir, 4, 'Reports', {
+      plans: [{ id: 'core', files: ['src/reports.js'], wave: 1 }],
+      summaries: ['core'],
+      verificationStatus: 'passed',
+    });
+
+    // Phase 5: ready — plan + summaries + passed verification, overlaps src/auth.js → worktree
+    createPhaseDir(tmpDir, 5, 'Settings', {
+      plans: [{ id: 'core', files: ['src/auth.js', 'src/settings.js'], wave: 1 }],
+      summaries: ['core'],
+      verificationStatus: 'passed',
+    });
+
+    const result = runGsdTools('unlocked json', tmpDir);
+    assert.ok(result.success, `expected success, got: ${result.output}`);
+    const out = JSON.parse(result.output);
+
+    assert.strictEqual(out.ready.length, 3);
+    assert.strictEqual(out.ready[0].recommendation, 'safe_parallel');
+    assert.strictEqual(out.ready[1].recommendation, 'worktree');
+    assert.strictEqual(out.ready[2].recommendation, 'plan_first');
+  });
+});
