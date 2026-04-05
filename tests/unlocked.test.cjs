@@ -324,3 +324,58 @@ describe('unlocked: overlap and recommendations', () => {
     assert.strictEqual(out.ready[2].recommendation, 'plan_first');
   });
 });
+
+// ─── Table format tests ──────────────────────────────────────────────────────
+
+describe('unlocked: table format', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('table format includes section headers and phase info', () => {
+    writeRoadmap(tmpDir, {
+      phases: [
+        { num: 1, name: 'Auth', complete: false, dependsOn: 'Nothing' },
+        { num: 2, name: 'Dashboard', complete: false, dependsOn: 'Phase 1' },
+      ],
+    });
+
+    // Phase 1: in_progress — has plan, no verification
+    createPhaseDir(tmpDir, 1, 'Auth', { hasPlan: true });
+
+    // Phase 2: blocked — depends on Phase 1 which is not complete
+
+    const result = runGsdTools('unlocked table', tmpDir);
+    assert.ok(result.success, `expected success, got: ${result.output}`);
+    const out = JSON.parse(result.output);
+
+    assert.ok(out.rendered, 'rendered field should exist');
+    assert.ok(out.rendered.includes('In Progress'), `expected 'In Progress' in rendered:\n${out.rendered}`);
+    assert.ok(out.rendered.includes('Phase 1: Auth'), `expected 'Phase 1: Auth' in rendered:\n${out.rendered}`);
+    assert.ok(out.rendered.includes('Blocked'), `expected 'Blocked' in rendered:\n${out.rendered}`);
+    assert.ok(out.rendered.includes('Phase 2: Dashboard'), `expected 'Phase 2: Dashboard' in rendered:\n${out.rendered}`);
+  });
+
+  test('table format shows all-complete message when nothing to do', () => {
+    writeRoadmap(tmpDir, {
+      phases: [
+        { num: 1, name: 'Auth', complete: true, dependsOn: 'Nothing' },
+      ],
+    });
+
+    createPhaseDir(tmpDir, 1, 'Auth', { hasPlan: true, hasSummary: true, verificationStatus: 'passed' });
+
+    const result = runGsdTools('unlocked table', tmpDir);
+    assert.ok(result.success, `expected success, got: ${result.output}`);
+    const out = JSON.parse(result.output);
+
+    assert.ok(out.rendered, 'rendered field should exist');
+    assert.ok(out.rendered.includes('nothing to unlock'), `expected 'nothing to unlock' in rendered:\n${out.rendered}`);
+  });
+});
