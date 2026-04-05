@@ -1,14 +1,14 @@
-# Design: `/gsd:unlocked` — Show Actionable Phases
+# Design: `/gsd-unlocked` — Show Actionable Phases
 
 ## Problem
 
-GSD has commands to see stats (`/gsd:stats`), progress (`/gsd:progress`), and validate a single phase (`/gsd:preflight N`), but no command answers: **"which phases can I start right now?"**
+GSD has commands to see stats (`/gsd-stats`), progress (`/gsd-progress`), and validate a single phase (`/gsd-preflight N`), but no command answers: **"which phases can I start right now?"**
 
 Users with multi-phase roadmaps need to quickly see what's available, what's blocked, and — when running parallel work — which phases will compete for the same files.
 
 ## Command
 
-`/gsd:unlocked` — scans all incomplete phases, classifies by status, detects file overlap with in-progress phases, and recommends execution order.
+`/gsd-unlocked` — scans all incomplete phases, classifies by status, detects file overlap with in-progress phases, and recommends execution order.
 
 ## Architecture
 
@@ -80,7 +80,7 @@ For phases without PLAN.md: overlap is `null` (no data — plan first).
         "files": []
       },
       "recommendation": "safe_parallel",
-      "suggested_command": "/gsd:execute-phase 7"
+      "suggested_command": "/gsd-execute-phase 7"
     },
     {
       "phase": 8,
@@ -93,7 +93,7 @@ For phases without PLAN.md: overlap is `null` (no data — plan first).
         "files": ["src/middleware.js"]
       },
       "recommendation": "worktree",
-      "suggested_command": "/gsd:execute-phase 8 (recommend worktree)"
+      "suggested_command": "/gsd-execute-phase 8 (recommend worktree)"
     },
     {
       "phase": 9,
@@ -102,7 +102,7 @@ For phases without PLAN.md: overlap is `null` (no data — plan first).
       "files_modified": null,
       "overlap": null,
       "recommendation": "plan_first",
-      "suggested_command": "/gsd:plan-phase 9"
+      "suggested_command": "/gsd-plan-phase 9"
     }
   ],
   "blocked": [
@@ -122,14 +122,14 @@ For phases without PLAN.md: overlap is `null` (no data — plan first).
 ## Unlocked — Ready to Start
 
  SAFE     Phase 7: Notifications — 0 file conflicts
-          → /gsd:execute-phase 7
+          → /gsd-execute-phase 7
 
  WORKTREE Phase 8: Dashboard — 1 file conflict with Phase 5
           src/middleware.js
-          → /gsd:execute-phase 8 (recommend worktree)
+          → /gsd-execute-phase 8 (recommend worktree)
 
  PLAN     Phase 9: Reports — no plan yet, overlap unknown
-          → /gsd:plan-phase 9
+          → /gsd-plan-phase 9
 
 ## In Progress (2)
   Phase 5: Auth System
@@ -156,11 +156,11 @@ For phases without PLAN.md: overlap is `null` (no data — plan first).
 
 ## Cleanup
 
-- Remove phantom `/gsd:unlock-phase` skill entry from registry (no implementation exists)
+- Remove phantom `/gsd-unlock-phase` skill entry from registry (no implementation exists)
 
 ## Out of Scope (YAGNI)
 
 - Heuristic overlap for phases without PLAN.md (decision: show "plan first" instead)
 - Visual dependency graph
 - Auto-execution of ready phases
-- Integration with `/gsd:manager` (natural future extension, not now)
+- Integration with `/gsd-manager` (natural future extension, not now)

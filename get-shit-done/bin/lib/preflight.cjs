@@ -44,12 +44,12 @@ function detectWorkflow(phaseDir) {
  */
 function nextCommand(workflow, phase) {
   const map = {
-    'discuss': `/gsd:discuss-phase ${phase}`,
-    'plan': `/gsd:plan-phase ${phase}`,
-    'execute': `/gsd:execute-phase ${phase}`,
-    'verify': `/gsd:verify-work ${phase}`,
+    'discuss': `/gsd-discuss-phase ${phase}`,
+    'plan': `/gsd-plan-phase ${phase}`,
+    'execute': `/gsd-execute-phase ${phase}`,
+    'verify': `/gsd-verify-work ${phase}`,
   };
-  return map[workflow] || `/gsd:discuss-phase ${phase}`;
+  return map[workflow] || `/gsd-discuss-phase ${phase}`;
 }
 
 /**
@@ -65,7 +65,7 @@ function checkArtifacts(phaseDirPath, workflow, phaseNum, phaseSection, blockers
     blockers.push({
       type: 'artifact_missing',
       message: `Phase directory not found — ${artifactMap[workflow] || 'artifacts'} required for ${workflow}`,
-      command: `/gsd:discuss-phase ${phaseNum}`,
+      command: `/gsd-discuss-phase ${phaseNum}`,
       skippable: false,
     });
     return;
@@ -88,7 +88,7 @@ function checkArtifacts(phaseDirPath, workflow, phaseNum, phaseSection, blockers
     blockers.push({
       type: 'artifact_missing',
       message: `CONTEXT.md missing — required before planning`,
-      command: `/gsd:discuss-phase ${phaseNum}`,
+      command: `/gsd-discuss-phase ${phaseNum}`,
       skippable: false,
     });
   }
@@ -97,7 +97,7 @@ function checkArtifacts(phaseDirPath, workflow, phaseNum, phaseSection, blockers
     blockers.push({
       type: 'artifact_missing',
       message: `No PLAN.md files found — required before execution`,
-      command: `/gsd:plan-phase ${phaseNum}`,
+      command: `/gsd-plan-phase ${phaseNum}`,
       skippable: false,
     });
   }
@@ -106,7 +106,7 @@ function checkArtifacts(phaseDirPath, workflow, phaseNum, phaseSection, blockers
     blockers.push({
       type: 'artifact_missing',
       message: `No SUMMARY.md files found — required before verification`,
-      command: `/gsd:execute-phase ${phaseNum}`,
+      command: `/gsd-execute-phase ${phaseNum}`,
       skippable: false,
     });
   }
@@ -121,7 +121,7 @@ function checkArtifacts(phaseDirPath, workflow, phaseNum, phaseSection, blockers
         warnings.push({
           type: 'ui_spec_missing',
           message: `Frontend phase without UI-SPEC.md`,
-          command: `/gsd:ui-phase ${phaseNum}`,
+          command: `/gsd-ui-phase ${phaseNum}`,
         });
       }
     }
@@ -304,7 +304,7 @@ function checkDependencies(cwd, phaseSection, phaseNum, blockers) {
       blockers.push({
         type: 'dependency_incomplete',
         message: `Phase ${depNum} (${depName}) not complete — required by Phase ${phaseNum}`,
-        command: `/gsd:execute-phase ${depNum}`,
+        command: `/gsd-execute-phase ${depNum}`,
         skippable: false,
       });
     }
@@ -323,8 +323,8 @@ function cmdPreflight(cwd, phaseNum, workflowArg, raw) {
       phase: phaseNum || null,
       phase_name: null,
       detected_workflow: null,
-      next_command: '/gsd:new-project',
-      blockers: [{ type: 'no_planning', message: '.planning/ directory not found. Run /gsd:new-project first', command: '/gsd:new-project', skippable: false }],
+      next_command: '/gsd-new-project',
+      blockers: [{ type: 'no_planning', message: '.planning/ directory not found. Run /gsd-new-project first', command: '/gsd-new-project', skippable: false }],
       warnings: [],
     }, raw);
     return;
@@ -337,8 +337,8 @@ function cmdPreflight(cwd, phaseNum, workflowArg, raw) {
       phase: phaseNum || null,
       phase_name: null,
       detected_workflow: null,
-      next_command: '/gsd:new-project',
-      blockers: [{ type: 'no_roadmap', message: 'ROADMAP.md not found. Run /gsd:new-project first', command: '/gsd:new-project', skippable: false }],
+      next_command: '/gsd-new-project',
+      blockers: [{ type: 'no_roadmap', message: 'ROADMAP.md not found. Run /gsd-new-project first', command: '/gsd-new-project', skippable: false }],
       warnings: [],
     }, raw);
     return;

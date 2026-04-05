@@ -1,8 +1,8 @@
-# `/gsd:unlocked` Implementation Plan
+# `/gsd-unlocked` Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a `/gsd:unlocked` command that shows which phases can be started now, with file overlap analysis and execution recommendations.
+**Goal:** Add a `/gsd-unlocked` command that shows which phases can be started now, with file overlap analysis and execution recommendations.
 
 **Architecture:** New `unlocked.cjs` lib module exposes `cmdUnlocked()` that reads the roadmap, classifies all incomplete phases into in_progress/ready/blocked, calculates `files_modified` overlap between ready and in_progress phases, and outputs structured JSON. A new `commands/gsd/unlocked.md` skill formats and presents the output. The `gsd-tools.cjs` dispatcher gets a new `unlocked` case.
 
@@ -444,15 +444,15 @@ function cmdUnlocked(cwd, format, raw) {
     if (!r.has_plan) {
       r.overlap = null;
       r.recommendation = 'plan_first';
-      r.suggested_command = `/gsd:plan-phase ${r.phase}`;
+      r.suggested_command = `/gsd-plan-phase ${r.phase}`;
     } else {
       r.overlap = calculateOverlap(r.files_modified, inProgress);
       if (r.overlap.score === 0) {
         r.recommendation = 'safe_parallel';
-        r.suggested_command = `/gsd:execute-phase ${r.phase}`;
+        r.suggested_command = `/gsd-execute-phase ${r.phase}`;
       } else {
         r.recommendation = 'worktree';
-        r.suggested_command = `/gsd:execute-phase ${r.phase} (recommend worktree)`;
+        r.suggested_command = `/gsd-execute-phase ${r.phase} (recommend worktree)`;
       }
     }
   }
@@ -714,7 +714,7 @@ describe('unlocked: overlap and recommendations', () => {
     assert.strictEqual(out.ready.length, 1);
     assert.strictEqual(out.ready[0].recommendation, 'plan_first');
     assert.strictEqual(out.ready[0].overlap, null);
-    assert.strictEqual(out.ready[0].suggested_command, '/gsd:plan-phase 2');
+    assert.strictEqual(out.ready[0].suggested_command, '/gsd-plan-phase 2');
   });
 
   test('safe_parallel when ready phase plan has no overlap with in_progress', () => {
@@ -917,7 +917,7 @@ git commit -m "test(unlocked): add table format output tests"
 
 ---
 
-### Task 4: Create the `/gsd:unlocked` skill command
+### Task 4: Create the `/gsd-unlocked` skill command
 
 **Files:**
 - Create: `commands/gsd/unlocked.md`
@@ -971,7 +971,7 @@ If everything is blocked, explain what needs to complete first.
 
 ```bash
 git add commands/gsd/unlocked.md
-git commit -m "feat(unlocked): add /gsd:unlocked skill command"
+git commit -m "feat(unlocked): add /gsd-unlocked skill command"
 ```
 
 ---

@@ -221,7 +221,7 @@ function assignRecommendations(readyPhases, inProgressPhases) {
         ...phase,
         overlap: null,
         recommendation: 'plan_first',
-        suggested_command: `/gsd:plan-phase ${phase.phase}`,
+        suggested_command: `/gsd-plan-phase ${phase.phase}`,
       };
     }
 
@@ -246,7 +246,7 @@ function assignRecommendations(readyPhases, inProgressPhases) {
         ...phase,
         overlap,
         recommendation: 'safe_parallel',
-        suggested_command: `/gsd:execute-phase ${phase.phase}`,
+        suggested_command: `/gsd-execute-phase ${phase.phase}`,
       };
     }
 
@@ -254,7 +254,7 @@ function assignRecommendations(readyPhases, inProgressPhases) {
       ...phase,
       overlap,
       recommendation: 'worktree',
-      suggested_command: `/gsd:execute-phase ${phase.phase} (recommend worktree)`,
+      suggested_command: `/gsd-execute-phase ${phase.phase} (recommend worktree)`,
     };
   });
 }

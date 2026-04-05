@@ -25,7 +25,7 @@ or when you want to see the full report before starting a workflow.
 
 Extract phase number from $ARGUMENTS. If empty, show usage:
 ```
-Usage: /gsd:preflight <phase-number> [--workflow discuss|plan|execute|verify]
+Usage: /gsd-preflight <phase-number> [--workflow discuss|plan|execute|verify]
 ```
 
 ## 2. Run Engine

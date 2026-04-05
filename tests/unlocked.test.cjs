@@ -209,7 +209,7 @@ describe('unlocked: overlap and recommendations', () => {
     assert.strictEqual(phase2.phase, '2');
     assert.strictEqual(phase2.recommendation, 'plan_first');
     assert.strictEqual(phase2.overlap, null);
-    assert.strictEqual(phase2.suggested_command, '/gsd:plan-phase 2');
+    assert.strictEqual(phase2.suggested_command, '/gsd-plan-phase 2');
   });
 
   test('safe_parallel when ready phase plan has no overlap with in_progress', () => {

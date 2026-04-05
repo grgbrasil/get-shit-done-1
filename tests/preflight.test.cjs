@@ -140,7 +140,7 @@ describe('preflight: check 3 — dependencies', () => {
     const depBlocker = out.blockers.find(b => b.type === 'dependency_incomplete');
     assert.ok(depBlocker, 'should have dependency_incomplete blocker');
     assert.ok(depBlocker.message.includes('Phase 1'));
-    assert.ok(depBlocker.command.includes('/gsd:execute-phase 1'));
+    assert.ok(depBlocker.command.includes('/gsd-execute-phase 1'));
   });
 
   test('passes when dependency phase is complete', () => {
@@ -262,7 +262,7 @@ describe('preflight: check 4b — UI-SPEC warning', () => {
     const out = JSON.parse(result.output);
     const warning = out.warnings.find(w => w.type === 'ui_spec_missing');
     assert.ok(warning, 'should warn about missing UI-SPEC');
-    assert.ok(warning.command.includes('/gsd:ui-phase 2'));
+    assert.ok(warning.command.includes('/gsd-ui-phase 2'));
   });
 
   test('no UI-SPEC warning when UI-SPEC exists', () => {
@@ -510,7 +510,7 @@ describe('preflight: workflow auto-detection', () => {
     assert.ok(result.success);
     const out = JSON.parse(result.output);
     assert.strictEqual(out.detected_workflow, 'discuss');
-    assert.strictEqual(out.next_command, '/gsd:discuss-phase 1');
+    assert.strictEqual(out.next_command, '/gsd-discuss-phase 1');
   });
 
   test('detects discuss when phase dir empty', () => {
@@ -529,7 +529,7 @@ describe('preflight: workflow auto-detection', () => {
     assert.ok(result.success);
     const out = JSON.parse(result.output);
     assert.strictEqual(out.detected_workflow, 'plan');
-    assert.strictEqual(out.next_command, '/gsd:plan-phase 1');
+    assert.strictEqual(out.next_command, '/gsd-plan-phase 1');
   });
 
   test('detects execute when PLANs exist but no SUMMARYs', () => {
@@ -541,7 +541,7 @@ describe('preflight: workflow auto-detection', () => {
     assert.ok(result.success);
     const out = JSON.parse(result.output);
     assert.strictEqual(out.detected_workflow, 'execute');
-    assert.strictEqual(out.next_command, '/gsd:execute-phase 1');
+    assert.strictEqual(out.next_command, '/gsd-execute-phase 1');
   });
 
   test('detects verify when SUMMARYs exist', () => {
@@ -554,7 +554,7 @@ describe('preflight: workflow auto-detection', () => {
     assert.ok(result.success);
     const out = JSON.parse(result.output);
     assert.strictEqual(out.detected_workflow, 'verify');
-    assert.strictEqual(out.next_command, '/gsd:verify-work 1');
+    assert.strictEqual(out.next_command, '/gsd-verify-work 1');
   });
 });
 
