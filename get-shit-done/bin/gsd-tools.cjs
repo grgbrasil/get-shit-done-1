@@ -961,6 +961,13 @@ async function runCommand(command, args, cwd, raw) {
       break;
     }
 
+    case 'unlocked': {
+      const unlocked = require('./lib/unlocked.cjs');
+      const subcommand = args[1] || 'json';
+      unlocked.cmdUnlocked(cwd, subcommand, raw);
+      break;
+    }
+
     default:
       error(`Unknown command: ${command}`);
   }
