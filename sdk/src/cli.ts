@@ -29,6 +29,8 @@ export interface ParsedCliArgs {
   wsPort: number | undefined;
   model: string | undefined;
   maxBudget: number | undefined;
+  port: number;
+  dev: boolean;
   help: boolean;
   version: boolean;
 }
@@ -46,6 +48,8 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
       model: { type: 'string' },
       'max-budget': { type: 'string' },
       init: { type: 'string' },
+      port: { type: 'string' },
+      dev: { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
       version: { type: 'boolean', short: 'v', default: false },
     },
@@ -69,6 +73,8 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
     wsPort: values['ws-port'] ? Number(values['ws-port']) : undefined,
     model: values.model as string | undefined,
     maxBudget: values['max-budget'] ? Number(values['max-budget']) : undefined,
+    port: values.port ? Number(values.port) : 4747,
+    dev: values.dev as boolean,
     help: values.help as boolean,
     version: values.version as boolean,
   };
@@ -83,6 +89,7 @@ Commands:
   run <prompt>          Run a full milestone from a text prompt
   auto                  Run the full autonomous lifecycle (discover → execute → advance)
   init [input]          Bootstrap a new project from a PRD or description
+  dashboard             Start the web dashboard
                         input can be:
                           @path/to/prd.md   Read input from a file
                           "description"     Use text directly
@@ -95,6 +102,8 @@ Options:
   --ws-port <port>      Enable WebSocket transport on <port>
   --model <model>       Override LLM model
   --max-budget <n>      Max budget per step in USD
+  --port <port>         Dashboard port (default: 4747)
+  --dev                 Run dashboard in dev mode with Vite proxy
   -h, --help            Show this help
   -v, --version         Show version
 `.trim();
@@ -194,8 +203,14 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<void
     return;
   }
 
-  if (args.command !== 'run' && args.command !== 'init' && args.command !== 'auto') {
-    console.error('Error: Expected "gsd-sdk run <prompt>", "gsd-sdk auto", or "gsd-sdk init [input]"');
+  if (args.command === 'dashboard') {
+    const { launchDashboard } = await import('./dashboard-launcher.js');
+    await launchDashboard({ port: args.port, dev: args.dev });
+    return;
+  }
+
+  if (args.command !== 'run' && args.command !== 'init' && args.command !== 'auto' && args.command !== 'dashboard') {
+    console.error('Error: Expected "gsd-sdk run <prompt>", "gsd-sdk auto", "gsd-sdk init [input]", or "gsd-sdk dashboard"');
     console.error(USAGE);
     process.exitCode = 1;
     return;

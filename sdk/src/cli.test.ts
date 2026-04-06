@@ -269,6 +269,8 @@ describe('resolveInitInput', () => {
       wsPort: undefined,
       model: undefined,
       maxBudget: undefined,
+      port: 4747,
+      dev: false,
       help: false,
       version: false,
       ...overrides,
