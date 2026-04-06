@@ -2,9 +2,11 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api';
+import { useWebSocket } from '../composables/useWebSocket';
 import FrontmatterForm from './FrontmatterForm.vue';
 
 const route = useRoute();
+const { on } = useWebSocket();
 
 const projectId = computed(() => route.params.projectId as string);
 const planId = computed(() => route.params.planId as string);
@@ -114,7 +116,19 @@ function onFrontmatterUpdate(key: string, value: unknown) {
   dirty.value = true;
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+
+  on('file:changed', (event) => {
+    if (event.project === projectId.value && event.path === filePath.value) {
+      if (dirty.value) {
+        diskChanged.value = true;
+      } else {
+        load();
+      }
+    }
+  });
+});
 watch([projectId, planId], load);
 </script>
 

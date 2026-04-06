@@ -3,12 +3,14 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePhasesStore } from '../stores/phases';
 import { useFileConflicts } from '../composables/useFileConflicts';
+import { useWebSocket } from '../composables/useWebSocket';
 import KanbanCard from './KanbanCard.vue';
 import type { PlanInfo } from '../api';
 
 const route = useRoute();
 const router = useRouter();
 const phasesStore = usePhasesStore();
+const { on } = useWebSocket();
 
 const projectId = computed(() => route.params.projectId as string);
 const phaseId = computed(() => route.params.phaseId as string);
@@ -48,6 +50,17 @@ onMounted(() => {
   if (projectId.value && phaseId.value) {
     phasesStore.loadPhaseDetail(projectId.value, phaseId.value);
   }
+
+  on('file:changed', (event) => {
+    if (event.project === projectId.value) {
+      phasesStore.loadPhaseDetail(projectId.value, phaseId.value);
+    }
+  });
+  on('file:created', (event) => {
+    if (event.project === projectId.value) {
+      phasesStore.loadPhaseDetail(projectId.value, phaseId.value);
+    }
+  });
 });
 
 watch([projectId, phaseId], () => {
