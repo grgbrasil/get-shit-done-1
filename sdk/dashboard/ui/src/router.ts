@@ -27,7 +27,7 @@ export const router = createRouter({
     },
     {
       path: '/project/:projectId/phase/:phaseId/plan/:planId',
-      component: Placeholder,
+      component: () => import('./components/MarkdownEditor.vue'),
     },
     {
       path: '/project/:projectId/config',
