@@ -16,7 +16,9 @@
   },
   "files": [
     "dist",
-    "prompts"
+    "prompts",
+    "dashboard/server",
+    "dashboard/ui/dist"
   ],
   "repository": {
     "type": "git",
@@ -37,7 +39,9 @@
     "prepublishOnly": "npm run build",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "vitest run --project integration",
+    "dashboard:build": "cd dashboard/ui && npm run build",
+    "dashboard:dev": "tsx dashboard/server/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.84",
