@@ -31,7 +31,7 @@ export const router = createRouter({
     },
     {
       path: '/project/:projectId/config',
-      component: Placeholder,
+      component: () => import('./components/ConfigEditor.vue'),
     },
   ],
 });
