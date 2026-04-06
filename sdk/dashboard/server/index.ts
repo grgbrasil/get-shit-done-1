@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { ProjectRegistry } from './registry.js';
 import { projectsRouter } from './routes/projects.js';
+import { overviewRouter } from './routes/overview.js';
+import { phasesRouter } from './routes/phases.js';
 
 export interface DashboardOptions {
   port: number;
@@ -29,6 +31,8 @@ export function createApp(registryPath: string = DEFAULT_REGISTRY_PATH) {
   });
 
   app.use('/api/projects', projectsRouter(registry));
+  app.use('/api/projects/:id/overview', overviewRouter(registry));
+  app.use('/api/projects/:id/phases', phasesRouter(registry));
 
   return { app, registry };
 }
