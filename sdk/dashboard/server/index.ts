@@ -12,6 +12,8 @@ import { phasesRouter } from './routes/phases.js';
 import { filesRouter } from './routes/files.js';
 import { ProjectWatcher } from './watcher.js';
 import { DashboardWS } from './ws.js';
+import { SessionManager } from './session-manager.js';
+import { sessionRouter } from './routes/session.js';
 
 export interface DashboardOptions {
   port: number;
@@ -22,9 +24,10 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const DEFAULT_REGISTRY_PATH = join(homedir(), '.gsd', 'dashboard.json');
 
-export function createApp(registryPath: string = DEFAULT_REGISTRY_PATH) {
+export function createApp(registryPath: string = DEFAULT_REGISTRY_PATH, port: number = 4747) {
   const app = express();
   const registry = new ProjectRegistry(registryPath);
+  const sessionManager = new SessionManager();
 
   app.use(cors());
   app.use(express.json());
@@ -37,12 +40,13 @@ export function createApp(registryPath: string = DEFAULT_REGISTRY_PATH) {
   app.use('/api/projects/:id/overview', overviewRouter(registry));
   app.use('/api/projects/:id/phases', phasesRouter(registry));
   app.use('/api/projects/:id/files', filesRouter(registry));
+  app.use('/api/projects/:id/session', sessionRouter(registry, sessionManager, port + 1));
 
-  return { app, registry };
+  return { app, registry, sessionManager };
 }
 
 export async function startDashboard(options: DashboardOptions): Promise<void> {
-  const { app, registry } = createApp();
+  const { app, registry, sessionManager } = createApp(undefined, options.port);
   const server = createServer(app);
 
   // WebSocket
@@ -72,6 +76,7 @@ export async function startDashboard(options: DashboardOptions): Promise<void> {
 
   // Graceful shutdown
   const shutdown = async () => {
+    sessionManager.stopAll();
     await watcher.close();
     dashboardWs.close();
     server.close();
