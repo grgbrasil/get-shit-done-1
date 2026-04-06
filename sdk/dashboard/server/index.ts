@@ -10,6 +10,8 @@ import { projectsRouter } from './routes/projects.js';
 import { overviewRouter } from './routes/overview.js';
 import { phasesRouter } from './routes/phases.js';
 import { filesRouter } from './routes/files.js';
+import { ProjectWatcher } from './watcher.js';
+import { DashboardWS } from './ws.js';
 
 export interface DashboardOptions {
   port: number;
@@ -40,8 +42,23 @@ export function createApp(registryPath: string = DEFAULT_REGISTRY_PATH) {
 }
 
 export async function startDashboard(options: DashboardOptions): Promise<void> {
-  const { app } = createApp();
+  const { app, registry } = createApp();
   const server = createServer(app);
+
+  // WebSocket
+  const dashboardWs = new DashboardWS(server);
+
+  // File watcher
+  const watcher = new ProjectWatcher();
+  watcher.onEvent((event) => {
+    dashboardWs.broadcast(event);
+  });
+
+  // Watch all registered projects
+  const projects = await registry.list();
+  for (const project of projects) {
+    await watcher.watch(project);
+  }
 
   if (!options.dev) {
     const uiDist = resolve(__dirname, '..', 'ui', 'dist');
@@ -52,6 +69,15 @@ export async function startDashboard(options: DashboardOptions): Promise<void> {
       });
     }
   }
+
+  // Graceful shutdown
+  const shutdown = async () => {
+    await watcher.close();
+    dashboardWs.close();
+    server.close();
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 
   return new Promise((resolvePromise) => {
     server.listen(options.port, () => {
