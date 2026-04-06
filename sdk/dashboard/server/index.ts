@@ -4,6 +4,9 @@ import { createServer } from 'node:http';
 import { join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { homedir } from 'node:os';
+import { ProjectRegistry } from './registry.js';
+import { projectsRouter } from './routes/projects.js';
 
 export interface DashboardOptions {
   port: number;
@@ -12,8 +15,12 @@ export interface DashboardOptions {
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-export function createApp() {
+const DEFAULT_REGISTRY_PATH = join(homedir(), '.gsd', 'dashboard.json');
+
+export function createApp(registryPath: string = DEFAULT_REGISTRY_PATH) {
   const app = express();
+  const registry = new ProjectRegistry(registryPath);
+
   app.use(cors());
   app.use(express.json());
 
@@ -21,11 +28,13 @@ export function createApp() {
     res.json({ status: 'ok', version: '0.1.0' });
   });
 
-  return app;
+  app.use('/api/projects', projectsRouter(registry));
+
+  return { app, registry };
 }
 
 export async function startDashboard(options: DashboardOptions): Promise<void> {
-  const app = createApp();
+  const { app } = createApp();
   const server = createServer(app);
 
   if (!options.dev) {
