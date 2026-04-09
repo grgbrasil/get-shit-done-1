@@ -1,5 +1,5 @@
-import { GSDTools, resolveGsdToolsPath } from '../../src/gsd-tools.js';
-import type { RoadmapAnalysis, PhasePlanIndex } from '../../src/types.js';
+import { GSDTools, resolveGsdToolsPath } from '../../dist/gsd-tools.js';
+import type { RoadmapAnalysis, PhasePlanIndex } from '../../dist/types.js';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';

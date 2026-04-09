@@ -35,7 +35,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cd dashboard/server && tsc",
     "prepublishOnly": "npm run build",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",

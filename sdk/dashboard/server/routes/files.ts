@@ -10,13 +10,13 @@ export function filesRouter(registry: ProjectRegistry): Router {
 
   // GET /api/projects/:id/files/*
   router.get('/*', async (req, res) => {
-    const project = await registry.get(req.params.id);
+    const project = await registry.get((req.params as unknown as Record<string, string>).id);
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
       return;
     }
 
-    const relativePath = req.params[0];
+    const relativePath = (req.params as unknown as Record<string, string>)[0];
     if (!relativePath) {
       res.status(400).json({ error: 'File path required' });
       return;
@@ -40,13 +40,13 @@ export function filesRouter(registry: ProjectRegistry): Router {
 
   // PUT /api/projects/:id/files/*
   router.put('/*', async (req, res) => {
-    const project = await registry.get(req.params.id);
+    const project = await registry.get((req.params as unknown as Record<string, string>).id);
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
       return;
     }
 
-    const relativePath = req.params[0];
+    const relativePath = (req.params as unknown as Record<string, string>)[0];
     const { content } = req.body as { content?: string };
 
     if (!relativePath) {

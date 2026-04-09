@@ -1,4 +1,4 @@
-import chokidar from 'chokidar';
+import chokidar, { type FSWatcher } from 'chokidar';
 import { relative } from 'node:path';
 import type { ProjectEntry } from './registry.js';
 
@@ -8,12 +8,13 @@ export interface FileEvent {
   type: FileEventType;
   project: string;
   path: string;
+  [key: string]: unknown;
 }
 
 export type FileEventHandler = (event: FileEvent) => void;
 
 export class ProjectWatcher {
-  private watchers = new Map<string, chokidar.FSWatcher>();
+  private watchers = new Map<string, FSWatcher>();
   private handler: FileEventHandler | null = null;
 
   onEvent(handler: FileEventHandler): void {

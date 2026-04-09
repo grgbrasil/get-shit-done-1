@@ -6,7 +6,7 @@ export function phasesRouter(registry: ProjectRegistry): Router {
   const router = Router({ mergeParams: true });
 
   router.get('/', async (req, res) => {
-    const project = await registry.get(req.params.id);
+    const project = await registry.get((req.params as Record<string, string>).id);
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
       return;
@@ -21,7 +21,7 @@ export function phasesRouter(registry: ProjectRegistry): Router {
   });
 
   router.get('/:phaseId', async (req, res) => {
-    const project = await registry.get(req.params.id);
+    const project = await registry.get((req.params as Record<string, string>).id);
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
       return;
