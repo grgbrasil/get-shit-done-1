@@ -113,6 +113,17 @@ If plans exist but not all have matching summaries:
 If all plans in the current phase have summaries:
 → Next action: `/gsd-verify-work`
 
+**Route 5.5: UAT passed but phase not transitioned → auto-transition (safety net)**
+If the current phase has a UAT file with `status: complete` AND Summary shows `issues: 0`,
+but the phase is NOT marked `[x]` in ROADMAP.md:
+
+```bash
+TRANSITION=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" phase complete "${current_phase}")
+```
+
+Load and follow `@~/.claude/get-shit-done/workflows/transition.md` from `update_roadmap_and_state`.
+Then re-evaluate routing (will hit Route 6 or 7).
+
 **Route 6: Phase complete, next phase exists → advance**
 If the current phase is complete and the next phase exists in ROADMAP:
 → Next action: `/gsd-discuss-phase <next-phase>`

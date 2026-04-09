@@ -437,12 +437,22 @@ If `SECURITY_CFG` is `true` AND `SECURITY_FILE` exists: check frontmatter `threa
 ```
 
 If `SECURITY_CFG` is `false` OR (`SECURITY_FILE` exists AND `threats_open` is `0`):
-```
-All tests passed. Ready to continue.
 
+**Auto-transition: mark phase complete and advance state.**
+
+```bash
+TRANSITION=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" phase complete "${current_phase}")
+```
+
+Load and follow `@~/.claude/get-shit-done/workflows/transition.md` starting from `update_roadmap_and_state` step (skip verify_completion — UAT already confirmed).
+
+After transition completes, present:
+```
+✓ Phase {phase} complete — all tests passed, phase transitioned.
+
+- `/gsd-discuss-phase {next}` — Discuss next phase
 - `/gsd-plan-phase {next}` — Plan next phase
 - `/gsd-execute-phase {next}` — Execute next phase
-- `/gsd-secure-phase {phase}` — security review
 - `/gsd-ui-review {phase}` — visual quality audit (if frontend files were modified)
 ```
 </step>
