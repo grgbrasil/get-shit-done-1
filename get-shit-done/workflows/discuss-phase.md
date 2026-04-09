@@ -173,6 +173,11 @@ Exit workflow.
 - Discussion is fully interactive (questions, gray area selection — same as default mode)
 - After discussion completes, auto-advance to plan-phase → execute-phase (same as `--auto`)
 - This is the middle ground: user controls the discuss decisions, then plan+execute run autonomously
+
+**Advisor mode** — If `--advisor` is present in ARGUMENTS:
+- Force-enable advisor mode regardless of whether USER-PROFILE.md exists
+- When USER-PROFILE.md is absent, uses `standard` calibration tier (no profile to read)
+- Combinable with other flags (e.g., `--advisor --chain`)
 </step>
 
 <step name="check_blocking_antipatterns" priority="first">
@@ -429,11 +434,11 @@ Analyze the phase to identify gray areas worth discussing. **Use both `prior_dec
 
 Check if advisor mode should activate:
 
-1. Check for USER-PROFILE.md:
+1. Check for `--advisor` flag or USER-PROFILE.md:
    ```bash
    PROFILE_PATH="$HOME/.claude/get-shit-done/USER-PROFILE.md"
    ```
-   ADVISOR_MODE = file exists at PROFILE_PATH → true, otherwise → false
+   ADVISOR_MODE = `--advisor` flag in ARGUMENTS → true, OR file exists at PROFILE_PATH → true, otherwise → false
 
 2. If ADVISOR_MODE is true, resolve vendor_philosophy calibration tier:
    - Priority 1: Read config.json > preferences.vendor_philosophy (project-level override)

@@ -102,6 +102,7 @@ Capture implementation decisions before planning.
 | `--batch` | Group questions for batch intake instead of one-by-one |
 | `--analyze` | Add trade-off analysis during discussion |
 | `--power` | File-based bulk question answering from a prepared answers file |
+| `--advisor` | Force advisor mode (research-backed comparison tables) without needing USER-PROFILE.md |
 
 **Prerequisites:** `.planning/ROADMAP.md` exists
 **Produces:** `{phase}-CONTEXT.md`, `{phase}-DISCUSSION-LOG.md` (audit trail)
@@ -112,6 +113,7 @@ Capture implementation decisions before planning.
 /gsd-discuss-phase --batch          # Batch mode for current phase
 /gsd-discuss-phase 2 --analyze      # Discussion with trade-off analysis
 /gsd-discuss-phase 1 --power        # Bulk answers from file
+/gsd-discuss-phase 1 --advisor      # Force advisor mode with research tables
 ```
 
 ---

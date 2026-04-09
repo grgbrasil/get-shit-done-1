@@ -1,7 +1,7 @@
 ---
 name: gsd:discuss-phase
-description: Gather phase context through adaptive questioning before planning. Use --auto to skip interactive questions (Claude picks recommended defaults). Use --chain for interactive discuss followed by automatic plan+execute. Use --power for bulk question generation into a file-based UI (answer at your own pace).
-argument-hint: "<phase> [--auto] [--chain] [--batch] [--analyze] [--text] [--power]"
+description: Gather phase context through adaptive questioning before planning. Use --auto to skip interactive questions (Claude picks recommended defaults). Use --chain for interactive discuss followed by automatic plan+execute. Use --power for bulk question generation into a file-based UI (answer at your own pace). Use --advisor to force advisor mode (research-backed comparison tables) without needing USER-PROFILE.md.
+argument-hint: "<phase> [--auto] [--chain] [--batch] [--analyze] [--text] [--power] [--advisor]"
 allowed-tools:
   - Read
   - Write
