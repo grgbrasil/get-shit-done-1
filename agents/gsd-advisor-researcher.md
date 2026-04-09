@@ -82,9 +82,18 @@ Return EXACTLY this structure:
 
 | Priority | Tool | Use For | Trust Level |
 |----------|------|---------|-------------|
+| 0th | Installed skills | Domain-specific guidelines, patterns, palettes, UX rules from user's skill library | HIGH (curated) |
 | 1st | Context7 | Library APIs, features, configuration, versions | HIGH |
 | 2nd | WebFetch | Official docs/READMEs not in Context7, changelogs | HIGH-MEDIUM |
 | 3rd | WebSearch | Ecosystem discovery, community patterns, pitfalls | Needs verification |
+
+**Skill discovery flow (Priority 0):**
+If `<installed_skills>` is provided in the prompt, check if any listed skill is relevant to this gray area's domain (e.g., UI/UX skill for layout decisions, backend skill for API design). If relevant:
+1. Read the skill's SKILL.md to understand what references it offers
+2. Read specific reference files that match the gray area topic
+3. Incorporate skill knowledge into the comparison table (cite the skill as source)
+
+If no `<installed_skills>` is provided, skip to Context7.
 
 **Context7 flow:**
 1. `mcp__context7__resolve-library-id` with libraryName

@@ -556,7 +556,13 @@ After user selects gray areas in present_gray_areas, spawn parallel research age
 
 1. Display brief status: "Researching {N} areas..."
 
-2. For EACH user-selected gray area, spawn a Task() in parallel:
+2. **Skill discovery** — Before spawning agents, scan for installed skills that may contain domain-relevant references:
+   ```bash
+   SKILL_DIRS=$(ls -d $HOME/.claude/skills/*/SKILL.md $HOME/.claude/plugins/cache/*/*/skills/*/SKILL.md 2>/dev/null | head -50)
+   ```
+   For each SKILL.md found, read its `name` and `description` from frontmatter. Build a compact list of `{name}: {description} → {path}` entries. This list is passed to each advisor agent as `<installed_skills>` so they can read relevant skill references during research.
+
+3. For EACH user-selected gray area, spawn a Task() in parallel:
 
    Task(
      prompt="First, read @~/.claude/agents/gsd-advisor-researcher.md for your role and instructions.
@@ -565,6 +571,7 @@ After user selects gray areas in present_gray_areas, spawn parallel research age
      <phase_context>{phase_goal and description from ROADMAP.md}</phase_context>
      <project_context>{project name and brief description from PROJECT.md}</project_context>
      <calibration_tier>{resolved calibration tier: full_maturity | standard | minimal_decisive}</calibration_tier>
+     <installed_skills>{compact skill list from step 2, or empty if none found}</installed_skills>
 
      Research this gray area and return a structured comparison table with rationale.
      ${AGENT_SKILLS_ADVISOR}",
