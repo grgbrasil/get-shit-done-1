@@ -5,7 +5,7 @@
 > should be acted on directly. LOW confidence dimensions should be approached with
 > hedging ("Based on your profile, I'll try X -- let me know if that's off").
 
-**Generated:** 2026-04-01T15:32:17.707Z
+**Generated:** 2026-04-05T18:35:06.894Z
 **Source:** session_analysis
 **Projects Analyzed:** 
 **Messages Analyzed:** 0
@@ -135,7 +135,7 @@
 | Field | Value |
 |-------|-------|
 | Profile Version | 1.0 |
-| Generated | 2026-04-01T15:32:17.707Z |
+| Generated | 2026-04-05T18:35:06.894Z |
 | Source | session_analysis |
 | Projects | 0 |
 | Messages | 0 |

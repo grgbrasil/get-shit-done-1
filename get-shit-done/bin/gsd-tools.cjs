@@ -166,7 +166,6 @@ const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
 const docs = require('./lib/docs.cjs');
 const fmap = require('./lib/fmap.cjs');
-const preflight = require('./lib/preflight.cjs');
 const ops = require('./lib/ops.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────

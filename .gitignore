@@ -18,6 +18,9 @@ coverage/
 animation/
 *.gif
 
+# Local sync script (grg-only, not for upstream)
+scripts/gsd-sync-upstream.sh
+
 # Internal planning documents
 reports/
 RAILROAD_ARCHITECTURE.md
